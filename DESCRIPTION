@@ -1,0 +1,28 @@
+Package: ClaudeAgentSDK
+Title: R SDK for Claude Code Agent
+Version: 0.1.0
+Authors@R: person("ClaudeAgentSDK", "Authors", role = c("aut", "cre"),
+                  email = "sdk@example.com")
+Description: R implementation of the Claude Agent SDK. Spawns the Claude Code CLI
+    as a subprocess and communicates via newline-delimited JSON stream protocol,
+    including the full bidirectional control protocol (permission requests, hooks,
+    interrupt). Mirrors the Python claude-agent-sdk API.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.0
+Imports:
+    processx (>= 3.8.0),
+    jsonlite,
+    R6,
+    later,
+    coro,
+    rlang (>= 1.0.0),
+    cli
+Suggests:
+    promises,
+    shiny,
+    testthat (>= 3.0.0),
+    withr
+SystemRequirements: Claude Code CLI (>= 2.0.0)
+Config/testthat/edition: 3

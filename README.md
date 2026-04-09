@@ -1,0 +1,499 @@
+# Claude Agent SDK for R
+
+R SDK for Claude Agent. See the [Claude Agent SDK documentation](https://platform.claude.com/docs/en/agent-sdk/python) for more information.
+
+## Installation
+
+```r
+# Install from source (development)
+devtools::install("/path/to/ClaudeAgentSDK")
+
+# Or from GitHub (once published)
+# remotes::install_github("your-org/ClaudeAgentSDK")
+```
+
+**Prerequisites:**
+
+- R 4.1+
+- Required packages: `processx`, `jsonlite`, `R6`, `later`, `coro`, `rlang`, `cli`
+
+**Note:** The Claude Code CLI must be installed separately:
+
+```bash
+curl -fsSL https://claude.ai/install.sh | bash
+# or
+npm install -g @anthropic-ai/claude-code
+```
+
+You can specify a custom path via `ClaudeAgentOptions(cli_path = "/path/to/claude")`.
+
+## Quick Start
+
+```r
+library(ClaudeAgentSDK)
+
+# Simple one-shot query (synchronous)
+result <- claude_run("What is 2 + 2?")
+print(result)
+
+# Stream messages with claude_query()
+gen <- claude_query("What is 2 + 2?")
+coro::loop(for (msg in gen) {
+  print(msg)
+})
+```
+
+## Basic Usage: `claude_query()` and `claude_run()`
+
+`claude_query()` is the R equivalent of Python's `query()`. It returns a
+`coro` generator that yields typed message objects. See
+[`R/query.R`](R/query.R).
+
+```r
+library(ClaudeAgentSDK)
+
+# Stream through messages
+gen <- claude_query("Hello Claude")
+coro::loop(for (msg in gen) {
+  if (inherits(msg, "AssistantMessage")) {
+    for (block in msg$content) {
+      if (inherits(block, "TextBlock")) {
+        cat(block$text)
+      }
+    }
+  }
+})
+
+# With options
+options <- ClaudeAgentOptions(
+  system_prompt = "You are a helpful assistant",
+  max_turns     = 1L
+)
+
+gen <- claude_query("Tell me a joke", options = options)
+coro::loop(for (msg in gen) {
+  print(msg)
+})
+```
+
+### Synchronous helper: `claude_run()`
+
+For simple blocking use, `claude_run()` collects all messages and returns a
+`ClaudeRunResult`:
+
+```r
+result <- claude_run("What is 2 + 2?",
+  options = ClaudeAgentOptions(max_turns = 1L))
+
+# Access the ResultMessage
+print(result$result)            # <ResultMessage ...>
+cat(result$result$total_cost_usd, "\n")
+
+# Walk all messages
+for (msg in result$messages) {
+  if (inherits(msg, "AssistantMessage")) {
+    cat(msg$content[[1]]$text, "\n")
+  }
+}
+```
+
+### Using Tools
+
+By default, Claude has access to the full Claude Code toolset (Read, Write,
+Edit, Bash, and others). `allowed_tools` is a permission allowlist: listed
+tools are auto-approved, and unlisted tools fall through to `permission_mode`
+and `can_use_tool` for a decision. To block specific tools use
+`disallowed_tools`.
+
+```r
+options <- ClaudeAgentOptions(
+  allowed_tools   = c("Read", "Write", "Bash"),   # auto-approve these
+  permission_mode = "acceptEdits"                 # auto-accept file edits
+)
+
+gen <- claude_query("Create a hello.R file", options = options)
+coro::loop(for (msg in gen) {
+  # process tool use and results
+})
+```
+
+### Working Directory
+
+```r
+options <- ClaudeAgentOptions(
+  cwd = "/path/to/project"
+)
+```
+
+## `ClaudeSDKClient`
+
+`ClaudeSDKClient` is an R6 class that supports bidirectional, interactive
+conversations with Claude Code. See [`R/client.R`](R/client.R).
+
+Unlike `claude_query()`, `ClaudeSDKClient` additionally enables **hooks** and
+**runtime control** (interrupt, permission-mode changes, model switching).
+
+### Interactive Client
+
+```r
+library(ClaudeAgentSDK)
+
+client <- ClaudeSDKClient$new(
+  ClaudeAgentOptions(cwd = getwd())
+)
+client$connect()
+
+# Send a prompt and receive the response
+client$send("What files are in the current directory?")
+coro::loop(for (msg in client$receive_response()) {
+  if (inherits(msg, "AssistantMessage")) {
+    for (block in msg$content) {
+      if (inherits(block, "TextBlock")) cat(block$text)
+    }
+  }
+  if (inherits(msg, "ResultMessage")) {
+    cat("\nCost: $", msg$total_cost_usd, "\n")
+  }
+})
+
+# Send a follow-up in the same session
+client$send("Now count how many R files there are.")
+coro::loop(for (msg in client$receive_response()) {
+  if (inherits(msg, "AssistantMessage")) {
+    cat(msg$content[[1]]$text, "\n")
+  }
+})
+
+client$disconnect()
+```
+
+### Hooks
+
+A **hook** is an R function that the Claude Code application invokes at
+specific points of the agent loop. Hooks can intercept tool calls, validate
+commands, and provide deterministic feedback.
+
+```r
+library(ClaudeAgentSDK)
+
+check_bash_command <- function(input_data, tool_use_id, context) {
+  if (!identical(input_data$hook_event_name, "PreToolUse")) return(list())
+  command <- input_data$tool_input$command %||% ""
+  block_patterns <- c("rm -rf", "sudo")
+  for (pattern in block_patterns) {
+    if (grepl(pattern, command, fixed = TRUE)) {
+      return(list(
+        hookSpecificOutput = list(
+          hookEventName         = "PreToolUse",
+          permissionDecision    = "deny",
+          permissionDecisionReason = paste("Command contains blocked pattern:", pattern)
+        )
+      ))
+    }
+  }
+  list()
+}
+
+options <- ClaudeAgentOptions(
+  allowed_tools = "Bash",
+  hooks = list(
+    PreToolUse = list(
+      list(
+        matcher = "Bash",
+        hooks   = list(check_bash_command)
+      )
+    )
+  )
+)
+
+client <- ClaudeSDKClient$new(options)
+client$connect()
+
+# Test 1: Command with forbidden pattern (will be blocked)
+client$send("Run: rm -rf /tmp/test")
+coro::loop(for (msg in client$receive_response()) {
+  print(msg)
+})
+
+# Test 2: Safe command
+client$send("Run: echo 'Hello from hooks!'")
+coro::loop(for (msg in client$receive_response()) {
+  if (inherits(msg, "AssistantMessage")) cat(msg$content[[1]]$text, "\n")
+})
+
+client$disconnect()
+```
+
+### Permission Callbacks
+
+Use `can_use_tool` for programmatic tool permission control:
+
+```r
+my_permission <- function(tool_name, tool_input, context) {
+  if (tool_name == "Bash") {
+    cmd <- tool_input$command %||% ""
+    if (grepl("sudo", cmd, fixed = TRUE)) {
+      return(PermissionResultDeny("sudo commands are not allowed"))
+    }
+  }
+  PermissionResultAllow()
+}
+
+options <- ClaudeAgentOptions(
+  can_use_tool = my_permission
+)
+```
+
+### Runtime Control
+
+```r
+client <- ClaudeSDKClient$new(ClaudeAgentOptions())
+client$connect()
+
+# Change permission mode at runtime
+client$set_permission_mode("acceptEdits")
+
+# Interrupt a running operation
+client$interrupt()
+
+# Switch model mid-session
+client$set_model("claude-sonnet-4-6")
+
+# Get MCP server status
+status <- client$get_mcp_status()
+cat("MCP servers:", length(status$mcpServers), "\n")
+
+# Get context usage
+usage <- client$get_context_usage()
+cat("Context:", usage$percentage, "% used\n")
+
+client$disconnect()
+```
+
+## Types
+
+See [`R/types.R`](R/types.R) for complete type definitions:
+
+- `ClaudeAgentOptions` — Configuration options
+- `AssistantMessage`, `UserMessage`, `SystemMessage`, `ResultMessage` — Message types
+- `TextBlock`, `ToolUseBlock`, `ToolResultBlock`, `ThinkingBlock` — Content blocks
+- `StreamEvent`, `RateLimitEvent` — Streaming events
+- `TaskStartedMessage`, `TaskProgressMessage`, `TaskNotificationMessage` — Task messages
+- `PermissionResultAllow`, `PermissionResultDeny` — Permission results
+- `SDKSessionInfo`, `SessionMessage` — Session types
+
+All objects are S3 lists with a `class` attribute; use `inherits(msg, "AssistantMessage")` for type checks.
+
+## Error Handling
+
+```r
+library(ClaudeAgentSDK)
+
+tryCatch(
+  {
+    result <- claude_run("Hello")
+  },
+  claude_error_cli_not_found = function(e) {
+    cat("Please install Claude Code\n")
+  },
+  claude_error_process = function(e) {
+    cat("Process failed with exit code:", e$exit_code, "\n")
+  },
+  claude_error_json_decode = function(e) {
+    cat("Failed to parse response:", e$line, "\n")
+  },
+  claude_error = function(e) {
+    cat("SDK error:", conditionMessage(e), "\n")
+  }
+)
+```
+
+### Error classes
+
+| R class | Equivalent Python | When raised |
+|---|---|---|
+| `claude_error` | `ClaudeSDKError` | Base class for all SDK errors |
+| `claude_error_cli_not_found` | `CLINotFoundError` | Claude Code CLI not found |
+| `claude_error_cli_connection` | `CLIConnectionError` | Connection/startup failure |
+| `claude_error_process` | `ProcessError` | CLI process exited with error |
+| `claude_error_json_decode` | `CLIJSONDecodeError` | Malformed JSON from CLI |
+| `claude_error_message_parse` | `MessageParseError` | Unrecognised message structure |
+
+## Session Management
+
+```r
+library(ClaudeAgentSDK)
+
+# List recent sessions for a project
+sessions <- list_sessions(
+  directory = "/path/to/project",
+  limit     = 10L
+)
+for (s in sessions) {
+  cat(s$session_id, "-", s$summary, "\n")
+}
+
+# List all sessions across all projects
+all_sessions <- list_sessions()
+
+# Get metadata for a specific session
+info <- get_session_info("550e8400-e29b-41d4-a716-446655440000")
+if (!is.null(info)) cat(info$summary, "\n")
+
+# Get conversation messages from a session
+messages <- get_session_messages(
+  "550e8400-e29b-41d4-a716-446655440000",
+  directory = "/path/to/project"
+)
+for (m in messages) {
+  cat(m$type, ":", m$uuid, "\n")
+}
+```
+
+## Advanced: Continuing and Resuming Sessions
+
+```r
+# Continue the most recent session
+result <- claude_run(
+  "Continue where we left off",
+  options = ClaudeAgentOptions(continue_conversation = TRUE)
+)
+
+# Resume a specific session
+result <- claude_run(
+  "What did we discuss?",
+  options = ClaudeAgentOptions(resume = "550e8400-e29b-41d4-a716-446655440000")
+)
+
+# Fork a session (resume into a new session ID)
+result <- claude_run(
+  "Try a different approach",
+  options = ClaudeAgentOptions(
+    resume       = "550e8400-e29b-41d4-a716-446655440000",
+    fork_session = TRUE
+  )
+)
+```
+
+## Advanced: Thinking and Effort
+
+```r
+# Extended thinking (adaptive)
+options <- ClaudeAgentOptions(
+  thinking = list(type = "adaptive")
+)
+
+# Extended thinking with budget
+options <- ClaudeAgentOptions(
+  thinking = list(type = "enabled", budget_tokens = 10000L)
+)
+
+# Effort level
+options <- ClaudeAgentOptions(effort = "high")
+```
+
+## Advanced: Structured Output
+
+```r
+options <- ClaudeAgentOptions(
+  output_format = list(
+    type   = "json_schema",
+    schema = list(
+      type       = "object",
+      properties = list(
+        answer = list(type = "string"),
+        steps  = list(type = "array", items = list(type = "string"))
+      )
+    )
+  )
+)
+
+result <- claude_run("Explain 2+2 step by step", options = options)
+```
+
+## Advanced: MCP Servers
+
+```r
+options <- ClaudeAgentOptions(
+  mcp_servers = list(
+    my_server = list(
+      type    = "stdio",
+      command = "python",
+      args    = c("-m", "my_mcp_server")
+    )
+  ),
+  allowed_tools = "mcp__my_server__my_tool"
+)
+```
+
+## Relationship to shinyClaudeCodeUI
+
+Once installed, `ClaudeAgentSDK` can replace the direct `processx` usage in
+`shinyClaudeCodeUI`:
+
+```r
+# Before (shinyClaudeCodeUI internal):
+rv$proc <- processx::process$new("claude", args, ...)
+later::later(poll_stdout, 0.05)
+
+# After (using ClaudeAgentSDK):
+library(ClaudeAgentSDK)
+
+client <- ClaudeSDKClient$new(ClaudeAgentOptions(
+  model         = model,
+  cwd           = workdir,
+  allowed_tools = allowed_tools
+))
+client$connect()
+client$send(user_input)
+
+gen <- client$receive_response()
+later::later(function() {
+  msg <- tryCatch(coro::generator_env(gen)$yield(), error = function(e) NULL)
+  if (!is.null(msg) && !coro::is_exhausted(msg)) {
+    handle_event(msg, session)   # only UI rendering remains
+    later::later(Recall, 0.05)
+  }
+}, 0)
+```
+
+## Available Tools
+
+See the [Claude Code documentation](https://code.claude.com/docs/en/settings#tools-available-to-claude) for a complete list of available tools.
+
+## Development
+
+### Running Tests
+
+```r
+# Unit tests (no CLI required)
+devtools::test("/path/to/ClaudeAgentSDK")
+
+# Or with testthat directly
+testthat::test_dir("tests/testthat")
+```
+
+### Package Structure
+
+```
+R/
+├── errors.R     # Error classes (_errors.py)
+├── utils.R      # CLI discovery + buffer helpers
+├── types.R      # All message/content S3 types (types.py)
+├── options.R    # ClaudeAgentOptions() constructor
+├── protocol.R   # JSON parser + message builders (message_parser.py)
+├── transport.R  # SubprocessCLITransport R6 class
+├── query.R      # claude_query() + claude_run()
+├── client.R     # ClaudeSDKClient R6 class (client.py)
+└── sessions.R   # list_sessions() etc. (sessions.py)
+```
+
+### Package Checks
+
+```r
+devtools::check("/path/to/ClaudeAgentSDK")
+```
+
+## License and Terms
+
+Use of this SDK is governed by Anthropic's [Commercial Terms of Service](https://www.anthropic.com/legal/commercial-terms), including when you use it to power products and services that you make available to your own customers and end users, except to the extent a specific component or dependency is covered by a different license as indicated in that component's LICENSE file.
