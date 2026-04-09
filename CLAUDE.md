@@ -6,7 +6,7 @@ R implementation of the Claude Agent SDK. Mirrors the Python SDK (`claude-agent-
 
 ```
 R/
-  types.R            # S3 constructors for all message/block/config types
+  types.R            # S3 constructors for all message/block/config/hook types
   errors.R           # S3 error constructors (claude_error, cli_not_found, …)
   options.R          # ClaudeAgentOptions() — validated options object
   protocol.R         # parse_message(), build_*_json() — JSON <-> typed objects
@@ -33,19 +33,36 @@ R/
 
 **`.extract_last_json_string_field()`** uses `length(m) == 1L && m[[1L]] == -1L` instead of `identical(m, -1L)` because `gregexpr` returns `-1L` with attributes.
 
+**Rate limit event wire format** uses both snake_case (`resets_at`, `overage_status`) and camelCase (`resetsAt`, `overageStatus`) depending on CLI version. The parser checks both with `%||%` fallback.
+
+### Type system
+
+All types are lightweight S3 classes (named lists with `class` attribute). Types mirror Python SDK's `types.py`:
+
+- **Content blocks**: `TextBlock`, `ThinkingBlock`, `ToolUseBlock`, `ToolResultBlock`
+- **Messages**: `UserMessage`, `AssistantMessage`, `SystemMessage`, `ResultMessage`, `StreamEvent`, `RateLimitEvent`
+- **Task messages**: `TaskStartedMessage`, `TaskProgressMessage`, `TaskNotificationMessage`
+- **Permission**: `PermissionResultAllow`, `PermissionResultDeny`, `PermissionRuleValue`, `PermissionUpdate`
+- **Hook inputs**: `PreToolUseHookInput`, `PostToolUseHookInput`, `PostToolUseFailureHookInput`, `UserPromptSubmitHookInput`, `StopHookInput`, `SubagentStopHookInput`, `PreCompactHookInput`, `NotificationHookInput`, `SubagentStartHookInput`, `PermissionRequestHookInput`
+- **Hook outputs**: `SyncHookOutput`, `AsyncHookOutput`
+- **System prompt**: `SystemPromptPreset`, `SystemPromptFile`
+- **Sandbox**: `SandboxSettings`, `SandboxNetworkConfig`, `SandboxIgnoreViolations`
+- **Agent/Hook config**: `AgentDefinition` (13 fields), `HookMatcher`
+- **Session**: `SDKSessionInfo`, `SessionMessage` (internal)
+
 ## Running tests
 
 ```r
 devtools::test()
 ```
 
-509+ tests. Integration tests require a real Claude Code CLI and skip automatically if not found.
+608+ tests. Integration tests require a real Claude Code CLI and skip automatically if not found.
 
 ### Test files
 
 | File | Coverage | Needs CLI |
 |------|----------|-----------|
-| `test-types.R` | S3 constructors, AgentDefinition (all 13 fields), options variants | No |
+| `test-types.R` | S3 constructors, AgentDefinition (all 13 fields), hook input/output types, permission types, system prompt types, sandbox types | No |
 | `test-errors.R` | Error constructors | No |
 | `test-options.R` | ClaudeAgentOptions defaults and storage | No |
 | `test-protocol.R` | parse_message (user/assistant/system/result/stream/rate_limit/control), builders, hook conversion, agents camelCase | No |
@@ -53,6 +70,8 @@ devtools::test()
 | `test-sessions-unit.R` | validate_uuid, sanitize_path, simple_hash, JSON field extraction, sort_and_slice, list_sessions with mock data, get_session_messages chain reconstruction | No |
 | `test-session-mutations.R` | rename/tag/delete/fork (file I/O) | No |
 | `test-client-unit.R` | Client lifecycle without CLI (disconnect/send/interrupt before connect) | No |
+| `test-rate-limit-event.R` | Rate limit event parsing: allowed_warning, rejected with overage, minimal fields, forward compat | No |
+| `test-buffering.R` | split_lines_with_buffer edge cases: split reads, large JSON, mixed complete/partial, non-JSON debug lines | No |
 | `test-query.R` | claude_run, claude_query, ClaudeSDKClient lifecycle | **Yes** |
 | `test-integration.R` | Full integration: get_server_info, set_permission_mode, set_model, interrupt, agents init, exclude_dynamic_sections, partial messages, StreamEvent, get_context_usage, get_mcp_status, multi-turn, stderr callback, can_use_tool, structured output, sessions list/info/messages | **Yes** |
 

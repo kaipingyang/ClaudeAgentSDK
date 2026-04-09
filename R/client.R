@@ -230,13 +230,13 @@ ClaudeSDKClient <- R6::R6Class(
 
     #' @description Enable or disable an MCP server.
     #' @param server_name Character. Server name.
-    #' @param enable Logical. `TRUE` to enable, `FALSE` to disable.
-    toggle_mcp_server = function(server_name, enable) {
+    #' @param enabled Logical. `TRUE` to enable, `FALSE` to disable.
+    toggle_mcp_server = function(server_name, enabled) {
       private$assert_connected()
       private$send_control_request(list(
         subtype    = "mcp_toggle",
         serverName = server_name,
-        enabled    = enable
+        enabled    = enabled
       ))
       invisible(self)
     }

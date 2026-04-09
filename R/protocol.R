@@ -197,12 +197,12 @@ parse_message <- function(line) {
   RateLimitEvent(
     rate_limit_info = RateLimitInfo(
       status                   = info[["status"]],
-      resets_at                = info[["resetsAt"]],
+      resets_at                = info[["resets_at"]]  %||% info[["resetsAt"]],
       rate_limit_type          = info[["rateLimitType"]],
       utilization              = info[["utilization"]],
-      overage_status           = info[["overageStatus"]],
-      overage_resets_at        = info[["overageResetsAt"]],
-      overage_disabled_reason  = info[["overageDisabledReason"]],
+      overage_status           = info[["overage_status"]]  %||% info[["overageStatus"]],
+      overage_resets_at        = info[["overage_resets_at"]] %||% info[["overageResetsAt"]],
+      overage_disabled_reason  = info[["overage_disabled_reason"]] %||% info[["overageDisabledReason"]],
       raw                      = info
     ),
     uuid       = obj[["uuid"]],
