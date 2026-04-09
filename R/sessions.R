@@ -205,7 +205,7 @@ NULL
 
   head_bytes <- tryCatch(readBin(con, "raw", n = .LITE_READ_BUF_SIZE), error = function(e) raw(0))
   if (!length(head_bytes)) return(NULL)
-  head <- rawToChar(head_bytes)
+  head <- iconv(rawToChar(head_bytes, multiple = FALSE), to = "UTF-8", sub = "")
 
   if (size <= .LITE_READ_BUF_SIZE) {
     tail <- head
@@ -213,7 +213,7 @@ NULL
     tail_offset <- max(0L, size - .LITE_READ_BUF_SIZE)
     tryCatch(seek(con, tail_offset), error = function(e) NULL)
     tail_bytes  <- tryCatch(readBin(con, "raw", n = .LITE_READ_BUF_SIZE), error = function(e) raw(0))
-    tail <- rawToChar(tail_bytes)
+    tail <- iconv(rawToChar(tail_bytes, multiple = FALSE), to = "UTF-8", sub = "")
   }
 
   list(mtime = mtime, size = size, head = head, tail = tail)
