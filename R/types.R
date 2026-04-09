@@ -497,6 +497,62 @@ HookMatcher <- function(matcher, hooks, timeout = NULL) {
 }
 
 # ---------------------------------------------------------------------------
+# MCP status types (returned by get_mcp_status)
+# ---------------------------------------------------------------------------
+
+#' Create a McpToolInfo
+#' @param name Character.
+#' @param description Character or NULL.
+#' @param annotations List or NULL.
+#' @return Object of class `McpToolInfo`.
+#' @export
+McpToolInfo <- function(name, description = NULL, annotations = NULL) {
+  .new_obj(list(name = name, description = description,
+                annotations = annotations), "McpToolInfo")
+}
+
+#' Create a McpServerInfo
+#' @param name Character.
+#' @param version Character.
+#' @return Object of class `McpServerInfo`.
+#' @export
+McpServerInfo <- function(name, version) {
+  .new_obj(list(name = name, version = version), "McpServerInfo")
+}
+
+#' Create a McpServerStatus
+#' @param name Character. Server name.
+#' @param status Character. One of `"connected"`, `"failed"`, `"needs-auth"`,
+#'   `"pending"`, `"disabled"`.
+#' @param server_info `McpServerInfo` or NULL.
+#' @param error Character or NULL.
+#' @param config List or NULL.
+#' @param scope Character or NULL.
+#' @param tools List of `McpToolInfo` or NULL.
+#' @return Object of class `McpServerStatus`.
+#' @export
+McpServerStatus <- function(name, status, server_info = NULL, error = NULL,
+                             config = NULL, scope = NULL, tools = NULL) {
+  .new_obj(list(
+    name       = name,
+    status     = status,
+    serverInfo = server_info,
+    error      = error,
+    config     = config,
+    scope      = scope,
+    tools      = tools
+  ), "McpServerStatus")
+}
+
+#' Create a McpStatusResponse
+#' @param mcp_servers List of `McpServerStatus`.
+#' @return Object of class `McpStatusResponse`.
+#' @export
+McpStatusResponse <- function(mcp_servers) {
+  .new_obj(list(mcpServers = mcp_servers), "McpStatusResponse")
+}
+
+# ---------------------------------------------------------------------------
 # Thinking configuration types
 # ---------------------------------------------------------------------------
 

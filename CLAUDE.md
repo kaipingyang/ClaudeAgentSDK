@@ -47,6 +47,7 @@ All types are lightweight S3 classes (named lists with `class` attribute). Types
 - **Hook outputs**: `SyncHookOutput`, `AsyncHookOutput`
 - **System prompt**: `SystemPromptPreset`, `SystemPromptFile`
 - **Sandbox**: `SandboxSettings`, `SandboxNetworkConfig`, `SandboxIgnoreViolations`
+- **MCP status**: `McpToolInfo`, `McpServerInfo`, `McpServerStatus`, `McpStatusResponse`
 - **Thinking config**: `ThinkingConfigAdaptive`, `ThinkingConfigEnabled`, `ThinkingConfigDisabled`
 - **Task/Context**: `TaskBudget`, `TaskUsage`, `ContextUsageCategory`, `ContextUsageResponse`
 - **Agent/Hook config**: `AgentDefinition` (13 fields), `HookMatcher`
@@ -58,7 +59,7 @@ All types are lightweight S3 classes (named lists with `class` attribute). Types
 devtools::test()
 ```
 
-627+ tests. Integration tests require a real Claude Code CLI and skip automatically if not found.
+637+ tests. Integration tests require a real Claude Code CLI and skip automatically if not found.
 
 ### Test files
 

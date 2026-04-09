@@ -50,6 +50,12 @@ export(PermissionResultDeny)
 export(AgentDefinition)
 export(HookMatcher)
 
+# MCP status types
+export(McpToolInfo)
+export(McpServerInfo)
+export(McpServerStatus)
+export(McpStatusResponse)
+
 # Thinking configuration types
 export(ThinkingConfigAdaptive)
 export(ThinkingConfigEnabled)
