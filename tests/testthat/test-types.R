@@ -345,6 +345,65 @@ test_that("SandboxSettings has correct class and camelCase fields", {
   expect_equal(s$excludedCommands, c("rm"))
 })
 
+# ---------------------------------------------------------------------------
+# Thinking configuration types
+# ---------------------------------------------------------------------------
+
+test_that("ThinkingConfigAdaptive has correct class and type", {
+  t <- ThinkingConfigAdaptive()
+  expect_s3_class(t, "ThinkingConfigAdaptive")
+  expect_equal(t$type, "adaptive")
+})
+
+test_that("ThinkingConfigEnabled has correct class and budget", {
+  t <- ThinkingConfigEnabled(budget_tokens = 10000L)
+  expect_s3_class(t, "ThinkingConfigEnabled")
+  expect_equal(t$type, "enabled")
+  expect_equal(t$budget_tokens, 10000L)
+})
+
+test_that("ThinkingConfigDisabled has correct class", {
+  t <- ThinkingConfigDisabled()
+  expect_s3_class(t, "ThinkingConfigDisabled")
+  expect_equal(t$type, "disabled")
+})
+
+# ---------------------------------------------------------------------------
+# Task budget / usage types
+# ---------------------------------------------------------------------------
+
+test_that("TaskBudget has correct class", {
+  b <- TaskBudget(max_tokens = 50000L)
+  expect_s3_class(b, "TaskBudget")
+  expect_equal(b$max_tokens, 50000L)
+})
+
+test_that("TaskUsage has correct class", {
+  u <- TaskUsage(total_tokens = 1000L, tool_uses = 5L)
+  expect_s3_class(u, "TaskUsage")
+  expect_equal(u$total_tokens, 1000L)
+  expect_equal(u$tool_uses, 5L)
+})
+
+# ---------------------------------------------------------------------------
+# Context usage types
+# ---------------------------------------------------------------------------
+
+test_that("ContextUsageCategory has correct class and camelCase field", {
+  c <- ContextUsageCategory("system", 500L, "#ff0000", is_deferred = TRUE)
+  expect_s3_class(c, "ContextUsageCategory")
+  expect_equal(c$name, "system")
+  expect_true(c$isDeferred)
+})
+
+test_that("ContextUsageResponse has correct class", {
+  cat1 <- ContextUsageCategory("system", 500L, "#ff0000")
+  r <- ContextUsageResponse(categories = list(cat1), total_tokens = 500L)
+  expect_s3_class(r, "ContextUsageResponse")
+  expect_equal(r$totalTokens, 500L)
+  expect_length(r$categories, 1L)
+})
+
 test_that("HookMatcher stores matcher, hooks, and timeout", {
   fn <- function(input, id, ctx) list()
   m  <- HookMatcher(matcher = "Bash", hooks = list(fn), timeout = 5000L)

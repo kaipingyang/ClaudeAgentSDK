@@ -50,6 +50,19 @@ export(PermissionResultDeny)
 export(AgentDefinition)
 export(HookMatcher)
 
+# Thinking configuration types
+export(ThinkingConfigAdaptive)
+export(ThinkingConfigEnabled)
+export(ThinkingConfigDisabled)
+
+# Task budget / usage types
+export(TaskBudget)
+export(TaskUsage)
+
+# Context usage types
+export(ContextUsageCategory)
+export(ContextUsageResponse)
+
 # Hook input type constructors
 export(PreToolUseHookInput)
 export(PostToolUseHookInput)

@@ -37,6 +37,11 @@ test_that("options stored on client", {
   expect_equal(client$options$max_turns, 3L)
 })
 
+test_that("query before connect raises error (alias for send)", {
+  client <- ClaudeSDKClient$new(ClaudeAgentOptions())
+  expect_error(client$query("hello"), "connect")
+})
+
 test_that("can_use_tool conflicts with permission_prompt_tool_name", {
   opts <- ClaudeAgentOptions(
     can_use_tool = function(tool, input, ctx) PermissionResultAllow(),

@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.1.2 (2026-04-09)
+
+### New Features
+
+- **`client$query()` method**: Added `query()` as alias for `send()` on `ClaudeSDKClient`, matching the Python SDK's `client.query()` API
+- **Thinking configuration types**: Added `ThinkingConfigAdaptive`, `ThinkingConfigEnabled`, `ThinkingConfigDisabled` constructors
+- **Task budget/usage types**: Added `TaskBudget`, `TaskUsage` constructors
+- **Context usage types**: Added `ContextUsageCategory`, `ContextUsageResponse` constructors
+
+### Tests
+
+- 627 tests total (up from 608)
+
 ## 0.1.1 (2026-04-09)
 
 ### Bug Fixes
@@ -20,7 +33,6 @@
 - Added `test-rate-limit-event.R`: rate limit event parsing edge cases (5 tests)
 - Added `test-buffering.R`: line buffer / split_lines_with_buffer edge cases (9 tests)
 - Expanded `test-types.R`: hook inputs, hook outputs, permission types, system prompt types, sandbox types (20+ new tests)
-- 608 tests total (up from 509)
 
 ### Examples
 

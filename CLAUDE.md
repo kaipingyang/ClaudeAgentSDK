@@ -6,7 +6,7 @@ R implementation of the Claude Agent SDK. Mirrors the Python SDK (`claude-agent-
 
 ```
 R/
-  types.R            # S3 constructors for all message/block/config/hook types
+  types.R            # S3 constructors for all message/block/config/hook/thinking types
   errors.R           # S3 error constructors (claude_error, cli_not_found, …)
   options.R          # ClaudeAgentOptions() — validated options object
   protocol.R         # parse_message(), build_*_json() — JSON <-> typed objects
@@ -47,6 +47,8 @@ All types are lightweight S3 classes (named lists with `class` attribute). Types
 - **Hook outputs**: `SyncHookOutput`, `AsyncHookOutput`
 - **System prompt**: `SystemPromptPreset`, `SystemPromptFile`
 - **Sandbox**: `SandboxSettings`, `SandboxNetworkConfig`, `SandboxIgnoreViolations`
+- **Thinking config**: `ThinkingConfigAdaptive`, `ThinkingConfigEnabled`, `ThinkingConfigDisabled`
+- **Task/Context**: `TaskBudget`, `TaskUsage`, `ContextUsageCategory`, `ContextUsageResponse`
 - **Agent/Hook config**: `AgentDefinition` (13 fields), `HookMatcher`
 - **Session**: `SDKSessionInfo`, `SessionMessage` (internal)
 
@@ -56,7 +58,7 @@ All types are lightweight S3 classes (named lists with `class` attribute). Types
 devtools::test()
 ```
 
-608+ tests. Integration tests require a real Claude Code CLI and skip automatically if not found.
+627+ tests. Integration tests require a real Claude Code CLI and skip automatically if not found.
 
 ### Test files
 
