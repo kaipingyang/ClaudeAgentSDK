@@ -50,6 +50,35 @@ export(PermissionResultDeny)
 export(AgentDefinition)
 export(HookMatcher)
 
+# Hook input type constructors
+export(PreToolUseHookInput)
+export(PostToolUseHookInput)
+export(PostToolUseFailureHookInput)
+export(UserPromptSubmitHookInput)
+export(StopHookInput)
+export(SubagentStopHookInput)
+export(PreCompactHookInput)
+export(NotificationHookInput)
+export(SubagentStartHookInput)
+export(PermissionRequestHookInput)
+
+# Hook output type constructors
+export(SyncHookOutput)
+export(AsyncHookOutput)
+
+# Permission update types
+export(PermissionRuleValue)
+export(PermissionUpdate)
+
+# System prompt types
+export(SystemPromptPreset)
+export(SystemPromptFile)
+
+# Sandbox types
+export(SandboxNetworkConfig)
+export(SandboxIgnoreViolations)
+export(SandboxSettings)
+
 # Error constructors
 export(claude_error)
 export(claude_cli_not_found)

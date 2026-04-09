@@ -497,6 +497,466 @@ HookMatcher <- function(matcher, hooks, timeout = NULL) {
 }
 
 # ---------------------------------------------------------------------------
+# Hook input types (mirrors Python TypedDicts in types.py)
+# ---------------------------------------------------------------------------
+
+#' Create a PreToolUseHookInput
+#' @param session_id Character.
+#' @param transcript_path Character.
+#' @param cwd Character.
+#' @param tool_name Character.
+#' @param tool_input List.
+#' @param tool_use_id Character.
+#' @param permission_mode Character or NULL.
+#' @param agent_id Character or NULL.
+#' @param agent_type Character or NULL.
+#' @return Object of class `PreToolUseHookInput`.
+#' @export
+PreToolUseHookInput <- function(session_id, transcript_path, cwd,
+                                tool_name, tool_input, tool_use_id,
+                                permission_mode = NULL,
+                                agent_id = NULL, agent_type = NULL) {
+  .new_obj(list(
+    hook_event_name = "PreToolUse",
+    session_id      = session_id,
+    transcript_path = transcript_path,
+    cwd             = cwd,
+    tool_name       = tool_name,
+    tool_input      = tool_input,
+    tool_use_id     = tool_use_id,
+    permission_mode = permission_mode,
+    agent_id        = agent_id,
+    agent_type      = agent_type
+  ), "PreToolUseHookInput")
+}
+
+#' Create a PostToolUseHookInput
+#' @param session_id Character.
+#' @param transcript_path Character.
+#' @param cwd Character.
+#' @param tool_name Character.
+#' @param tool_input List.
+#' @param tool_response Any.
+#' @param tool_use_id Character.
+#' @param permission_mode Character or NULL.
+#' @param agent_id Character or NULL.
+#' @param agent_type Character or NULL.
+#' @return Object of class `PostToolUseHookInput`.
+#' @export
+PostToolUseHookInput <- function(session_id, transcript_path, cwd,
+                                 tool_name, tool_input, tool_response,
+                                 tool_use_id,
+                                 permission_mode = NULL,
+                                 agent_id = NULL, agent_type = NULL) {
+  .new_obj(list(
+    hook_event_name = "PostToolUse",
+    session_id      = session_id,
+    transcript_path = transcript_path,
+    cwd             = cwd,
+    tool_name       = tool_name,
+    tool_input      = tool_input,
+    tool_response   = tool_response,
+    tool_use_id     = tool_use_id,
+    permission_mode = permission_mode,
+    agent_id        = agent_id,
+    agent_type      = agent_type
+  ), "PostToolUseHookInput")
+}
+
+#' Create a PostToolUseFailureHookInput
+#' @param session_id Character.
+#' @param transcript_path Character.
+#' @param cwd Character.
+#' @param tool_name Character.
+#' @param tool_input List.
+#' @param tool_use_id Character.
+#' @param error Character.
+#' @param is_interrupt Logical or NULL.
+#' @param permission_mode Character or NULL.
+#' @param agent_id Character or NULL.
+#' @param agent_type Character or NULL.
+#' @return Object of class `PostToolUseFailureHookInput`.
+#' @export
+PostToolUseFailureHookInput <- function(session_id, transcript_path, cwd,
+                                        tool_name, tool_input, tool_use_id,
+                                        error,
+                                        is_interrupt = NULL,
+                                        permission_mode = NULL,
+                                        agent_id = NULL, agent_type = NULL) {
+  .new_obj(list(
+    hook_event_name = "PostToolUseFailure",
+    session_id      = session_id,
+    transcript_path = transcript_path,
+    cwd             = cwd,
+    tool_name       = tool_name,
+    tool_input      = tool_input,
+    tool_use_id     = tool_use_id,
+    error           = error,
+    is_interrupt    = is_interrupt,
+    permission_mode = permission_mode,
+    agent_id        = agent_id,
+    agent_type      = agent_type
+  ), "PostToolUseFailureHookInput")
+}
+
+#' Create a UserPromptSubmitHookInput
+#' @param session_id Character.
+#' @param transcript_path Character.
+#' @param cwd Character.
+#' @param prompt Character.
+#' @param permission_mode Character or NULL.
+#' @return Object of class `UserPromptSubmitHookInput`.
+#' @export
+UserPromptSubmitHookInput <- function(session_id, transcript_path, cwd,
+                                      prompt,
+                                      permission_mode = NULL) {
+  .new_obj(list(
+    hook_event_name = "UserPromptSubmit",
+    session_id      = session_id,
+    transcript_path = transcript_path,
+    cwd             = cwd,
+    prompt          = prompt,
+    permission_mode = permission_mode
+  ), "UserPromptSubmitHookInput")
+}
+
+#' Create a StopHookInput
+#' @param session_id Character.
+#' @param transcript_path Character.
+#' @param cwd Character.
+#' @param stop_hook_active Logical.
+#' @param permission_mode Character or NULL.
+#' @return Object of class `StopHookInput`.
+#' @export
+StopHookInput <- function(session_id, transcript_path, cwd,
+                           stop_hook_active,
+                           permission_mode = NULL) {
+  .new_obj(list(
+    hook_event_name  = "Stop",
+    session_id       = session_id,
+    transcript_path  = transcript_path,
+    cwd              = cwd,
+    stop_hook_active = stop_hook_active,
+    permission_mode  = permission_mode
+  ), "StopHookInput")
+}
+
+#' Create a SubagentStopHookInput
+#' @param session_id Character.
+#' @param transcript_path Character.
+#' @param cwd Character.
+#' @param stop_hook_active Logical.
+#' @param agent_id Character.
+#' @param agent_transcript_path Character.
+#' @param agent_type Character.
+#' @param permission_mode Character or NULL.
+#' @return Object of class `SubagentStopHookInput`.
+#' @export
+SubagentStopHookInput <- function(session_id, transcript_path, cwd,
+                                   stop_hook_active,
+                                   agent_id, agent_transcript_path,
+                                   agent_type,
+                                   permission_mode = NULL) {
+  .new_obj(list(
+    hook_event_name      = "SubagentStop",
+    session_id           = session_id,
+    transcript_path      = transcript_path,
+    cwd                  = cwd,
+    stop_hook_active     = stop_hook_active,
+    agent_id             = agent_id,
+    agent_transcript_path = agent_transcript_path,
+    agent_type           = agent_type,
+    permission_mode      = permission_mode
+  ), "SubagentStopHookInput")
+}
+
+#' Create a PreCompactHookInput
+#' @param session_id Character.
+#' @param transcript_path Character.
+#' @param cwd Character.
+#' @param trigger Character. `"manual"` or `"auto"`.
+#' @param custom_instructions Character or NULL.
+#' @param permission_mode Character or NULL.
+#' @return Object of class `PreCompactHookInput`.
+#' @export
+PreCompactHookInput <- function(session_id, transcript_path, cwd,
+                                 trigger, custom_instructions = NULL,
+                                 permission_mode = NULL) {
+  .new_obj(list(
+    hook_event_name     = "PreCompact",
+    session_id          = session_id,
+    transcript_path     = transcript_path,
+    cwd                 = cwd,
+    trigger             = trigger,
+    custom_instructions = custom_instructions,
+    permission_mode     = permission_mode
+  ), "PreCompactHookInput")
+}
+
+#' Create a NotificationHookInput
+#' @param session_id Character.
+#' @param transcript_path Character.
+#' @param cwd Character.
+#' @param message Character.
+#' @param notification_type Character.
+#' @param title Character or NULL.
+#' @param permission_mode Character or NULL.
+#' @return Object of class `NotificationHookInput`.
+#' @export
+NotificationHookInput <- function(session_id, transcript_path, cwd,
+                                   message, notification_type,
+                                   title = NULL,
+                                   permission_mode = NULL) {
+  .new_obj(list(
+    hook_event_name   = "Notification",
+    session_id        = session_id,
+    transcript_path   = transcript_path,
+    cwd               = cwd,
+    message           = message,
+    notification_type = notification_type,
+    title             = title,
+    permission_mode   = permission_mode
+  ), "NotificationHookInput")
+}
+
+#' Create a SubagentStartHookInput
+#' @param session_id Character.
+#' @param transcript_path Character.
+#' @param cwd Character.
+#' @param agent_id Character.
+#' @param agent_type Character.
+#' @param permission_mode Character or NULL.
+#' @return Object of class `SubagentStartHookInput`.
+#' @export
+SubagentStartHookInput <- function(session_id, transcript_path, cwd,
+                                    agent_id, agent_type,
+                                    permission_mode = NULL) {
+  .new_obj(list(
+    hook_event_name = "SubagentStart",
+    session_id      = session_id,
+    transcript_path = transcript_path,
+    cwd             = cwd,
+    agent_id        = agent_id,
+    agent_type      = agent_type,
+    permission_mode = permission_mode
+  ), "SubagentStartHookInput")
+}
+
+#' Create a PermissionRequestHookInput
+#' @param session_id Character.
+#' @param transcript_path Character.
+#' @param cwd Character.
+#' @param tool_name Character.
+#' @param tool_input List.
+#' @param permission_suggestions List or NULL.
+#' @param permission_mode Character or NULL.
+#' @param agent_id Character or NULL.
+#' @param agent_type Character or NULL.
+#' @return Object of class `PermissionRequestHookInput`.
+#' @export
+PermissionRequestHookInput <- function(session_id, transcript_path, cwd,
+                                        tool_name, tool_input,
+                                        permission_suggestions = NULL,
+                                        permission_mode = NULL,
+                                        agent_id = NULL, agent_type = NULL) {
+  .new_obj(list(
+    hook_event_name        = "PermissionRequest",
+    session_id             = session_id,
+    transcript_path        = transcript_path,
+    cwd                    = cwd,
+    tool_name              = tool_name,
+    tool_input             = tool_input,
+    permission_suggestions = permission_suggestions,
+    permission_mode        = permission_mode,
+    agent_id               = agent_id,
+    agent_type             = agent_type
+  ), "PermissionRequestHookInput")
+}
+
+# ---------------------------------------------------------------------------
+# Hook output types
+# ---------------------------------------------------------------------------
+
+#' Create a SyncHookOutput
+#'
+#' Synchronous hook output returned by hook callbacks.
+#'
+#' @param continue_ Logical or NULL. Whether to continue execution.
+#'   Note: The trailing underscore avoids R's `continue` reserved word.
+#'   Serialized as `"continue"` for the CLI.
+#' @param suppress_output Logical or NULL. Suppress output.
+#' @param stop_reason Character or NULL.
+#' @param decision Character or NULL. `"block"` to block execution.
+#' @param system_message Character or NULL.
+#' @param reason Character or NULL.
+#' @param hook_specific_output List or NULL.
+#' @return Object of class `SyncHookOutput`.
+#' @export
+SyncHookOutput <- function(continue_            = NULL,
+                            suppress_output      = NULL,
+                            stop_reason          = NULL,
+                            decision             = NULL,
+                            system_message       = NULL,
+                            reason               = NULL,
+                            hook_specific_output = NULL) {
+  .new_obj(list(
+    continue_            = continue_,
+    suppressOutput       = suppress_output,
+    stopReason           = stop_reason,
+    decision             = decision,
+    systemMessage        = system_message,
+    reason               = reason,
+    hookSpecificOutput   = hook_specific_output
+  ), "SyncHookOutput")
+}
+
+#' Create an AsyncHookOutput
+#'
+#' Signals that the hook will complete asynchronously.
+#'
+#' @param async_timeout Integer or NULL. Timeout in milliseconds.
+#' @return Object of class `AsyncHookOutput`.
+#' @export
+AsyncHookOutput <- function(async_timeout = NULL) {
+  .new_obj(list(
+    async_       = TRUE,
+    asyncTimeout = async_timeout
+  ), "AsyncHookOutput")
+}
+
+# ---------------------------------------------------------------------------
+# Permission update types
+# ---------------------------------------------------------------------------
+
+#' Create a PermissionRuleValue
+#' @param tool_name Character. Tool name pattern.
+#' @param rule_content Character or NULL.
+#' @return Object of class `PermissionRuleValue`.
+#' @export
+PermissionRuleValue <- function(tool_name, rule_content = NULL) {
+  .new_obj(
+    list(tool_name = tool_name, rule_content = rule_content),
+    "PermissionRuleValue"
+  )
+}
+
+#' Create a PermissionUpdate
+#'
+#' Specifies a permission rule change to apply.
+#'
+#' @param type Character. One of `"addRules"`, `"replaceRules"`,
+#'   `"removeRules"`, `"setMode"`, `"addDirectories"`, `"removeDirectories"`.
+#' @param rules List of `PermissionRuleValue` or NULL.
+#' @param behavior Character or NULL. `"allow"`, `"deny"`, or `"ask"`.
+#' @param mode Character or NULL. Permission mode.
+#' @param directories Character vector or NULL.
+#' @param destination Character or NULL. `"userSettings"`, `"projectSettings"`,
+#'   `"localSettings"`, or `"session"`.
+#' @return Object of class `PermissionUpdate`.
+#' @export
+PermissionUpdate <- function(type, rules = NULL, behavior = NULL,
+                              mode = NULL, directories = NULL,
+                              destination = NULL) {
+  .new_obj(list(
+    type        = type,
+    rules       = rules,
+    behavior    = behavior,
+    mode        = mode,
+    directories = directories,
+    destination = destination
+  ), "PermissionUpdate")
+}
+
+# ---------------------------------------------------------------------------
+# System prompt types
+# ---------------------------------------------------------------------------
+
+#' Create a SystemPromptPreset
+#' @param exclude_dynamic_sections Logical or NULL.
+#' @param append Character or NULL. Additional instructions to append.
+#' @return Object of class `SystemPromptPreset`.
+#' @export
+SystemPromptPreset <- function(exclude_dynamic_sections = NULL,
+                                append = NULL) {
+  .new_obj(list(
+    type                      = "preset",
+    exclude_dynamic_sections = exclude_dynamic_sections,
+    append                   = append
+  ), "SystemPromptPreset")
+}
+
+#' Create a SystemPromptFile
+#' @param path Character. Path to the system prompt file.
+#' @return Object of class `SystemPromptFile`.
+#' @export
+SystemPromptFile <- function(path) {
+  .new_obj(list(type = "file", path = path), "SystemPromptFile")
+}
+
+# ---------------------------------------------------------------------------
+# Sandbox types
+# ---------------------------------------------------------------------------
+
+#' Create a SandboxNetworkConfig
+#' @param allow_unix_sockets Character vector or NULL.
+#' @param allow_all_unix_sockets Logical or NULL.
+#' @param allow_local_binding Logical or NULL.
+#' @param http_proxy_port Integer or NULL.
+#' @param socks_proxy_port Integer or NULL.
+#' @return Object of class `SandboxNetworkConfig`.
+#' @export
+SandboxNetworkConfig <- function(allow_unix_sockets     = NULL,
+                                  allow_all_unix_sockets = NULL,
+                                  allow_local_binding    = NULL,
+                                  http_proxy_port        = NULL,
+                                  socks_proxy_port       = NULL) {
+  .new_obj(list(
+    allowUnixSockets    = allow_unix_sockets,
+    allowAllUnixSockets = allow_all_unix_sockets,
+    allowLocalBinding   = allow_local_binding,
+    httpProxyPort       = http_proxy_port,
+    socksProxyPort      = socks_proxy_port
+  ), "SandboxNetworkConfig")
+}
+
+#' Create a SandboxIgnoreViolations
+#' @param file Character vector or NULL.
+#' @param network Character vector or NULL.
+#' @return Object of class `SandboxIgnoreViolations`.
+#' @export
+SandboxIgnoreViolations <- function(file = NULL, network = NULL) {
+  .new_obj(list(file = file, network = network), "SandboxIgnoreViolations")
+}
+
+#' Create SandboxSettings
+#' @param enabled Logical or NULL.
+#' @param auto_allow_bash_if_sandboxed Logical or NULL.
+#' @param excluded_commands Character vector or NULL.
+#' @param allow_unsandboxed_commands Logical or NULL.
+#' @param network `SandboxNetworkConfig` or NULL.
+#' @param ignore_violations `SandboxIgnoreViolations` or NULL.
+#' @param enable_weaker_nested_sandbox Logical or NULL.
+#' @return Object of class `SandboxSettings`.
+#' @export
+SandboxSettings <- function(enabled                      = NULL,
+                             auto_allow_bash_if_sandboxed = NULL,
+                             excluded_commands            = NULL,
+                             allow_unsandboxed_commands   = NULL,
+                             network                      = NULL,
+                             ignore_violations            = NULL,
+                             enable_weaker_nested_sandbox = NULL) {
+  .new_obj(list(
+    enabled                    = enabled,
+    autoAllowBashIfSandboxed   = auto_allow_bash_if_sandboxed,
+    excludedCommands           = excluded_commands,
+    allowUnsandboxedCommands   = allow_unsandboxed_commands,
+    network                    = network,
+    ignoreViolations           = ignore_violations,
+    enableWeakerNestedSandbox  = enable_weaker_nested_sandbox
+  ), "SandboxSettings")
+}
+
+# ---------------------------------------------------------------------------
 # print methods
 # ---------------------------------------------------------------------------
 

@@ -179,6 +179,172 @@ test_that("ClaudeAgentOptions system_prompt preset with append", {
   expect_equal(opts$system_prompt$append, "extra instructions")
 })
 
+# ---------------------------------------------------------------------------
+# Hook input types
+# ---------------------------------------------------------------------------
+
+test_that("PreToolUseHookInput has correct class and fields", {
+  h <- PreToolUseHookInput("s1", "/tmp/t", "/home", "Bash", list(command = "ls"), "tu1")
+  expect_s3_class(h, "PreToolUseHookInput")
+  expect_equal(h$hook_event_name, "PreToolUse")
+  expect_equal(h$tool_name, "Bash")
+  expect_equal(h$tool_use_id, "tu1")
+  expect_null(h$agent_id)
+})
+
+test_that("PostToolUseHookInput has correct class and fields", {
+  h <- PostToolUseHookInput("s1", "/tmp/t", "/home", "Bash",
+                            list(command = "ls"), "output", "tu1")
+  expect_s3_class(h, "PostToolUseHookInput")
+  expect_equal(h$hook_event_name, "PostToolUse")
+  expect_equal(h$tool_response, "output")
+})
+
+test_that("PostToolUseFailureHookInput has correct class and fields", {
+  h <- PostToolUseFailureHookInput("s1", "/tmp/t", "/home", "Bash",
+                                    list(command = "ls"), "tu1", "timeout")
+  expect_s3_class(h, "PostToolUseFailureHookInput")
+  expect_equal(h$hook_event_name, "PostToolUseFailure")
+  expect_equal(h$error, "timeout")
+  expect_null(h$is_interrupt)
+})
+
+test_that("UserPromptSubmitHookInput has correct class", {
+  h <- UserPromptSubmitHookInput("s1", "/tmp/t", "/home", "hello")
+  expect_s3_class(h, "UserPromptSubmitHookInput")
+  expect_equal(h$prompt, "hello")
+})
+
+test_that("StopHookInput has correct class", {
+  h <- StopHookInput("s1", "/tmp/t", "/home", TRUE)
+  expect_s3_class(h, "StopHookInput")
+  expect_true(h$stop_hook_active)
+})
+
+test_that("SubagentStopHookInput has correct class and fields", {
+  h <- SubagentStopHookInput("s1", "/tmp/t", "/home", TRUE, "a1", "/tmp/a", "code")
+  expect_s3_class(h, "SubagentStopHookInput")
+  expect_equal(h$agent_id, "a1")
+  expect_equal(h$agent_transcript_path, "/tmp/a")
+})
+
+test_that("PreCompactHookInput has correct class", {
+  h <- PreCompactHookInput("s1", "/tmp/t", "/home", "auto", "keep this")
+  expect_s3_class(h, "PreCompactHookInput")
+  expect_equal(h$trigger, "auto")
+  expect_equal(h$custom_instructions, "keep this")
+})
+
+test_that("NotificationHookInput has correct class", {
+  h <- NotificationHookInput("s1", "/tmp/t", "/home", "hello", "info", title = "Test")
+  expect_s3_class(h, "NotificationHookInput")
+  expect_equal(h$notification_type, "info")
+  expect_equal(h$title, "Test")
+})
+
+test_that("SubagentStartHookInput has correct class", {
+  h <- SubagentStartHookInput("s1", "/tmp/t", "/home", "a1", "code")
+  expect_s3_class(h, "SubagentStartHookInput")
+  expect_equal(h$agent_id, "a1")
+})
+
+test_that("PermissionRequestHookInput has correct class", {
+  h <- PermissionRequestHookInput("s1", "/tmp/t", "/home", "Bash", list(command = "rm"))
+  expect_s3_class(h, "PermissionRequestHookInput")
+  expect_equal(h$tool_name, "Bash")
+  expect_null(h$permission_suggestions)
+})
+
+# ---------------------------------------------------------------------------
+# Hook output types
+# ---------------------------------------------------------------------------
+
+test_that("SyncHookOutput has correct class and camelCase fields", {
+  o <- SyncHookOutput(continue_ = TRUE, suppress_output = TRUE, reason = "ok")
+  expect_s3_class(o, "SyncHookOutput")
+  expect_true(o$continue_)
+  expect_true(o$suppressOutput)
+  expect_equal(o$reason, "ok")
+})
+
+test_that("AsyncHookOutput has correct class", {
+  o <- AsyncHookOutput(async_timeout = 5000L)
+  expect_s3_class(o, "AsyncHookOutput")
+  expect_true(o$async_)
+  expect_equal(o$asyncTimeout, 5000L)
+})
+
+# ---------------------------------------------------------------------------
+# Permission update types
+# ---------------------------------------------------------------------------
+
+test_that("PermissionRuleValue has correct class", {
+  r <- PermissionRuleValue("Bash", "allow all")
+  expect_s3_class(r, "PermissionRuleValue")
+  expect_equal(r$tool_name, "Bash")
+  expect_equal(r$rule_content, "allow all")
+})
+
+test_that("PermissionUpdate has correct class and fields", {
+  u <- PermissionUpdate("addRules",
+    rules = list(PermissionRuleValue("Bash")),
+    behavior = "allow",
+    destination = "session"
+  )
+  expect_s3_class(u, "PermissionUpdate")
+  expect_equal(u$type, "addRules")
+  expect_equal(u$behavior, "allow")
+  expect_s3_class(u$rules[[1]], "PermissionRuleValue")
+})
+
+# ---------------------------------------------------------------------------
+# System prompt types
+# ---------------------------------------------------------------------------
+
+test_that("SystemPromptPreset has correct class", {
+  p <- SystemPromptPreset(exclude_dynamic_sections = TRUE, append = "extra")
+  expect_s3_class(p, "SystemPromptPreset")
+  expect_equal(p$type, "preset")
+  expect_true(p$exclude_dynamic_sections)
+  expect_equal(p$append, "extra")
+})
+
+test_that("SystemPromptFile has correct class", {
+  f <- SystemPromptFile("/tmp/prompt.txt")
+  expect_s3_class(f, "SystemPromptFile")
+  expect_equal(f$type, "file")
+  expect_equal(f$path, "/tmp/prompt.txt")
+})
+
+# ---------------------------------------------------------------------------
+# Sandbox types
+# ---------------------------------------------------------------------------
+
+test_that("SandboxNetworkConfig has correct class and camelCase fields", {
+  n <- SandboxNetworkConfig(
+    allow_unix_sockets     = c("/tmp/socket"),
+    allow_all_unix_sockets = TRUE,
+    http_proxy_port        = 8080L
+  )
+  expect_s3_class(n, "SandboxNetworkConfig")
+  expect_equal(n$allowUnixSockets, c("/tmp/socket"))
+  expect_true(n$allowAllUnixSockets)
+  expect_equal(n$httpProxyPort, 8080L)
+})
+
+test_that("SandboxIgnoreViolations has correct class", {
+  v <- SandboxIgnoreViolations(file = c("/tmp/ok"), network = c("localhost"))
+  expect_s3_class(v, "SandboxIgnoreViolations")
+  expect_equal(v$file, c("/tmp/ok"))
+})
+
+test_that("SandboxSettings has correct class and camelCase fields", {
+  s <- SandboxSettings(enabled = TRUE, excluded_commands = c("rm"))
+  expect_s3_class(s, "SandboxSettings")
+  expect_true(s$enabled)
+  expect_equal(s$excludedCommands, c("rm"))
+})
+
 test_that("HookMatcher stores matcher, hooks, and timeout", {
   fn <- function(input, id, ctx) list()
   m  <- HookMatcher(matcher = "Bash", hooks = list(fn), timeout = 5000L)
