@@ -112,6 +112,14 @@ ClaudeSDKClient <- R6::R6Class(
       invisible(self)
     },
 
+    #' @description Send a new request in streaming mode.
+    #'   Alias for [send()] that matches the Python SDK's `client.query()` API.
+    #' @param prompt Character(1) or list. Prompt text or list of content blocks.
+    #' @param session_id Character(1). Session identifier (default `"default"`).
+    query = function(prompt, session_id = "default") {
+      self$send(prompt, session_id = session_id)
+    },
+
     # ------------------------------------------------------------------
     # Message receiving
     # ------------------------------------------------------------------

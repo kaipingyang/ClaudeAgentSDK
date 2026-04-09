@@ -497,6 +497,91 @@ HookMatcher <- function(matcher, hooks, timeout = NULL) {
 }
 
 # ---------------------------------------------------------------------------
+# Thinking configuration types
+# ---------------------------------------------------------------------------
+
+#' Create a ThinkingConfigAdaptive
+#' @return Object of class `ThinkingConfigAdaptive`.
+#' @export
+ThinkingConfigAdaptive <- function() {
+  .new_obj(list(type = "adaptive"), "ThinkingConfigAdaptive")
+}
+
+#' Create a ThinkingConfigEnabled
+#' @param budget_tokens Integer. Token budget for thinking.
+#' @return Object of class `ThinkingConfigEnabled`.
+#' @export
+ThinkingConfigEnabled <- function(budget_tokens) {
+  .new_obj(list(type = "enabled", budget_tokens = budget_tokens),
+           "ThinkingConfigEnabled")
+}
+
+#' Create a ThinkingConfigDisabled
+#' @return Object of class `ThinkingConfigDisabled`.
+#' @export
+ThinkingConfigDisabled <- function() {
+  .new_obj(list(type = "disabled"), "ThinkingConfigDisabled")
+}
+
+# ---------------------------------------------------------------------------
+# Task budget / usage types
+# ---------------------------------------------------------------------------
+
+#' Create a TaskBudget
+#'
+#' API-side task budget in tokens. When set, the model is made aware of its
+#' remaining token budget so it can pace tool use and wrap up before the limit.
+#'
+#' @param max_tokens Integer. Maximum token budget for the task.
+#' @return Object of class `TaskBudget`.
+#' @export
+TaskBudget <- function(max_tokens) {
+  .new_obj(list(max_tokens = max_tokens), "TaskBudget")
+}
+
+#' Create a TaskUsage
+#' @param total_tokens Integer.
+#' @param tool_uses Integer.
+#' @return Object of class `TaskUsage`.
+#' @export
+TaskUsage <- function(total_tokens, tool_uses) {
+  .new_obj(list(total_tokens = total_tokens, tool_uses = tool_uses),
+           "TaskUsage")
+}
+
+# ---------------------------------------------------------------------------
+# Context usage types
+# ---------------------------------------------------------------------------
+
+#' Create a ContextUsageCategory
+#' @param name Character.
+#' @param tokens Integer.
+#' @param color Character.
+#' @param is_deferred Logical or NULL.
+#' @return Object of class `ContextUsageCategory`.
+#' @export
+ContextUsageCategory <- function(name, tokens, color, is_deferred = NULL) {
+  .new_obj(list(
+    name       = name,
+    tokens     = tokens,
+    color      = color,
+    isDeferred = is_deferred
+  ), "ContextUsageCategory")
+}
+
+#' Create a ContextUsageResponse
+#' @param categories List of `ContextUsageCategory`.
+#' @param total_tokens Integer.
+#' @return Object of class `ContextUsageResponse`.
+#' @export
+ContextUsageResponse <- function(categories, total_tokens) {
+  .new_obj(list(
+    categories  = categories,
+    totalTokens = total_tokens
+  ), "ContextUsageResponse")
+}
+
+# ---------------------------------------------------------------------------
 # Hook input types (mirrors Python TypedDicts in types.py)
 # ---------------------------------------------------------------------------
 

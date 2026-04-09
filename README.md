@@ -143,8 +143,8 @@ client <- ClaudeSDKClient$new(
 )
 client$connect()
 
-# Send a prompt and receive the response
-client$send("What files are in the current directory?")
+# Send a prompt and receive the response (query() is an alias for send())
+client$query("What files are in the current directory?")
 coro::loop(for (msg in client$receive_response()) {
   if (inherits(msg, "AssistantMessage")) {
     for (block in msg$content) {
@@ -157,7 +157,7 @@ coro::loop(for (msg in client$receive_response()) {
 })
 
 # Send a follow-up in the same session
-client$send("Now count how many R files there are.")
+client$query("Now count how many R files there are.")
 coro::loop(for (msg in client$receive_response()) {
   if (inherits(msg, "AssistantMessage")) {
     cat(msg$content[[1]]$text, "\n")
@@ -279,7 +279,14 @@ See [`R/types.R`](R/types.R) for complete type definitions:
 - `TextBlock`, `ToolUseBlock`, `ToolResultBlock`, `ThinkingBlock` — Content blocks
 - `StreamEvent`, `RateLimitEvent` — Streaming events
 - `TaskStartedMessage`, `TaskProgressMessage`, `TaskNotificationMessage` — Task messages
-- `PermissionResultAllow`, `PermissionResultDeny` — Permission results
+- `PermissionResultAllow`, `PermissionResultDeny`, `PermissionUpdate`, `PermissionRuleValue` — Permission types
+- `PreToolUseHookInput`, `PostToolUseHookInput`, ... — Hook input types (10 total)
+- `SyncHookOutput`, `AsyncHookOutput` — Hook output types
+- `SystemPromptPreset`, `SystemPromptFile` — System prompt types
+- `SandboxSettings`, `SandboxNetworkConfig`, `SandboxIgnoreViolations` — Sandbox types
+- `ThinkingConfigAdaptive`, `ThinkingConfigEnabled`, `ThinkingConfigDisabled` — Thinking config
+- `TaskBudget`, `TaskUsage`, `ContextUsageCategory`, `ContextUsageResponse` — Budget/usage types
+- `AgentDefinition`, `HookMatcher` — Agent and hook configuration
 - `SDKSessionInfo`, `SessionMessage` — Session types
 
 All objects are S3 lists with a `class` attribute; use `inherits(msg, "AssistantMessage")` for type checks.
@@ -378,14 +385,19 @@ result <- claude_run(
 ## Advanced: Thinking and Effort
 
 ```r
-# Extended thinking (adaptive)
+# Extended thinking (adaptive) — using typed constructor or plain list
 options <- ClaudeAgentOptions(
-  thinking = list(type = "adaptive")
+  thinking = ThinkingConfigAdaptive()
 )
 
 # Extended thinking with budget
 options <- ClaudeAgentOptions(
-  thinking = list(type = "enabled", budget_tokens = 10000L)
+  thinking = ThinkingConfigEnabled(budget_tokens = 10000L)
+)
+
+# Disable thinking
+options <- ClaudeAgentOptions(
+  thinking = ThinkingConfigDisabled()
 )
 
 # Effort level
