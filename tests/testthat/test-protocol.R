@@ -171,3 +171,128 @@ test_that("build_agents_config strips NULL fields and class attribute", {
   expect_equal(cfg[["reviewer"]][["description"]], "reviews code")
   expect_equal(cfg[["reviewer"]][["model"]], "claude-sonnet-4-6")
 })
+
+test_that("build_agents_config produces named dict with camelCase", {
+  t <- SubprocessCLITransport$new(ClaudeAgentOptions())
+  env <- t$.__enclos_env__$private
+  agents <- list(
+    myagent = AgentDefinition(
+      description      = "test",
+      prompt           = "hi",
+      disallowed_tools = c("Bash"),
+      mcp_servers      = list("server1"),
+      initial_prompt   = "start here",
+      max_turns        = 5L,
+      permission_mode  = "bypassPermissions"
+    )
+  )
+  cfg <- env$build_agents_config(agents)
+  # Named dict keyed by agent name
+  expect_true("myagent" %in% names(cfg))
+  ag <- cfg[["myagent"]]
+  # camelCase field names
+  expect_equal(ag[["disallowedTools"]], c("Bash"))
+  expect_equal(ag[["mcpServers"]], list("server1"))
+  expect_equal(ag[["initialPrompt"]], "start here")
+  expect_equal(ag[["maxTurns"]], 5L)
+  expect_equal(ag[["permissionMode"]], "bypassPermissions")
+  # snake_case originals should NOT be present
+  expect_null(ag[["disallowed_tools"]])
+  expect_null(ag[["mcp_servers"]])
+  expect_null(ag[["initial_prompt"]])
+  expect_null(ag[["max_turns"]])
+  expect_null(ag[["permission_mode"]])
+})
+
+# ---------------------------------------------------------------------------
+# Additional parse_message coverage
+# ---------------------------------------------------------------------------
+
+test_that("parse_message: user message with tool_use_result", {
+  json <- '{"type":"user","message":{"role":"user","content":"result"},"uuid":"u1","tool_use_result":{"tool_use_id":"tu1","content":"ok","is_error":false}}'
+  msg  <- parse_message(json)
+  expect_s3_class(msg, "UserMessage")
+  expect_equal(msg$tool_use_result$tool_use_id, "tu1")
+})
+
+test_that("parse_message: assistant with thinking block", {
+  json <- '{"type":"assistant","message":{"role":"assistant","content":[{"type":"thinking","thinking":"deep thought","signature":"sig1"},{"type":"text","text":"answer"}],"model":"m"}}'
+  msg  <- parse_message(json)
+  expect_length(msg$content, 2L)
+  expect_s3_class(msg$content[[1]], "ThinkingBlock")
+  expect_equal(msg$content[[1]]$thinking, "deep thought")
+  expect_s3_class(msg$content[[2]], "TextBlock")
+})
+
+test_that("parse_message: assistant with usage", {
+  json <- '{"type":"assistant","message":{"role":"assistant","content":[{"type":"text","text":"hi"}],"model":"m","usage":{"input_tokens":100,"output_tokens":50}}}'
+  msg  <- parse_message(json)
+  expect_equal(msg$usage$input_tokens, 100L)
+  expect_equal(msg$usage$output_tokens, 50L)
+})
+
+test_that("parse_message: result with stop_reason and model_usage", {
+  json <- '{"type":"result","subtype":"success","is_error":false,"num_turns":1,"session_id":"s1","stop_reason":"end_turn","modelUsage":{"input":500,"output":200}}'
+  msg  <- parse_message(json)
+  expect_equal(msg$stop_reason, "end_turn")
+  expect_equal(msg$model_usage$input, 500L)
+})
+
+test_that("parse_message: result with errors list", {
+  json <- '{"type":"result","subtype":"error","is_error":true,"num_turns":0,"session_id":"s1","errors":["timeout","quota"]}'
+  msg  <- parse_message(json)
+  expect_true(msg$is_error)
+  expect_equal(msg$errors, list("timeout", "quota"))
+})
+
+test_that("parse_message: task_progress system message", {
+  json <- '{"type":"system","subtype":"task_progress","task_id":"t1","description":"running","uuid":"u1","session_id":"s1","last_tool_name":"Bash"}'
+  msg  <- parse_message(json)
+  expect_s3_class(msg, "TaskProgressMessage")
+  expect_s3_class(msg, "SystemMessage")
+  expect_equal(msg$last_tool_name, "Bash")
+})
+
+test_that("parse_message: task_notification system message", {
+  json <- '{"type":"system","subtype":"task_notification","task_id":"t1","status":"completed","output_file":"/tmp/out","summary":"done","uuid":"u1","session_id":"s1"}'
+  msg  <- parse_message(json)
+  expect_s3_class(msg, "TaskNotificationMessage")
+  expect_equal(msg$status, "completed")
+  expect_equal(msg$output_file, "/tmp/out")
+})
+
+test_that("parse_message: control_cancel_request passes through", {
+  json <- '{"type":"control_cancel_request","request_id":"req_1"}'
+  msg  <- parse_message(json)
+  expect_true(is.list(msg))
+  expect_equal(msg$type, "control_cancel_request")
+})
+
+test_that("parse_message: control_response passes through", {
+  json <- '{"type":"control_response","response":{"subtype":"success","request_id":"req_1","response":{}}}'
+  msg  <- parse_message(json)
+  expect_true(is.list(msg))
+  expect_equal(msg$type, "control_response")
+})
+
+test_that("parse_message: missing type field raises error", {
+  json <- '{"data":"no type field"}'
+  expect_error(parse_message(json), class = "claude_error_message_parse")
+})
+
+test_that("parse_message: non-object raises error", {
+  json <- '"just a string"'
+  expect_error(parse_message(json), class = "claude_error_message_parse")
+})
+
+test_that("build_initialize_request includes agents and exclude_dynamic_sections", {
+  json <- build_initialize_request("req_1",
+    hooks_config = list(PreToolUse = list()),
+    agents = list(a1 = list(description = "test")),
+    exclude_dynamic_sections = TRUE
+  )
+  obj <- jsonlite::fromJSON(json, simplifyVector = FALSE)
+  expect_equal(obj$request$subtype, "initialize")
+  expect_true("a1" %in% names(obj$request$agents))
+  expect_true(obj$request$excludeDynamicSections)
+})

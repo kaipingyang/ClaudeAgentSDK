@@ -677,13 +677,33 @@ SubprocessCLITransport <- R6::R6Class(
       converted
     },
 
+    # snake_case → camelCase mapping for AgentDefinition fields
+    # (Python defines these fields in camelCase directly)
+    .agent_field_map = list(
+      disallowed_tools = "disallowedTools",
+      mcp_servers      = "mcpServers",
+      initial_prompt   = "initialPrompt",
+      max_turns        = "maxTurns",
+      permission_mode  = "permissionMode"
+    ),
+
     build_agents_config = function(agents) {
-      lapply(agents, function(ag) {
+      # Python sends agents as {name: config} dict; R options uses named list
+      result <- list()
+      for (nm in names(agents)) {
+        ag <- agents[[nm]]
         fields <- as.list(ag)
-        # Remove class attribute carried over from S3 object
         fields[["class"]] <- NULL
-        Filter(Negate(is.null), fields)
-      })
+        fields <- Filter(Negate(is.null), fields)
+        # Convert snake_case field names → camelCase for CLI
+        converted <- list()
+        for (key in names(fields)) {
+          cli_key <- private$.agent_field_map[[key]] %||% key
+          converted[[cli_key]] <- fields[[key]]
+        }
+        result[[nm]] <- converted
+      }
+      result
     }
   )
 )

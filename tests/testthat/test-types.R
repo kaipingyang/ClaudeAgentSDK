@@ -113,6 +113,70 @@ test_that("AgentDefinition allows NULL optional fields", {
   expect_null(a$prompt)
   expect_null(a$tools)
   expect_null(a$model)
+  expect_null(a$disallowed_tools)
+  expect_null(a$skills)
+  expect_null(a$memory)
+  expect_null(a$mcp_servers)
+  expect_null(a$initial_prompt)
+  expect_null(a$max_turns)
+  expect_null(a$background)
+  expect_null(a$effort)
+  expect_null(a$permission_mode)
+})
+
+test_that("AgentDefinition stores new fields (parity with Python)", {
+  a <- AgentDefinition(
+    description      = "full agent",
+    prompt           = "sys prompt",
+    tools            = c("Read"),
+    disallowed_tools = c("Bash", "Write"),
+    model            = "claude-sonnet-4-6",
+    skills           = c("commit", "review"),
+    memory           = "project",
+    mcp_servers      = list("server1"),
+    initial_prompt   = "start here",
+    max_turns        = 10L,
+    background       = TRUE,
+    effort           = "high",
+    permission_mode  = "bypassPermissions"
+  )
+  expect_equal(a$disallowed_tools, c("Bash", "Write"))
+  expect_equal(a$skills, c("commit", "review"))
+  expect_equal(a$memory, "project")
+  expect_equal(a$mcp_servers, list("server1"))
+  expect_equal(a$initial_prompt, "start here")
+  expect_equal(a$max_turns, 10L)
+  expect_true(a$background)
+  expect_equal(a$effort, "high")
+  expect_equal(a$permission_mode, "bypassPermissions")
+})
+
+test_that("AgentDefinition effort accepts integer", {
+  a <- AgentDefinition("agent", effort = 42L)
+  expect_equal(a$effort, 42L)
+})
+
+test_that("ClaudeAgentOptions system_prompt preset with exclude_dynamic_sections", {
+  opts <- ClaudeAgentOptions(
+    system_prompt = list(type = "preset", exclude_dynamic_sections = TRUE)
+  )
+  expect_equal(opts$system_prompt$type, "preset")
+  expect_true(opts$system_prompt$exclude_dynamic_sections)
+})
+
+test_that("ClaudeAgentOptions system_prompt file", {
+  opts <- ClaudeAgentOptions(
+    system_prompt = list(type = "file", path = "/tmp/prompt.txt")
+  )
+  expect_equal(opts$system_prompt$type, "file")
+  expect_equal(opts$system_prompt$path, "/tmp/prompt.txt")
+})
+
+test_that("ClaudeAgentOptions system_prompt preset with append", {
+  opts <- ClaudeAgentOptions(
+    system_prompt = list(type = "preset", append = "extra instructions")
+  )
+  expect_equal(opts$system_prompt$append, "extra instructions")
 })
 
 test_that("HookMatcher stores matcher, hooks, and timeout", {
