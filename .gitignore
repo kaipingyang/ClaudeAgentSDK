@@ -1,0 +1,21 @@
+# R package
+*.Rcheck/
+*.tar.gz
+*.tgz
+.Rproj.user/
+.Rhistory
+.RData
+.Ruserdata
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+dist/
+build/
+
+# Misc
+.DS_Store
+*.swp
+.claude/
