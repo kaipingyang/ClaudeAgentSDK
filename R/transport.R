@@ -143,6 +143,65 @@ SubprocessCLITransport <- R6::R6Class(
       !is.null(private$proc) && private$proc$is_alive()
     },
 
+    #' @description Send a control request and synchronously poll for its
+    #'   response. Buffers any SDK messages received before the response so
+    #'   they are not lost from the main receive loop.
+    #'
+    #'   Mirrors Python's `Query._send_control_request()` (synchronous
+    #'   version). Safe to call between turns (not while `receive_messages()`
+    #'   is being iterated).
+    #'
+    #' @param request List. Control request body (must have `subtype`).
+    #' @param timeout_ms Integer. Milliseconds to wait (default 30 000).
+    #' @return Named list with the response payload, or `NULL` on timeout.
+    send_and_wait = function(request, timeout_ms = 30000L) {
+      private$req_counter <- private$req_counter + 1L
+      request_id <- paste0("req_", private$req_counter, "_",
+                           paste0(as.hexmode(sample.int(256, 4) - 1), collapse = ""))
+      json <- jsonlite::toJSON(
+        list(type = "control_request", request_id = request_id, request = request),
+        auto_unbox = TRUE, null = "null"
+      )
+      self$send(json)
+
+      deadline <- proc.time()[["elapsed"]] + timeout_ms / 1000
+      while (proc.time()[["elapsed"]] < deadline) {
+        if (is.null(private$proc) || !private$proc$is_alive()) break
+        status <- tryCatch(private$proc$poll_io(100L), error = function(e) NULL)
+        if (is.null(status)) next
+        stdout_ready <- !is.null(names(status)) &&
+          "output" %in% names(status) &&
+          identical(status[["output"]], "ready")
+        if (!stdout_ready) next
+        raw <- tryCatch(private$proc$read_output(65536L), error = function(e) "")
+        if (!nzchar(raw)) next
+        result <- split_lines_with_buffer(private$buffer, raw)
+        private$buffer <- result$remaining
+        for (line in result$complete_lines) {
+          line <- trimws(line)
+          if (!nzchar(line) || !startsWith(line, "{")) next
+          obj <- tryCatch(
+            jsonlite::fromJSON(line, simplifyVector = FALSE),
+            error = function(e) NULL
+          )
+          if (is.null(obj)) next
+          if (identical(obj[["type"]], "control_response") &&
+              identical(obj[["response"]][["request_id"]], request_id)) {
+            resp <- obj[["response"]]
+            if (identical(resp[["subtype"]], "error")) {
+              stop(resp[["error"]] %||% "Control request error", call. = FALSE)
+            }
+            return(resp[["response"]] %||% list())
+          }
+          # Not our response — buffer it so the main receive loop can pick it up
+          private$buffer <- paste0(private$buffer, line, "\n")
+        }
+      }
+      warning(paste0("send_and_wait timed out waiting for: ", request[["subtype"]]),
+              call. = FALSE)
+      NULL
+    },
+
     #' @description Return a `coro` generator that yields typed message objects
     #'   until a `ResultMessage` is received or the process exits. Control
     #'   requests are handled internally and never yielded.
@@ -198,6 +257,12 @@ SubprocessCLITransport <- R6::R6Class(
                 # Route control requests internally
                 if (is.list(msg) && identical(msg[["type"]], "control_request")) {
                   private$handle_control_request(msg)
+                  next
+                }
+
+                # Cancel requests: R is synchronous so no in-flight tasks
+                # to cancel — acknowledge silently, no response needed.
+                if (is.list(msg) && identical(msg[["type"]], "control_cancel_request")) {
                   next
                 }
 
@@ -428,11 +493,19 @@ SubprocessCLITransport <- R6::R6Class(
         agents_config <- private$build_agents_config(private$options$agents)
       }
 
+      # exclude_dynamic_sections from SystemPromptPreset (mirrors Python Query.initialize())
+      exclude_dyn <- NULL
+      if (is.list(private$options$system_prompt) &&
+          identical(private$options$system_prompt[["type"]], "preset")) {
+        exclude_dyn <- private$options$system_prompt[["exclude_dynamic_sections"]]
+      }
+
       init_req_body <- list(
         subtype = "initialize",
         hooks   = hooks_config
       )
-      if (!is.null(agents_config)) init_req_body[["agents"]] <- agents_config
+      if (!is.null(agents_config))  init_req_body[["agents"]]                 <- agents_config
+      if (!is.null(exclude_dyn))    init_req_body[["excludeDynamicSections"]] <- exclude_dyn
 
       init_request <- list(
         type       = "control_request",

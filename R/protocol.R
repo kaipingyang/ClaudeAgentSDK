@@ -42,8 +42,9 @@ parse_message <- function(line) {
     "result"           = .parse_result_message(obj),
     "stream_event"     = .parse_stream_event(obj),
     "rate_limit_event" = .parse_rate_limit_event(obj),
-    "control_request"  = obj,          # pass-through for transport layer
-    "control_response" = obj,          # pass-through for client layer
+    "control_request"        = obj,   # pass-through for transport layer
+    "control_response"       = obj,   # pass-through for client layer
+    "control_cancel_request" = obj,   # pass-through; handled in transport loop
     {
       # Forward-compatible: skip unknown types silently (returns NULL)
       NULL
