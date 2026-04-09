@@ -77,7 +77,7 @@ test_that("exclude_dynamic_sections passes through without error", {
 # agents in initialize — connect succeeds when agents are supplied
 # ---------------------------------------------------------------------------
 
-test_that("agents config passes through initialize without error", {
+test_that("agents config (named list) passes through initialize without error", {
   skip_if_no_claude()
   ag <- AgentDefinition(
     description = "A test sub-agent",
@@ -87,7 +87,7 @@ test_that("agents config passes through initialize without error", {
   client <- ClaudeSDKClient$new(ClaudeAgentOptions(
     max_turns       = 1L,
     permission_mode = "bypassPermissions",
-    agents          = list(ag)
+    agents          = list(helper = ag)
   ))
   expect_no_error(client$connect())
   client$disconnect()
@@ -222,4 +222,168 @@ test_that("get_session_messages limit works", {
 
   limited <- get_session_messages(sid, limit = 1L)
   expect_equal(length(limited), 1L)
+})
+
+# ---------------------------------------------------------------------------
+# set_model — runtime control
+# ---------------------------------------------------------------------------
+
+test_that("set_model does not error", {
+  skip_if_no_claude()
+  client <- make_client()
+  client$connect()
+  on.exit(client$disconnect())
+  expect_no_error(client$set_model("claude-sonnet-4-6"))
+})
+
+# ---------------------------------------------------------------------------
+# stderr callback — captures CLI debug output
+# ---------------------------------------------------------------------------
+
+test_that("stderr callback captures output", {
+  skip_if_no_claude()
+  captured <- character(0)
+  result <- claude_run(
+    "Say only: STDERR_TEST",
+    options = ClaudeAgentOptions(
+      max_turns       = 1L,
+      permission_mode = "bypassPermissions",
+      stderr          = function(line) { captured <<- c(captured, line) },
+      extra_args      = list("debug-to-stderr" = NULL)
+    )
+  )
+  expect_false(result$result$is_error)
+  expect_true(length(captured) > 0L)
+})
+
+# ---------------------------------------------------------------------------
+# Multi-turn ClaudeSDKClient — 2 sequential prompts
+# ---------------------------------------------------------------------------
+
+test_that("ClaudeSDKClient handles multi-turn conversation", {
+  skip_if_no_claude()
+  client <- ClaudeSDKClient$new(ClaudeAgentOptions(
+    max_turns       = 1L,
+    permission_mode = "bypassPermissions"
+  ))
+  client$connect()
+  on.exit(client$disconnect())
+
+  # Turn 1
+  client$send("Say only: TURN1")
+  msgs1 <- list()
+  coro::loop(for (msg in client$receive_response()) {
+    msgs1 <- c(msgs1, list(msg))
+  })
+  result1 <- Filter(function(m) inherits(m, "ResultMessage"), msgs1)
+  expect_true(length(result1) >= 1L)
+  expect_false(result1[[1L]]$is_error)
+
+  # Turn 2
+  client$send("Say only: TURN2")
+  msgs2 <- list()
+  coro::loop(for (msg in client$receive_response()) {
+    msgs2 <- c(msgs2, list(msg))
+  })
+  result2 <- Filter(function(m) inherits(m, "ResultMessage"), msgs2)
+  expect_true(length(result2) >= 1L)
+  expect_false(result2[[1L]]$is_error)
+})
+
+# ---------------------------------------------------------------------------
+# can_use_tool permission callback
+# ---------------------------------------------------------------------------
+
+test_that("can_use_tool callback is invoked and can allow", {
+  skip_if_no_claude()
+  callback_invoked <- FALSE
+  tool_names_seen  <- character(0)
+  result <- claude_run(
+    "Use the Read tool to read the file /dev/null",
+    options = ClaudeAgentOptions(
+      max_turns   = 2L,
+      can_use_tool = function(tool_name, input, ctx) {
+        callback_invoked <<- TRUE
+        tool_names_seen  <<- c(tool_names_seen, tool_name)
+        PermissionResultAllow()
+      }
+    )
+  )
+  # If Claude used any tool, callback should have been invoked
+  # Skip if Claude answered without tool use (model may refuse)
+  if (!callback_invoked) skip("Claude did not attempt any tool use")
+  expect_true(length(tool_names_seen) >= 1L)
+})
+
+# ---------------------------------------------------------------------------
+# Structured output / json schema
+# ---------------------------------------------------------------------------
+
+test_that("structured output with json_schema works", {
+  skip_if_no_claude()
+  schema <- list(
+    type = "object",
+    properties = list(
+      answer = list(type = "string"),
+      confidence = list(type = "number")
+    ),
+    required = list("answer"),
+    additionalProperties = FALSE
+  )
+  result <- claude_run(
+    "What is 1+1? Respond with JSON only.",
+    options = ClaudeAgentOptions(
+      max_turns       = 1L,
+      permission_mode = "bypassPermissions",
+      output_format   = list(type = "json_schema", schema = schema)
+    )
+  )
+  # Structured output may fail depending on model support; skip if error
+  if (isTRUE(result$result$is_error)) skip("Structured output not supported in this env")
+  so <- result$result$structured_output
+  if (!is.null(so)) {
+    expect_true(is.list(so) || is.character(so))
+  }
+})
+
+# ---------------------------------------------------------------------------
+# include_partial_messages emits StreamEvent
+# ---------------------------------------------------------------------------
+
+test_that("include_partial_messages emits StreamEvent", {
+  skip_if_no_claude()
+  result <- claude_run(
+    "Say only: STREAM_CHECK",
+    options = ClaudeAgentOptions(
+      max_turns               = 1L,
+      permission_mode         = "bypassPermissions",
+      include_partial_messages = TRUE
+    )
+  )
+  stream_events <- Filter(function(m) inherits(m, "StreamEvent"), result$messages)
+  # With include_partial_messages, we should see StreamEvent objects
+  expect_true(length(stream_events) >= 1L)
+})
+
+# ---------------------------------------------------------------------------
+# Agent with new fields in real connection
+# ---------------------------------------------------------------------------
+
+test_that("agent with full fields connects without error", {
+  skip_if_no_claude()
+  ag <- AgentDefinition(
+    description      = "code reviewer",
+    prompt           = "Review code carefully.",
+    tools            = c("Read", "Grep"),
+    disallowed_tools = c("Bash"),
+    max_turns        = 3L,
+    effort           = "high"
+  )
+  client <- ClaudeSDKClient$new(ClaudeAgentOptions(
+    max_turns       = 1L,
+    permission_mode = "bypassPermissions",
+    agents          = list(reviewer = ag)
+  ))
+  expect_no_error(client$connect())
+  client$disconnect()
 })

@@ -430,19 +430,48 @@ session_message_obj <- function(type, uuid, session_id, message,
 #' @param description Character. Short description of what this agent does.
 #' @param prompt Character or NULL. System prompt for the agent.
 #' @param tools Character vector or NULL. Tools the agent can use.
+#' @param disallowed_tools Character vector or NULL. Tools the agent cannot use.
 #' @param model Character or NULL. Model ID for the agent.
+#' @param skills Character vector or NULL. Additional skills for the agent.
+#' @param memory Character or NULL. Memory scope: `"user"`, `"project"`, or
+#'   `"local"`.
+#' @param mcp_servers List or NULL. MCP server configurations.
+#' @param initial_prompt Character or NULL. Initial prompt for the agent.
+#' @param max_turns Integer or NULL. Maximum turns for the agent.
+#' @param background Logical or NULL. Whether agent runs in background.
+#' @param effort Character or integer or NULL. Effort level: `"low"`,
+#'   `"medium"`, `"high"`, `"max"`, or an integer.
+#' @param permission_mode Character or NULL. Permission mode for the agent.
 #' @return Object of class `AgentDefinition`.
 #' @export
 AgentDefinition <- function(description,
-                             prompt  = NULL,
-                             tools   = NULL,
-                             model   = NULL) {
+                             prompt           = NULL,
+                             tools            = NULL,
+                             disallowed_tools = NULL,
+                             model            = NULL,
+                             skills           = NULL,
+                             memory           = NULL,
+                             mcp_servers      = NULL,
+                             initial_prompt   = NULL,
+                             max_turns        = NULL,
+                             background       = NULL,
+                             effort           = NULL,
+                             permission_mode  = NULL) {
   .new_obj(
     list(
-      description = description,
-      prompt      = prompt,
-      tools       = tools,
-      model       = model
+      description      = description,
+      prompt           = prompt,
+      tools            = tools,
+      disallowed_tools = disallowed_tools,
+      model            = model,
+      skills           = skills,
+      memory           = memory,
+      mcp_servers      = mcp_servers,
+      initial_prompt   = initial_prompt,
+      max_turns        = max_turns,
+      background       = background,
+      effort           = effort,
+      permission_mode  = permission_mode
     ),
     "AgentDefinition"
   )

@@ -20,22 +20,19 @@ NULL
 # ---------------------------------------------------------------------------
 
 .simple_hash <- function(s) {
-  h <- 0L
-  mask32   <- 4294967295  # 0xFFFFFFFF
-  sign_bit <- 2147483648  # 0x80000000
-  wrap32   <- 4294967296  # 0x100000000
+  # Use double arithmetic to avoid R's 32-bit integer overflow in bitwAnd.
+  # Doubles represent all integers up to 2^53 exactly; 2^32 is safe.
+  h <- 0
   for (ch in utf8ToInt(s)) {
-    h <- bitwAnd(bitwOr(bitwShiftL(h, 5L) - h + ch, 0L), mask32)
-    if (h >= sign_bit) h <- h - wrap32  # coerce to signed 32-bit
+    h <- ((h * 32) - h + ch) %% 4294967296  # unsigned 32-bit via modulo
   }
-  h <- abs(h)
-  if (h == 0L) return("0")
+  if (h == 0) return("0")
   digits <- c(0:9, letters[1:26])
   out <- character(0)
   n <- h
-  while (n > 0L) {
-    out <- c(digits[[n %% 36 + 1L]], out)
-    n   <- n %/% 36L
+  while (n > 0) {
+    out <- c(digits[[n %% 36 + 1]], out)
+    n   <- n %/% 36
   }
   paste(out, collapse = "")
 }
@@ -111,7 +108,7 @@ NULL
   last_val <- NULL
   for (pat in patterns) {
     m <- gregexpr(pat, text, fixed = TRUE)[[1L]]
-    if (identical(m, -1L)) next
+    if (length(m) == 1L && m[[1L]] == -1L) next
     for (pos in rev(m)) {
       value_start <- pos + nchar(pat)
       sub_text    <- substr(text, value_start, min(nchar(text), value_start + 4096L))
@@ -322,7 +319,10 @@ NULL
   if (!length(sessions)) return(list())
   mtimes <- vapply(sessions, function(s) s$last_modified, numeric(1))
   sessions <- sessions[order(mtimes, decreasing = TRUE)]
-  if (offset > 0L) sessions <- sessions[seq(offset + 1L, length(sessions))]
+  if (offset > 0L) {
+    if (offset >= length(sessions)) return(list())
+    sessions <- sessions[seq(offset + 1L, length(sessions))]
+  }
   if (!is.null(limit) && limit > 0L) sessions <- sessions[seq_len(min(limit, length(sessions)))]
   sessions
 }
