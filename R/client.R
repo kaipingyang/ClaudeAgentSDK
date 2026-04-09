@@ -195,17 +195,19 @@ ClaudeSDKClient <- R6::R6Class(
     # ------------------------------------------------------------------
 
     #' @description Get MCP server connection status.
-    #' @return Named list with `mcpServers` key.
-    get_mcp_status = function() {
+    #' @param timeout_ms Integer. Milliseconds to wait for response (default 30 000).
+    #' @return Named list with `mcpServers` key, or `NULL` on timeout.
+    get_mcp_status = function(timeout_ms = 30000L) {
       private$assert_connected()
-      private$send_control_request(list(subtype = "mcp_status"))
+      private$transport$send_and_wait(list(subtype = "mcp_status"), timeout_ms)
     },
 
     #' @description Get context window usage breakdown.
-    #' @return Named list with token counts by category.
-    get_context_usage = function() {
+    #' @param timeout_ms Integer. Milliseconds to wait for response (default 30 000).
+    #' @return Named list with token counts by category, or `NULL` on timeout.
+    get_context_usage = function(timeout_ms = 30000L) {
       private$assert_connected()
-      private$send_control_request(list(subtype = "get_context_usage"))
+      private$transport$send_and_wait(list(subtype = "get_context_usage"), timeout_ms)
     },
 
     #' @description Get server initialization info.

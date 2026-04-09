@@ -13,6 +13,12 @@ export(list_sessions)
 export(get_session_info)
 export(get_session_messages)
 
+# Session mutation functions
+export(rename_session)
+export(tag_session)
+export(delete_session)
+export(fork_session)
+
 # Utility functions
 export(find_claude)
 export(list_skills)
