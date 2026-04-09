@@ -404,6 +404,38 @@ test_that("ContextUsageResponse has correct class", {
   expect_length(r$categories, 1L)
 })
 
+# ---------------------------------------------------------------------------
+# MCP status types
+# ---------------------------------------------------------------------------
+
+test_that("McpToolInfo has correct class", {
+  t <- McpToolInfo("Read", description = "Read files")
+  expect_s3_class(t, "McpToolInfo")
+  expect_equal(t$name, "Read")
+})
+
+test_that("McpServerInfo has correct class", {
+  i <- McpServerInfo("my-server", "1.0.0")
+  expect_s3_class(i, "McpServerInfo")
+  expect_equal(i$version, "1.0.0")
+})
+
+test_that("McpServerStatus has correct class and camelCase fields", {
+  s <- McpServerStatus("srv", "connected",
+    server_info = McpServerInfo("srv", "1.0"),
+    tools = list(McpToolInfo("tool1")))
+  expect_s3_class(s, "McpServerStatus")
+  expect_equal(s$status, "connected")
+  expect_s3_class(s$serverInfo, "McpServerInfo")
+  expect_length(s$tools, 1L)
+})
+
+test_that("McpStatusResponse has correct class", {
+  r <- McpStatusResponse(list(McpServerStatus("srv", "connected")))
+  expect_s3_class(r, "McpStatusResponse")
+  expect_length(r$mcpServers, 1L)
+})
+
 test_that("HookMatcher stores matcher, hooks, and timeout", {
   fn <- function(input, id, ctx) list()
   m  <- HookMatcher(matcher = "Bash", hooks = list(fn), timeout = 5000L)

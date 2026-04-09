@@ -5,13 +5,15 @@
 ### New Features
 
 - **`client$query()` method**: Added `query()` as alias for `send()` on `ClaudeSDKClient`, matching the Python SDK's `client.query()` API
+- **MCP status types**: Added `McpToolInfo`, `McpServerInfo`, `McpServerStatus`, `McpStatusResponse` constructors
 - **Thinking configuration types**: Added `ThinkingConfigAdaptive`, `ThinkingConfigEnabled`, `ThinkingConfigDisabled` constructors
 - **Task budget/usage types**: Added `TaskBudget`, `TaskUsage` constructors
 - **Context usage types**: Added `ContextUsageCategory`, `ContextUsageResponse` constructors
+- **Pre-push hook**: Added `scripts/pre-push` and `scripts/initial-setup.sh` for running tests before push
 
 ### Tests
 
-- 627 tests total (up from 608)
+- 637 tests total (up from 608)
 
 ## 0.1.1 (2026-04-09)
 

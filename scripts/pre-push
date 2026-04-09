@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# Pre-push hook for ClaudeAgentSDK
+# Runs unit tests before allowing a push.
+# Install: cp scripts/pre-push .git/hooks/pre-push && chmod +x .git/hooks/pre-push
+# Or run: bash scripts/initial-setup.sh
+
+set -euo pipefail
+
+echo "Running tests before push..."
+
+# Run tests (skip integration tests that need CLI if not available)
+Rscript -e '
+  res <- devtools::test(reporter = "summary")
+  if (any(as.data.frame(res)$failed > 0)) {
+    cat("\n\033[31mTests failed — push aborted.\033[0m\n")
+    quit(status = 1)
+  }
+  cat("\n\033[32mAll tests passed.\033[0m\n")
+'
+
+echo "Pre-push checks passed."
