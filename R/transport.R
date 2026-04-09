@@ -143,6 +143,12 @@ SubprocessCLITransport <- R6::R6Class(
       !is.null(private$proc) && private$proc$is_alive()
     },
 
+    #' @description Return the server initialization info captured during
+    #'   the initialize handshake, or NULL if not yet connected.
+    get_init_result = function() {
+      private$init_result
+    },
+
     #' @description Send a control request and synchronously poll for its
     #'   response. Buffers any SDK messages received before the response so
     #'   they are not lost from the main receive loop.
@@ -291,6 +297,7 @@ SubprocessCLITransport <- R6::R6Class(
     req_counter     = 0L,
     hook_callbacks  = NULL,   # named list: callback_id -> function
     next_callback_id = 0L,    # counter for unique IDs
+    init_result     = NULL,   # captured from the initialize control_response
 
     # -----------------------------------------------------------------------
     # CLI command builder — mirrors _build_command() in subprocess_cli.py
@@ -549,7 +556,8 @@ SubprocessCLITransport <- R6::R6Class(
           if (is.null(obj)) next
           if (identical(obj[["type"]], "control_response") &&
               identical(obj[["response"]][["request_id"]], req_id)) {
-            # Handshake complete — SDK registered with CLI
+            # Capture server info for get_server_info()
+            private$init_result <- obj[["response"]][["response"]] %||% list()
             return(invisible(NULL))
           }
           # Queue any other messages that arrived before the init response (append preserves order)

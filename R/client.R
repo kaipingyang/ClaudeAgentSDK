@@ -76,6 +76,7 @@ ClaudeSDKClient <- R6::R6Class(
         private$transport <- SubprocessCLITransport$new(opts)
       }
       private$transport$connect()
+      private$init_result <- private$transport$get_init_result()
 
       # Send initial prompt if provided
       if (!is.null(prompt) && is.character(prompt)) {
