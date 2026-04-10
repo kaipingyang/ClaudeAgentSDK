@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.1.3 (2026-04-10)
+
+### New Features
+
+- **`client$receive_response_async()`**: Promise-based async receive method for Shiny `ExtendedTask` integration. Returns a `promises::promise` that resolves to the `ResultMessage`, with an `on_message` callback for real-time streaming of intermediate messages. Uses non-blocking 10ms polling via `later::later()` + `transport$read_available_messages()`.
+- **`transport$read_available_messages()`**: Non-blocking single-cycle read method on `SubprocessCLITransport`. Polls stdout with 0ms timeout, parses available data, handles control requests internally, returns list of SDK messages.
+
+### Tests
+
+- 643 tests total (up from 637)
+- Added unit test: `receive_response_async()` before connect errors
+- Added integration tests: async round-trip resolves `ResultMessage`, `on_message` receives `AssistantMessage`
+
 ## 0.1.2 (2026-04-09)
 
 ### New Features

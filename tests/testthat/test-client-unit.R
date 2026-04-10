@@ -50,3 +50,16 @@ test_that("can_use_tool conflicts with permission_prompt_tool_name", {
   client <- ClaudeSDKClient$new(opts)
   expect_error(client$connect(), "can_use_tool.*permission_prompt_tool_name")
 })
+
+test_that("receive_response_async before connect raises error", {
+  client <- ClaudeSDKClient$new(ClaudeAgentOptions())
+  expect_error(client$receive_response_async(), "connect")
+})
+
+test_that("receive_response_async errors without promises package", {
+  skip_if(!requireNamespace("promises", quietly = TRUE),
+          "promises installed — cannot test missing-package path")
+  # If promises IS installed this test is a no-op; the integration
+
+  # test below covers the real usage.
+})

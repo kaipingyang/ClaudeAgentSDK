@@ -369,6 +369,78 @@ test_that("include_partial_messages emits StreamEvent", {
 # Agent with new fields in real connection
 # ---------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------
+# receive_response_async — promise-based async receive
+# ---------------------------------------------------------------------------
+
+test_that("receive_response_async resolves with ResultMessage", {
+  skip_if_no_claude()
+  skip_if(!requireNamespace("promises", quietly = TRUE), "promises package not installed")
+
+  client <- make_client()
+  client$connect()
+  on.exit(client$disconnect())
+
+  client$send("Say only: ASYNC_TEST")
+
+  collected <- list()
+  p <- client$receive_response_async(on_message = function(msg) {
+    collected[[length(collected) + 1L]] <<- msg
+  })
+
+  result <- NULL
+  error  <- NULL
+  promises::then(p,
+    onFulfilled = function(val) result <<- val,
+    onRejected  = function(err) error  <<- err
+  )
+
+  # Drive the later event loop until the promise settles
+  deadline <- Sys.time() + 120
+  while (is.null(result) && is.null(error) && Sys.time() < deadline) {
+    later::run_now(timeoutSecs = 0.1)
+  }
+
+  expect_null(error)
+  expect_true(inherits(result, "ResultMessage"))
+  expect_false(result$is_error)
+  # on_message should have received at least one message before the result
+  expect_true(length(collected) >= 1L)
+})
+
+test_that("receive_response_async on_message receives AssistantMessage", {
+  skip_if_no_claude()
+  skip_if(!requireNamespace("promises", quietly = TRUE), "promises package not installed")
+
+  client <- make_client()
+  client$connect()
+  on.exit(client$disconnect())
+
+  client$send("Say only: CALLBACK_CHECK")
+
+  assistant_seen <- FALSE
+  p <- client$receive_response_async(on_message = function(msg) {
+    if (inherits(msg, "AssistantMessage")) assistant_seen <<- TRUE
+  })
+
+  result <- NULL
+  promises::then(p,
+    onFulfilled = function(val) result <<- val,
+    onRejected  = function(err) result <<- err
+  )
+
+  deadline <- Sys.time() + 120
+  while (is.null(result) && Sys.time() < deadline) {
+    later::run_now(timeoutSecs = 0.1)
+  }
+
+  expect_true(assistant_seen)
+})
+
+# ---------------------------------------------------------------------------
+# Agent with new fields in real connection
+# ---------------------------------------------------------------------------
+
 test_that("agent with full fields connects without error", {
   skip_if_no_claude()
   ag <- AgentDefinition(

@@ -1,6 +1,6 @@
 Package: ClaudeAgentSDK
 Title: R SDK for Claude Code Agent
-Version: 0.1.2
+Version: 0.1.3
 Authors@R: person("ClaudeAgentSDK", "Authors", role = c("aut", "cre"),
                   email = "sdk@example.com")
 Description: R implementation of the Claude Agent SDK. Spawns the Claude Code CLI

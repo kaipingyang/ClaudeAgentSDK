@@ -24,6 +24,7 @@ R/
 - `wait_for_initialize()` — sends the SDK's `initialize` control request and waits for the CLI's `control_response`. Captures the response in `private$init_result` (exposed via `get_init_result()`).
 - `send_and_wait()` — synchronous polling loop for control requests that return data (mirrors Python's async `_send_control_request`). Safe only when called *between* generator iterations.
 - `receive_messages()` — `coro` generator; routes `control_request` and `control_cancel_request` internally, yields all other message types.
+- `read_available_messages()` — non-blocking single-cycle read (0ms `poll_io`). Returns a list of parsed SDK messages; control requests handled internally. Used by `receive_response_async()` for event-loop-friendly polling.
 
 **Agents** are sent as a named dict `{name: config}` via the `initialize` control request (not CLI args). `AgentDefinition` stores fields in snake_case; `build_agents_config()` converts to camelCase (`disallowed_tools` -> `disallowedTools`, `mcp_servers` -> `mcpServers`, etc.) during serialization.
 
@@ -59,7 +60,7 @@ All types are lightweight S3 classes (named lists with `class` attribute). Types
 devtools::test()
 ```
 
-637+ tests. Integration tests require a real Claude Code CLI and skip automatically if not found.
+643+ tests. Integration tests require a real Claude Code CLI and skip automatically if not found.
 
 ### Test files
 
@@ -72,11 +73,11 @@ devtools::test()
 | `test-transport-build-command.R` | All CLI flag combinations (33+ scenarios) | No |
 | `test-sessions-unit.R` | validate_uuid, sanitize_path, simple_hash, JSON field extraction, sort_and_slice, list_sessions with mock data, get_session_messages chain reconstruction | No |
 | `test-session-mutations.R` | rename/tag/delete/fork (file I/O) | No |
-| `test-client-unit.R` | Client lifecycle without CLI (disconnect/send/interrupt before connect) | No |
+| `test-client-unit.R` | Client lifecycle without CLI (disconnect/send/interrupt/receive_response_async before connect) | No |
 | `test-rate-limit-event.R` | Rate limit event parsing: allowed_warning, rejected with overage, minimal fields, forward compat | No |
 | `test-buffering.R` | split_lines_with_buffer edge cases: split reads, large JSON, mixed complete/partial, non-JSON debug lines | No |
 | `test-query.R` | claude_run, claude_query, ClaudeSDKClient lifecycle | **Yes** |
-| `test-integration.R` | Full integration: get_server_info, set_permission_mode, set_model, interrupt, agents init, exclude_dynamic_sections, partial messages, StreamEvent, get_context_usage, get_mcp_status, multi-turn, stderr callback, can_use_tool, structured output, sessions list/info/messages | **Yes** |
+| `test-integration.R` | Full integration: get_server_info, set_permission_mode, set_model, interrupt, agents init, exclude_dynamic_sections, partial messages, StreamEvent, get_context_usage, get_mcp_status, multi-turn, stderr callback, can_use_tool, structured output, sessions list/info/messages, receive_response_async | **Yes** |
 
 ## GitHub
 
@@ -98,7 +99,7 @@ scripts/
 
 Install: `bash scripts/initial-setup.sh`
 
-## Python SDK parity assessment (as of v0.1.2, 2026-04-10)
+## Python SDK parity assessment (as of v0.1.3, 2026-04-10)
 
 | Module | Parity | Notes |
 |--------|--------|-------|
@@ -106,11 +107,11 @@ Install: `bash scripts/initial-setup.sh`
 | Session management | 100% | 7 functions identical (list/get/messages + rename/tag/delete/fork) |
 | Error types | 100% | 6 error types identical |
 | Type definitions | 100% | 100+ S3 constructors covering all Python TypedDicts/dataclasses |
-| Client methods | 100% | 15 methods including query(), send(), connect(), disconnect(), get_mcp_status(), etc. |
+| Client methods | 100% | 16 methods including query(), send(), receive_response_async(), connect(), disconnect(), get_mcp_status(), etc. |
 | Transport/Protocol | 90% | Functionally identical; R uses `coro` sync generators vs Python `async/await` — architectural difference, not a feature gap |
 | Public API | 92% | Only missing: `create_sdk_mcp_server()` / `@tool` — R uses `mcptools` subprocess instead (same MCP protocol, different execution model) |
 | Examples | 87% | Missing: Python async variant examples (trio/ipython), plugin example — N/A for R's single-threaded model |
-| Tests | 637 | All pass; 3 env-dependent skips |
+| Tests | 643 | All pass; 4 env-dependent skips |
 
 ### Why Transport/Protocol is 90% (not 100%)
 
