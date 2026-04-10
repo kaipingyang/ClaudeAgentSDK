@@ -45,6 +45,7 @@ export(RateLimitEvent)
 # Permission result constructors
 export(PermissionResultAllow)
 export(PermissionResultDeny)
+export(PermissionRequestMessage)
 
 # Agent and Hook configuration constructors
 export(AgentDefinition)

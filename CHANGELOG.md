@@ -8,12 +8,13 @@
 - **`transport$set_tool_request_callback()`**: Internal method to inject/clear the async tool approval handler on the transport layer.
 - **Example 15**: `15_shinychat_tool_approval.R` — Full streaming chat with modal-based tool approval and interrupt button.
 - **Example 13**: Added interrupt button to streaming chat.
+- **`PermissionRequestMessage` + `approve_tool()` / `deny_tool()`**: Message-driven tool approval API. When no `can_use_tool` or `on_tool_request` handler is configured, `can_use_tool` control requests are yielded as `PermissionRequestMessage` objects through the message stream. Call `client$approve_tool(request_id)` or `client$deny_tool(request_id)` to respond. Coexists with the callback-based `on_tool_request` API.
 
 ### Tests
 
-- 651 tests total (up from 643)
-- Added unit tests: `on_tool_request` before connect, non-function rejection
-- Added integration tests: async tool approval allow/deny/deferred resolve
+- 661 tests total (up from 643)
+- Added unit tests: `on_tool_request` before connect, non-function rejection, approve/deny_tool before connect, PermissionRequestMessage constructor
+- Added integration tests: async tool approval allow/deny/deferred resolve, message-driven approve_tool/deny_tool
 
 ## 0.1.3 (2026-04-10)
 

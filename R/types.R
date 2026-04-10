@@ -377,6 +377,40 @@ PermissionResultDeny <- function(message = "", interrupt = FALSE) {
   )
 }
 
+#' Create a PermissionRequestMessage
+#'
+#' Yielded by the message stream when a `can_use_tool` control request
+#' arrives and no handler (`can_use_tool` / `on_tool_request`) is configured.
+#' The caller must eventually call [ClaudeSDKClient]`$approve_tool()` or
+#' `$deny_tool()` with the `request_id` to unblock the CLI.
+#'
+#' @param request_id Character. Unique ID for this control request.
+#' @param tool_name Character. Name of the tool Claude wants to use.
+#' @param tool_input List. Input arguments for the tool.
+#' @param tool_use_id Character or NULL.
+#' @param agent_id Character or NULL.
+#' @param suggestions List or NULL. Permission suggestions from the CLI.
+#' @return Object of class `PermissionRequestMessage`.
+#' @export
+PermissionRequestMessage <- function(request_id,
+                                     tool_name,
+                                     tool_input,
+                                     tool_use_id = NULL,
+                                     agent_id    = NULL,
+                                     suggestions = NULL) {
+  .new_obj(
+    list(
+      request_id  = request_id,
+      tool_name   = tool_name,
+      tool_input  = tool_input,
+      tool_use_id = tool_use_id,
+      agent_id    = agent_id,
+      suggestions = suggestions
+    ),
+    "PermissionRequestMessage"
+  )
+}
+
 # ---------------------------------------------------------------------------
 # Session types  (mirrors SDKSessionInfo + SessionMessage)
 # ---------------------------------------------------------------------------

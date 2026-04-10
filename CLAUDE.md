@@ -36,7 +36,10 @@ R/
 
 **Rate limit event wire format** uses both snake_case (`resets_at`, `overage_status`) and camelCase (`resetsAt`, `overageStatus`) depending on CLI version. The parser checks both with `%||%` fallback.
 
-**Async tool approval** (`on_tool_request`): When `receive_response_async(on_tool_request = ...)` is called, the transport's `tool_request_callback` is set. During `read_available_messages()`, if a `can_use_tool` control request arrives and the callback is set, `handle_permission_request_async()` builds a one-shot `resolve` closure and calls the callback without sending the response. The response is sent later when `resolve()` is called (e.g., from a Shiny button handler). The callback is cleared via `promises::finally()` when the promise settles. The sync `receive_messages()` path is unaffected. Requires `permission_prompt_tool_name = "stdio"` in options.
+**Async tool approval** has two coexisting APIs (both require `permission_prompt_tool_name = "stdio"`):
+1. **Callback API** (`on_tool_request`): `receive_response_async(on_tool_request = function(name, input, ctx, resolve) {...})` — the transport's `tool_request_callback` defers the response; `resolve()` sends it later. Cleaned up via `promises::finally()`.
+2. **Message API** (`PermissionRequestMessage` + `approve_tool/deny_tool`): When no `can_use_tool` or `on_tool_request` handler is configured, `can_use_tool` requests yield `PermissionRequestMessage` through the message stream. The request is stored in `private$pending_permissions` (an `env`). `client$approve_tool(request_id)` / `client$deny_tool(request_id)` resolve it.
+Priority: `on_tool_request` callback > `can_use_tool` sync > message-driven.
 
 ### Type system
 
@@ -113,7 +116,7 @@ Install: `bash scripts/initial-setup.sh`
 | Transport/Protocol | 90% | Functionally identical; R uses `coro` sync generators vs Python `async/await` — architectural difference, not a feature gap |
 | Public API | 92% | Only missing: `create_sdk_mcp_server()` / `@tool` — R uses `mcptools` subprocess instead (same MCP protocol, different execution model) |
 | Examples | 87% | Missing: Python async variant examples (trio/ipython), plugin example — N/A for R's single-threaded model |
-| Tests | 651 | All pass; 4 env-dependent skips |
+| Tests | 661 | All pass; 4 env-dependent skips |
 
 ### Why Transport/Protocol is 90% (not 100%)
 

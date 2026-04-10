@@ -248,6 +248,48 @@ ClaudeSDKClient <- R6::R6Class(
     },
 
     # ------------------------------------------------------------------
+    # Tool approval (message-driven API)
+    # ------------------------------------------------------------------
+
+    #' @description Approve a pending tool request.
+    #'   Call this after receiving a `PermissionRequestMessage` from the
+    #'   message stream to allow the tool to execute.
+    #' @param request_id Character. The `request_id` from the
+    #'   `PermissionRequestMessage`.
+    #' @param updated_input List or NULL. Modified tool input (default:
+    #'   use original input).
+    approve_tool = function(request_id, updated_input = NULL) {
+      private$assert_connected()
+      pending <- private$transport$get_pending_permission(request_id)
+      if (is.null(pending)) {
+        stop("No pending permission request with id: ", request_id, call. = FALSE)
+      }
+      response <- list(
+        behavior     = "allow",
+        updatedInput = updated_input %||% pending[["input"]]
+      )
+      private$transport$resolve_pending_permission(request_id, response)
+      invisible(self)
+    },
+
+    #' @description Deny a pending tool request.
+    #' @param request_id Character. The `request_id` from the
+    #'   `PermissionRequestMessage`.
+    #' @param message Character. Reason for denial (default `"Denied by user"`).
+    deny_tool = function(request_id, message = "Denied by user") {
+      private$assert_connected()
+      pending <- private$transport$get_pending_permission(request_id)
+      if (is.null(pending)) {
+        stop("No pending permission request with id: ", request_id, call. = FALSE)
+      }
+      private$transport$resolve_pending_permission(
+        request_id,
+        list(behavior = "deny", message = message)
+      )
+      invisible(self)
+    },
+
+    # ------------------------------------------------------------------
     # Runtime control
     # ------------------------------------------------------------------
 

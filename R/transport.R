@@ -38,6 +38,7 @@ SubprocessCLITransport <- R6::R6Class(
       private$write_lock <- FALSE
       private$session_id <- ""
       private$req_counter <- 0L
+      private$pending_permissions <- new.env(parent = emptyenv())
       invisible(self)
     },
 
@@ -265,9 +266,12 @@ SubprocessCLITransport <- R6::R6Class(
             )
             if (is.null(msg)) next
 
-            # Route control requests internally
+            # Route control requests; may return a PermissionRequestMessage
             if (is.list(msg) && identical(msg[["type"]], "control_request")) {
-              private$handle_control_request(msg)
+              ctrl_msg <- private$handle_control_request(msg)
+              if (!is.null(ctrl_msg)) {
+                msgs[[length(msgs) + 1L]] <- ctrl_msg
+              }
               next
             }
             if (is.list(msg) && identical(msg[["type"]], "control_cancel_request")) {
@@ -291,6 +295,31 @@ SubprocessCLITransport <- R6::R6Class(
     set_tool_request_callback = function(callback) {
       private$tool_request_callback <- callback
       invisible(self)
+    },
+
+    #' @description Get a pending permission request by ID, or NULL.
+    #' @param request_id Character.
+    get_pending_permission = function(request_id) {
+      if (exists(request_id, envir = private$pending_permissions, inherits = FALSE)) {
+        get(request_id, envir = private$pending_permissions)
+      } else {
+        NULL
+      }
+    },
+
+    #' @description Resolve a pending permission request by sending the
+    #'   control response to the CLI.
+    #' @param request_id Character.
+    #' @param response List with `behavior`, and optionally `updatedInput`,
+    #'   `message`, `interrupt`.
+    resolve_pending_permission = function(request_id, response) {
+      if (!exists(request_id, envir = private$pending_permissions, inherits = FALSE)) {
+        warning("No pending permission request: ", request_id, call. = FALSE)
+        return(invisible(NULL))
+      }
+      rm(list = request_id, envir = private$pending_permissions)
+      self$send(build_control_response(request_id, response))
+      invisible(NULL)
     },
 
     #' @description Return a `coro` generator that yields typed message objects
@@ -345,9 +374,10 @@ SubprocessCLITransport <- R6::R6Class(
                 )
                 if (is.null(msg)) next
 
-                # Route control requests internally
+                # Route control requests; may return a PermissionRequestMessage
                 if (is.list(msg) && identical(msg[["type"]], "control_request")) {
-                  private$handle_control_request(msg)
+                  ctrl_msg <- private$handle_control_request(msg)
+                  if (!is.null(ctrl_msg)) coro::yield(ctrl_msg)
                   next
                 }
 
@@ -384,6 +414,7 @@ SubprocessCLITransport <- R6::R6Class(
     next_callback_id = 0L,    # counter for unique IDs
     init_result     = NULL,   # captured from the initialize control_response
     tool_request_callback = NULL,  # async tool approval: function(tool_name, tool_input, ctx, resolve)
+    pending_permissions = NULL,    # env: request_id → request list (message-driven approval)
 
     # -----------------------------------------------------------------------
     # CLI command builder — mirrors _build_command() in subprocess_cli.py
@@ -656,18 +687,36 @@ SubprocessCLITransport <- R6::R6Class(
     # -----------------------------------------------------------------------
     # Control-request handlers
     # -----------------------------------------------------------------------
+    # Returns NULL when handled internally, or a PermissionRequestMessage
+    # when the caller must approve/deny via approve_tool()/deny_tool().
     handle_control_request = function(req) {
       request_id <- req[["request_id"]]
       request    <- req[["request"]]
       subtype    <- request[["subtype"]]
 
-      # Async tool approval: defer response when callback is set
+      # Priority 1: Async callback (on_tool_request)
       if (identical(subtype, "can_use_tool") &&
           is.function(private$tool_request_callback)) {
         private$handle_permission_request_async(req)
-        return(invisible(NULL))
+        return(NULL)
       }
 
+      # Priority 2: Message-driven — yield PermissionRequestMessage
+      # when no handler is configured (user calls approve_tool/deny_tool)
+      if (identical(subtype, "can_use_tool") &&
+          is.null(private$options$can_use_tool)) {
+        assign(request_id, request, envir = private$pending_permissions)
+        return(PermissionRequestMessage(
+          request_id  = request_id,
+          tool_name   = request[["tool_name"]],
+          tool_input  = request[["input"]],
+          tool_use_id = request[["tool_use_id"]],
+          agent_id    = request[["agent_id"]],
+          suggestions = request[["permission_suggestions"]]
+        ))
+      }
+
+      # Priority 3: Sync callback (can_use_tool) or default allow
       response <- tryCatch({
         switch(subtype,
           "initialize"        = private$handle_initialize_request_inline(req),
@@ -684,7 +733,7 @@ SubprocessCLITransport <- R6::R6Class(
       if (!is.null(response)) {
         self$send(build_control_response(request_id, response))
       }
-      invisible(NULL)
+      NULL
     },
 
     handle_initialize_request_inline = function(req) {
