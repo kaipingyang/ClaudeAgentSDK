@@ -1,8 +1,8 @@
 Package: ClaudeAgentSDK
 Title: R SDK for Claude Code Agent
 Version: 0.1.4
-Authors@R: person("ClaudeAgentSDK", "Authors", role = c("aut", "cre"),
-                  email = "sdk@example.com")
+Authors@R: person("Kaiping", "Yang", role = c("aut", "cre"),
+                  email = "1260146556@qq.com")
 Description: R implementation of the Claude Agent SDK. Spawns the Claude Code CLI
     as a subprocess and communicates via newline-delimited JSON stream protocol,
     including the full bidirectional control protocol (permission requests, hooks,

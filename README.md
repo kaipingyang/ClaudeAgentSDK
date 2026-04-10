@@ -270,6 +270,21 @@ p <- client$receive_response_async(
 See [`examples/15_shinychat_tool_approval.R`](examples/15_shinychat_tool_approval.R)
 for a full Shiny app with modal-based approval.
 
+### Message-Driven Tool Approval
+
+Alternative to the callback API: `PermissionRequestMessage` flows through the
+message stream, and you call `approve_tool()` / `deny_tool()` explicitly:
+
+```r
+p <- client$receive_response_async(on_message = function(msg) {
+  if (inherits(msg, "PermissionRequestMessage")) {
+    cat("Tool:", msg$tool_name, "\n")
+    client$approve_tool(msg$request_id)
+    # or: client$deny_tool(msg$request_id, "Not allowed")
+  }
+})
+```
+
 ### Runtime Control
 
 ```r
@@ -305,7 +320,7 @@ See [`R/types.R`](R/types.R) for complete type definitions:
 - `TextBlock`, `ToolUseBlock`, `ToolResultBlock`, `ThinkingBlock` — Content blocks
 - `StreamEvent`, `RateLimitEvent` — Streaming events
 - `TaskStartedMessage`, `TaskProgressMessage`, `TaskNotificationMessage` — Task messages
-- `PermissionResultAllow`, `PermissionResultDeny`, `PermissionUpdate`, `PermissionRuleValue` — Permission types
+- `PermissionResultAllow`, `PermissionResultDeny`, `PermissionRequestMessage`, `PermissionUpdate`, `PermissionRuleValue` — Permission types
 - `PreToolUseHookInput`, `PostToolUseHookInput`, ... — Hook input types (10 total)
 - `SyncHookOutput`, `AsyncHookOutput` — Hook output types
 - `SystemPromptPreset`, `SystemPromptFile` — System prompt types

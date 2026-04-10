@@ -558,6 +558,86 @@ test_that("on_tool_request deferred resolve works", {
 })
 
 # ---------------------------------------------------------------------------
+# PermissionRequestMessage + approve_tool (message-driven API)
+# ---------------------------------------------------------------------------
+
+test_that("PermissionRequestMessage is yielded and approve_tool works", {
+  skip_if_no_claude()
+  skip_if(!requireNamespace("promises", quietly = TRUE), "promises package not installed")
+
+  # No can_use_tool, no on_tool_request → message-driven path
+  client <- ClaudeSDKClient$new(ClaudeAgentOptions(
+    max_turns                   = 2L,
+    permission_prompt_tool_name = "stdio"
+  ))
+  client$connect()
+  on.exit(client$disconnect())
+
+  client$send("Use the Read tool to read the file /dev/null")
+
+  perm_seen <- FALSE
+  p <- client$receive_response_async(on_message = function(msg) {
+    if (inherits(msg, "PermissionRequestMessage")) {
+      perm_seen <<- TRUE
+      # Approve via the message-driven API
+      client$approve_tool(msg$request_id)
+    }
+  })
+
+  result <- NULL
+  error  <- NULL
+  promises::then(p,
+    onFulfilled = function(val) result <<- val,
+    onRejected  = function(err) error  <<- err
+  )
+
+  deadline <- Sys.time() + 120
+  while (is.null(result) && is.null(error) && Sys.time() < deadline) {
+    later::run_now(timeoutSecs = 0.1)
+  }
+
+  if (!perm_seen) skip("Claude did not attempt any tool use")
+  expect_null(error)
+  expect_true(inherits(result, "ResultMessage"))
+})
+
+test_that("deny_tool works via message-driven API", {
+  skip_if_no_claude()
+  skip_if(!requireNamespace("promises", quietly = TRUE), "promises package not installed")
+
+  client <- ClaudeSDKClient$new(ClaudeAgentOptions(
+    max_turns                   = 2L,
+    permission_prompt_tool_name = "stdio"
+  ))
+  client$connect()
+  on.exit(client$disconnect())
+
+  client$send("Use the Read tool to read the file /dev/null")
+
+  denied <- FALSE
+  p <- client$receive_response_async(on_message = function(msg) {
+    if (inherits(msg, "PermissionRequestMessage")) {
+      denied <<- TRUE
+      client$deny_tool(msg$request_id, "Denied by test")
+    }
+  })
+
+  result <- NULL
+  promises::then(p,
+    onFulfilled = function(val) result <<- val,
+    onRejected  = function(err) result <<- err
+  )
+
+  deadline <- Sys.time() + 120
+  while (is.null(result) && Sys.time() < deadline) {
+    later::run_now(timeoutSecs = 0.1)
+  }
+
+  if (!denied) skip("Claude did not attempt any tool use")
+  expect_true(inherits(result, "ResultMessage"))
+})
+
+# ---------------------------------------------------------------------------
 # Agent with new fields in real connection
 # ---------------------------------------------------------------------------
 

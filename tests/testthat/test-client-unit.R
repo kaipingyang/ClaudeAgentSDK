@@ -75,3 +75,25 @@ test_that("receive_response_async rejects non-function on_tool_request", {
     "function"
   )
 })
+
+test_that("approve_tool before connect raises error", {
+  client <- ClaudeSDKClient$new(ClaudeAgentOptions())
+  expect_error(client$approve_tool("req_1"), "connect")
+})
+
+test_that("deny_tool before connect raises error", {
+  client <- ClaudeSDKClient$new(ClaudeAgentOptions())
+  expect_error(client$deny_tool("req_1"), "connect")
+})
+
+test_that("PermissionRequestMessage constructor works", {
+  msg <- PermissionRequestMessage(
+    request_id = "req_1", tool_name = "Read",
+    tool_input = list(path = "/tmp")
+  )
+  expect_true(inherits(msg, "PermissionRequestMessage"))
+  expect_equal(msg$request_id, "req_1")
+  expect_equal(msg$tool_name, "Read")
+  expect_equal(msg$tool_input, list(path = "/tmp"))
+  expect_null(msg$tool_use_id)
+})
