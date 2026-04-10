@@ -36,6 +36,8 @@ R/
 
 **Rate limit event wire format** uses both snake_case (`resets_at`, `overage_status`) and camelCase (`resetsAt`, `overageStatus`) depending on CLI version. The parser checks both with `%||%` fallback.
 
+**Async tool approval** (`on_tool_request`): When `receive_response_async(on_tool_request = ...)` is called, the transport's `tool_request_callback` is set. During `read_available_messages()`, if a `can_use_tool` control request arrives and the callback is set, `handle_permission_request_async()` builds a one-shot `resolve` closure and calls the callback without sending the response. The response is sent later when `resolve()` is called (e.g., from a Shiny button handler). The callback is cleared via `promises::finally()` when the promise settles. The sync `receive_messages()` path is unaffected. Requires `permission_prompt_tool_name = "stdio"` in options.
+
 ### Type system
 
 All types are lightweight S3 classes (named lists with `class` attribute). Types mirror Python SDK's `types.py`:
@@ -99,7 +101,7 @@ scripts/
 
 Install: `bash scripts/initial-setup.sh`
 
-## Python SDK parity assessment (as of v0.1.3, 2026-04-10)
+## Python SDK parity assessment (as of v0.1.4, 2026-04-10)
 
 | Module | Parity | Notes |
 |--------|--------|-------|
@@ -111,7 +113,7 @@ Install: `bash scripts/initial-setup.sh`
 | Transport/Protocol | 90% | Functionally identical; R uses `coro` sync generators vs Python `async/await` — architectural difference, not a feature gap |
 | Public API | 92% | Only missing: `create_sdk_mcp_server()` / `@tool` — R uses `mcptools` subprocess instead (same MCP protocol, different execution model) |
 | Examples | 87% | Missing: Python async variant examples (trio/ipython), plugin example — N/A for R's single-threaded model |
-| Tests | 643 | All pass; 4 env-dependent skips |
+| Tests | 651 | All pass; 4 env-dependent skips |
 
 ### Why Transport/Protocol is 90% (not 100%)
 

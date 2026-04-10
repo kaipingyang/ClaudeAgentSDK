@@ -156,10 +156,20 @@ ClaudeSDKClient <- R6::R6Class(
     #' @param on_message Function(msg) or NULL.
     #'   Called for every message (AssistantMessage, SystemMessage,
     #'   StreamEvent, etc.) except the final ResultMessage.
+    #' @param on_tool_request Function or NULL.
+    #'   Async tool-approval callback.  Called when Claude requests permission
+    #'   to use a tool, with signature
+    #'   `function(tool_name, tool_input, context, resolve)`.
+    #'   Call `resolve(PermissionResultAllow())` or
+    #'   `resolve(PermissionResultDeny("reason"))` to continue.
+    #'   Requires `permission_prompt_tool_name = "stdio"` (or `can_use_tool`)
+    #'   in [ClaudeAgentOptions()].  The CLI blocks until `resolve()` is called.
     #' @param poll_interval Numeric.
     #'   Seconds between non-blocking polls (default 0.01 = 10 ms).
     #' @return A `promises::promise` that resolves to the `ResultMessage`.
-    receive_response_async = function(on_message = NULL, poll_interval = 0.01) {
+    receive_response_async = function(on_message      = NULL,
+                                      on_tool_request = NULL,
+                                      poll_interval   = 0.01) {
       if (!requireNamespace("promises", quietly = TRUE)) {
         stop(
           "The 'promises' package is required for receive_response_async(). ",
@@ -168,9 +178,28 @@ ClaudeSDKClient <- R6::R6Class(
         )
       }
       private$assert_connected()
+
+      # Validate and wire up async tool approval
+      if (!is.null(on_tool_request)) {
+        if (!is.function(on_tool_request)) {
+          stop("on_tool_request must be a function or NULL", call. = FALSE)
+        }
+        opts <- self$options
+        if (is.null(opts$can_use_tool) &&
+            !identical(opts$permission_prompt_tool_name, "stdio")) {
+          warning(
+            "on_tool_request requires permission_prompt_tool_name = \"stdio\" ",
+            "(or can_use_tool) in ClaudeAgentOptions for the CLI to send ",
+            "tool approval requests.",
+            call. = FALSE
+          )
+        }
+        private$transport$set_tool_request_callback(on_tool_request)
+      }
+
       transport <- private$transport
 
-      promises::promise(function(resolve, reject) {
+      p <- promises::promise(function(resolve, reject) {
         poll_step <- function() {
           if (!transport$is_alive()) {
             reject(simpleError("Claude Code process exited during async receive"))
@@ -204,6 +233,18 @@ ClaudeSDKClient <- R6::R6Class(
         }
         poll_step()
       })
+
+      # Clean up the transport callback when promise settles
+      if (!is.null(on_tool_request)) {
+        p <- promises::finally(p, function() {
+          tryCatch(
+            transport$set_tool_request_callback(NULL),
+            error = function(e) NULL
+          )
+        })
+      }
+
+      p
     },
 
     # ------------------------------------------------------------------

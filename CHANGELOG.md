@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.1.4 (2026-04-10)
+
+### New Features
+
+- **`on_tool_request` in `receive_response_async()`**: Async tool approval callback for Shiny interactive dialogs. When Claude requests permission to use a tool, the callback receives `(tool_name, tool_input, context, resolve)`. Call `resolve(PermissionResultAllow())` or `resolve(PermissionResultDeny())` asynchronously (e.g., from a Shiny button handler). The CLI blocks until resolved. The resolve function is one-shot (double-resolution warns and no-ops).
+- **`transport$set_tool_request_callback()`**: Internal method to inject/clear the async tool approval handler on the transport layer.
+- **Example 15**: `15_shinychat_tool_approval.R` — Full streaming chat with modal-based tool approval and interrupt button.
+- **Example 13**: Added interrupt button to streaming chat.
+
+### Tests
+
+- 651 tests total (up from 643)
+- Added unit tests: `on_tool_request` before connect, non-function rejection
+- Added integration tests: async tool approval allow/deny/deferred resolve
+
 ## 0.1.3 (2026-04-10)
 
 ### New Features

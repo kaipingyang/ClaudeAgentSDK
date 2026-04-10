@@ -245,6 +245,31 @@ options <- ClaudeAgentOptions(
 )
 ```
 
+### Async Tool Approval (Shiny)
+
+Use `on_tool_request` in `receive_response_async()` for interactive approval
+dialogs. The callback receives a `resolve` function — call it asynchronously
+when the user clicks Allow or Deny:
+
+```r
+client <- ClaudeSDKClient$new(ClaudeAgentOptions(
+  permission_prompt_tool_name = "stdio"  # required
+))
+client$connect()
+client$send("Read the file /dev/null")
+
+p <- client$receive_response_async(
+  on_tool_request = function(tool_name, tool_input, ctx, resolve) {
+    # In Shiny: show a modal, store resolve, call it from a button handler
+    cat("Tool requested:", tool_name, "\n")
+    resolve(PermissionResultAllow())  # or PermissionResultDeny("reason")
+  }
+)
+```
+
+See [`examples/15_shinychat_tool_approval.R`](examples/15_shinychat_tool_approval.R)
+for a full Shiny app with modal-based approval.
+
 ### Runtime Control
 
 ```r
