@@ -208,6 +208,80 @@ SubprocessCLITransport <- R6::R6Class(
       NULL
     },
 
+    #' @description Perform a single non-blocking read cycle.  Polls stdout
+    #'   with a 0 ms timeout, reads any available data, parses complete JSON
+    #'   lines into typed message objects, handles control requests internally,
+    #'   and returns a list of SDK messages (never control messages).
+    #'
+    #'   Returns an empty list when no data is available — the caller can
+    #'   schedule the next call via `later::later()` for event-loop-friendly
+    #'   polling.
+    #' @return List of typed message objects (may be empty).
+    read_available_messages = function() {
+      if (is.null(private$proc) || !private$proc$is_alive()) return(list())
+
+      msgs <- list()
+      opts <- private$options
+
+      # Non-blocking poll (0 ms timeout)
+      status <- tryCatch(private$proc$poll_io(0L), error = function(e) NULL)
+      if (is.null(status)) return(msgs)
+
+      # Handle stderr
+      stderr_ready <- !is.null(names(status)) &&
+        "error" %in% names(status) &&
+        identical(status[["error"]], "ready")
+      if (stderr_ready && !is.null(opts$stderr)) {
+        err_line <- tryCatch(private$proc$read_error(1024L), error = function(e) "")
+        if (nzchar(err_line)) {
+          for (ln in strsplit(err_line, "\n", fixed = TRUE)[[1]]) {
+            if (nzchar(trimws(ln))) opts$stderr(ln)
+          }
+        }
+      }
+
+      # Handle stdout
+      stdout_ready <- !is.null(names(status)) &&
+        "output" %in% names(status) &&
+        identical(status[["output"]], "ready")
+
+      if (stdout_ready) {
+        max_buf <- opts$max_buffer_size %||% .DEFAULT_MAX_BUFFER_SIZE
+        raw <- tryCatch(private$proc$read_output(max_buf), error = function(e) "")
+        if (nzchar(raw)) {
+          result <- split_lines_with_buffer(private$buffer, raw)
+          private$buffer <- result$remaining
+          for (line in result$complete_lines) {
+            line <- trimws(line)
+            if (!nzchar(line)) next
+            if (!startsWith(line, "{")) next
+
+            msg <- tryCatch(
+              parse_message(line),
+              error = function(e) {
+                warning(conditionMessage(e), call. = FALSE)
+                NULL
+              }
+            )
+            if (is.null(msg)) next
+
+            # Route control requests internally
+            if (is.list(msg) && identical(msg[["type"]], "control_request")) {
+              private$handle_control_request(msg)
+              next
+            }
+            if (is.list(msg) && identical(msg[["type"]], "control_cancel_request")) {
+              next
+            }
+
+            msgs[[length(msgs) + 1L]] <- msg
+          }
+        }
+      }
+
+      msgs
+    },
+
     #' @description Return a `coro` generator that yields typed message objects
     #'   until a `ResultMessage` is received or the process exits. Control
     #'   requests are handled internally and never yielded.

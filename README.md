@@ -472,32 +472,70 @@ result <- claude_run("What is 3 + 4?", options = options)
 See [`examples/11_mcp_server.R`](examples/11_mcp_server.R) for a complete
 example.
 
-## Relationship to shinyClaudeCodeUI
+## Advanced: Async / Shiny Integration
 
-Once installed, `ClaudeAgentSDK` can replace the direct `processx` usage in
-`shinyClaudeCodeUI`:
+`receive_response_async()` returns a `promises::promise` that resolves to
+the `ResultMessage`. An `on_message` callback streams intermediate messages
+as they arrive — ideal for real-time UI updates in Shiny.
 
 ```r
-# Before (shinyClaudeCodeUI internal):
-rv$proc <- processx::process$new("claude", args, ...)
-later::later(poll_stdout, 0.05)
-
-# After (using ClaudeAgentSDK):
 library(ClaudeAgentSDK)
+library(promises)
 
-client <- ClaudeSDKClient$new(ClaudeAgentOptions(
-  model         = model,
-  cwd           = workdir,
-  allowed_tools = allowed_tools
-))
+client <- ClaudeSDKClient$new(ClaudeAgentOptions(max_turns = 1L))
 client$connect()
+client$send("Explain R in one sentence")
+
+p <- client$receive_response_async(on_message = function(msg) {
+  if (inherits(msg, "AssistantMessage")) {
+    cat(msg$content[[1]]$text)
+  }
+})
+
+# Drive the event loop (non-Shiny context)
+result <- NULL
+then(p, onFulfilled = function(val) result <<- val)
+while (is.null(result)) later::run_now(timeoutSecs = 0.1)
+
+cat("\nCost: $", result$total_cost_usd, "\n")
+client$disconnect()
+```
+
+### Shiny ExtendedTask pattern
+
+```r
+# server.R
+client <- ClaudeSDKClient$new(ClaudeAgentOptions(max_turns = 1L))
+client$connect()
+onStop(function() client$disconnect())
+
+rv <- reactiveVal("")
+
+task <- shiny::ExtendedTask$new(function(prompt) {
+  client$send(prompt)
+  client$receive_response_async(on_message = function(msg) {
+    if (inherits(msg, "AssistantMessage")) {
+      rv(paste0(isolate(rv()), msg$content[[1]]$text))
+    }
+  })
+})
+
+observeEvent(input$send, {
+  rv("")
+  task$invoke(input$prompt)
+})
+```
+
+### Synchronous alternative (coro generator)
+
+```r
 client$send(user_input)
 
 gen <- client$receive_response()
 later::later(function() {
   msg <- tryCatch(coro::generator_env(gen)$yield(), error = function(e) NULL)
   if (!is.null(msg) && !coro::is_exhausted(msg)) {
-    handle_event(msg, session)   # only UI rendering remains
+    handle_event(msg, session)
     later::later(Recall, 0.05)
   }
 }, 0)

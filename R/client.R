@@ -145,6 +145,67 @@ ClaudeSDKClient <- R6::R6Class(
       })()
     },
 
+    #' @description Return a `promises::promise` that resolves to the next
+    #'   `ResultMessage`.  Each intermediate message is passed to `on_message`
+    #'   as it arrives.  Requires the **promises** package (listed in Suggests).
+    #'
+    #'   Designed for Shiny `ExtendedTask` integration: the promise keeps the
+    #'   Shiny session unblocked while `on_message` streams intermediate
+    #'   results (e.g., into a `reactiveVal`) for real-time UI updates.
+    #'
+    #' @param on_message Function(msg) or NULL.
+    #'   Called for every message (AssistantMessage, SystemMessage,
+    #'   StreamEvent, etc.) except the final ResultMessage.
+    #' @param poll_interval Numeric.
+    #'   Seconds between non-blocking polls (default 0.01 = 10 ms).
+    #' @return A `promises::promise` that resolves to the `ResultMessage`.
+    receive_response_async = function(on_message = NULL, poll_interval = 0.01) {
+      if (!requireNamespace("promises", quietly = TRUE)) {
+        stop(
+          "The 'promises' package is required for receive_response_async(). ",
+          "Install with: install.packages('promises')",
+          call. = FALSE
+        )
+      }
+      private$assert_connected()
+      transport <- private$transport
+
+      promises::promise(function(resolve, reject) {
+        poll_step <- function() {
+          if (!transport$is_alive()) {
+            reject(simpleError("Claude Code process exited during async receive"))
+            return()
+          }
+
+          msgs <- tryCatch(
+            transport$read_available_messages(),
+            error = function(e) {
+              reject(e)
+              NULL
+            }
+          )
+          if (is.null(msgs)) return()
+
+          for (msg in msgs) {
+            if (is.function(on_message)) {
+              tryCatch(on_message(msg), error = function(e) {
+                warning("on_message callback error: ", conditionMessage(e),
+                        call. = FALSE)
+              })
+            }
+            if (inherits(msg, "ResultMessage")) {
+              resolve(msg)
+              return()
+            }
+          }
+
+          # Re-arm: schedule next non-blocking poll
+          later::later(poll_step, poll_interval)
+        }
+        poll_step()
+      })
+    },
+
     # ------------------------------------------------------------------
     # Runtime control
     # ------------------------------------------------------------------
