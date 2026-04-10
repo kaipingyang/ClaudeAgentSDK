@@ -88,9 +88,45 @@ source ~/.Renviron
 git push https://kaipingyang:${GITHUB_TOKEN}@github.com/kaipingyang/ClaudeAgentSDK.git main
 ```
 
+## Development scripts
+
+```
+scripts/
+  pre-push          # Git pre-push hook — runs devtools::test() before allowing push
+  initial-setup.sh  # Installs pre-push hook into .git/hooks/
+```
+
+Install: `bash scripts/initial-setup.sh`
+
+## Python SDK parity assessment (as of v0.1.2, 2026-04-10)
+
+| Module | Parity | Notes |
+|--------|--------|-------|
+| Options fields | 100% | 35/35 fields identical |
+| Session management | 100% | 7 functions identical (list/get/messages + rename/tag/delete/fork) |
+| Error types | 100% | 6 error types identical |
+| Type definitions | 100% | 100+ S3 constructors covering all Python TypedDicts/dataclasses |
+| Client methods | 100% | 15 methods including query(), send(), connect(), disconnect(), get_mcp_status(), etc. |
+| Transport/Protocol | 90% | Functionally identical; R uses `coro` sync generators vs Python `async/await` — architectural difference, not a feature gap |
+| Public API | 92% | Only missing: `create_sdk_mcp_server()` / `@tool` — R uses `mcptools` subprocess instead (same MCP protocol, different execution model) |
+| Examples | 87% | Missing: Python async variant examples (trio/ipython), plugin example — N/A for R's single-threaded model |
+| Tests | 637 | All pass; 3 env-dependent skips |
+
+### Why Transport/Protocol is 90% (not 100%)
+
+Python exports a `Transport` abstract base class so users can implement custom transports. R only has the internal `SubprocessCLITransport` and does not expose an abstract interface. There is only one transport implementation (subprocess), so an abstract base adds no value for R users.
+
+### Why Public API is 92% (not 100%)
+
+Python's `create_sdk_mcp_server()` runs an MCP server **in-process** (same Python event loop). R is single-threaded and synchronous — running an MCP server in the same process while also communicating with the CLI subprocess would require complex `later`/`callr` coordination. The `mcptools` package provides equivalent functionality via a subprocess MCP server, which uses the same protocol and covers 99% of use cases. The only loss is shared-memory access to the main R process.
+
+### Why Examples is 87% (not 100%)
+
+Python has `streaming_mode_trio.py`, `streaming_mode_ipython.py` (multiple async runtime examples) and `plugin_example.py`. R has only one concurrency model (`coro`), so async variant examples are N/A. Plugin support in R is not yet documented.
+
 ## Known remaining gaps
 
 - `rewind_files()` / `stop_task()` — fire-and-forget control messages, no integration test
-- SDK-managed MCP servers (Python's `create_sdk_mcp_server`) — not implemented in R
+- SDK-managed MCP servers (Python's `create_sdk_mcp_server`) — R uses `mcptools` subprocess instead
 - Large MCP output handling (`CLAUDE_MCP_OUTPUT_MAX_TOKENS`) — not implemented
 - Plugin support — examples exist but no integration test
