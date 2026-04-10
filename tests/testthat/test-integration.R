@@ -438,6 +438,126 @@ test_that("receive_response_async on_message receives AssistantMessage", {
 })
 
 # ---------------------------------------------------------------------------
+# on_tool_request — async tool approval
+# ---------------------------------------------------------------------------
+
+test_that("on_tool_request callback is invoked and can allow", {
+  skip_if_no_claude()
+  skip_if(!requireNamespace("promises", quietly = TRUE), "promises package not installed")
+
+  client <- ClaudeSDKClient$new(ClaudeAgentOptions(
+    max_turns                   = 2L,
+    permission_prompt_tool_name = "stdio"
+  ))
+  client$connect()
+  on.exit(client$disconnect())
+
+  client$send("Use the Read tool to read the file /dev/null")
+
+  tool_requests <- list()
+  p <- client$receive_response_async(
+    on_tool_request = function(tool_name, tool_input, ctx, resolve) {
+      tool_requests[[length(tool_requests) + 1L]] <<- list(
+        tool_name = tool_name, tool_input = tool_input
+      )
+      resolve(PermissionResultAllow())
+    }
+  )
+
+  result <- NULL
+  error  <- NULL
+  promises::then(p,
+    onFulfilled = function(val) result <<- val,
+    onRejected  = function(err) error  <<- err
+  )
+
+  deadline <- Sys.time() + 120
+  while (is.null(result) && is.null(error) && Sys.time() < deadline) {
+    later::run_now(timeoutSecs = 0.1)
+  }
+
+  if (length(tool_requests) == 0L) skip("Claude did not attempt any tool use")
+  expect_null(error)
+  expect_true(inherits(result, "ResultMessage"))
+  expect_true(length(tool_requests) >= 1L)
+})
+
+test_that("on_tool_request callback can deny", {
+  skip_if_no_claude()
+  skip_if(!requireNamespace("promises", quietly = TRUE), "promises package not installed")
+
+  client <- ClaudeSDKClient$new(ClaudeAgentOptions(
+    max_turns                   = 2L,
+    permission_prompt_tool_name = "stdio"
+  ))
+  client$connect()
+  on.exit(client$disconnect())
+
+  client$send("Use the Read tool to read the file /dev/null")
+
+  denied <- FALSE
+  p <- client$receive_response_async(
+    on_tool_request = function(tool_name, tool_input, ctx, resolve) {
+      denied <<- TRUE
+      resolve(PermissionResultDeny("Denied by test"))
+    }
+  )
+
+  result <- NULL
+  promises::then(p,
+    onFulfilled = function(val) result <<- val,
+    onRejected  = function(err) result <<- err
+  )
+
+  deadline <- Sys.time() + 120
+  while (is.null(result) && Sys.time() < deadline) {
+    later::run_now(timeoutSecs = 0.1)
+  }
+
+  if (!denied) skip("Claude did not attempt any tool use")
+  expect_true(inherits(result, "ResultMessage"))
+})
+
+test_that("on_tool_request deferred resolve works", {
+  skip_if_no_claude()
+  skip_if(!requireNamespace("promises", quietly = TRUE), "promises package not installed")
+
+  client <- ClaudeSDKClient$new(ClaudeAgentOptions(
+    max_turns                   = 2L,
+    permission_prompt_tool_name = "stdio"
+  ))
+  client$connect()
+  on.exit(client$disconnect())
+
+  client$send("Use the Read tool to read the file /dev/null")
+
+  deferred <- FALSE
+  p <- client$receive_response_async(
+    on_tool_request = function(tool_name, tool_input, ctx, resolve) {
+      deferred <<- TRUE
+      # Simulate user thinking for 500ms before approving
+      later::later(function() resolve(PermissionResultAllow()), 0.5)
+    }
+  )
+
+  result <- NULL
+  error  <- NULL
+  promises::then(p,
+    onFulfilled = function(val) result <<- val,
+    onRejected  = function(err) error  <<- err
+  )
+
+  deadline <- Sys.time() + 120
+  while (is.null(result) && is.null(error) && Sys.time() < deadline) {
+    later::run_now(timeoutSecs = 0.1)
+  }
+
+  if (!deferred) skip("Claude did not attempt any tool use")
+  expect_null(error)
+  expect_true(inherits(result, "ResultMessage"))
+})
+
+# ---------------------------------------------------------------------------
 # Agent with new fields in real connection
 # ---------------------------------------------------------------------------
 

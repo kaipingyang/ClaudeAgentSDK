@@ -56,10 +56,22 @@ test_that("receive_response_async before connect raises error", {
   expect_error(client$receive_response_async(), "connect")
 })
 
-test_that("receive_response_async errors without promises package", {
-  skip_if(!requireNamespace("promises", quietly = TRUE),
-          "promises installed — cannot test missing-package path")
-  # If promises IS installed this test is a no-op; the integration
+test_that("receive_response_async with on_tool_request before connect raises error", {
+  client <- ClaudeSDKClient$new(ClaudeAgentOptions())
+  expect_error(
+    client$receive_response_async(on_tool_request = function(n, i, c, r) {}),
+    "connect"
+  )
+})
 
-  # test below covers the real usage.
+test_that("receive_response_async rejects non-function on_tool_request", {
+  skip_if(is.null(tryCatch(find_claude(), error = function(e) NULL)),
+          "Claude Code CLI not found")
+  client <- ClaudeSDKClient$new(ClaudeAgentOptions(max_turns = 1L))
+  client$connect()
+  on.exit(client$disconnect())
+  expect_error(
+    client$receive_response_async(on_tool_request = "not_a_function"),
+    "function"
+  )
 })
