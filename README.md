@@ -1,6 +1,6 @@
 # Claude Agent SDK for R
 
-R SDK for Claude Agent. See the [Claude Agent SDK documentation](https://platform.claude.com/docs/en/agent-sdk/python) for more information.
+R SDK for Claude Agent. Mirrors the [Python SDK](https://github.com/anthropics/claude-agent-sdk-python) with idiomatic R internals. See the [Claude Agent SDK documentation](https://docs.anthropic.com/en/docs/claude-code/sdk) for more information.
 
 ## Installation
 
@@ -31,6 +31,7 @@ You can specify a custom path via `ClaudeAgentOptions(cli_path = "/path/to/claud
 
 ```r
 library(ClaudeAgentSDK)
+
 
 # Simple one-shot query (synchronous)
 result <- claude_run("What is 2 + 2?")
@@ -438,6 +439,39 @@ options <- ClaudeAgentOptions(
 )
 ```
 
+## Advanced: Custom Tools via MCP
+
+The Python SDK provides `create_sdk_mcp_server()` for defining tools in-process.
+The R SDK uses [`mcptools`](https://github.com/tidyverse/mcptools) instead,
+which runs tools in a separate R subprocess via the standard MCP protocol.
+Functionally equivalent — the only difference is shared-memory access.
+
+```r
+# 1. Define tools in a file (e.g., mcp_tools_def.R)
+list(
+  ellmer::tool(
+    fun         = function(a, b) a + b,
+    name        = "add",
+    description = "Add two numbers",
+    arguments   = list(
+      a = ellmer::type_number("First number"),
+      b = ellmer::type_number("Second number")
+    )
+  )
+)
+
+# 2. Launch as an MCP server and pass to ClaudeAgentOptions
+options <- ClaudeAgentOptions(
+  mcp_servers = r_mcp_server("mcp_tools_def.R"),
+  allowed_tools = "mcp__r_tools__add"
+)
+
+result <- claude_run("What is 3 + 4?", options = options)
+```
+
+See [`examples/11_mcp_server.R`](examples/11_mcp_server.R) for a complete
+example.
+
 ## Relationship to shinyClaudeCodeUI
 
 Once installed, `ClaudeAgentSDK` can replace the direct `processx` usage in
@@ -483,6 +517,13 @@ devtools::test("/path/to/ClaudeAgentSDK")
 
 # Or with testthat directly
 testthat::test_dir("tests/testthat")
+```
+
+### Development Setup
+
+```bash
+# Install git hooks (runs tests before push)
+bash scripts/initial-setup.sh
 ```
 
 ### Package Structure
