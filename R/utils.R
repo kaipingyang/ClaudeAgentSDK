@@ -74,7 +74,10 @@ find_claude <- function(cli_path = NULL) {
 check_claude_version <- function(cli_path,
                                   min_version = MINIMUM_CLAUDE_CODE_VERSION) {
   result <- tryCatch(
-    system2(cli_path, "-v", stdout = TRUE, stderr = FALSE, timeout = 2L),
+    withCallingHandlers(
+      system2(cli_path, "-v", stdout = TRUE, stderr = FALSE, timeout = 2L),
+      warning = function(w) invokeRestart("muffleWarning")
+    ),
     error = function(e) NULL
   )
   if (is.null(result) || !length(result)) return(invisible(NULL))
