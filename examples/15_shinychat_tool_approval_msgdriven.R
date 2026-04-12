@@ -1,4 +1,4 @@
-# examples/16_shinychat_tool_approval_msgdriven.R
+# examples/15_shinychat_tool_approval_msgdriven.R
 # =========================================================================
 # API 2: 消息驱动式工具审批（PermissionRequestMessage + approve_tool/deny_tool）
 # =========================================================================
@@ -22,7 +22,7 @@
 #   - approve_tool/deny_tool 是 client 上的独立方法
 #
 # 运行：
-#   shiny::runApp("examples/16_shinychat_tool_approval_msgdriven.R")
+#   shiny::runApp("examples/15_shinychat_tool_approval_msgdriven.R")
 #
 # 测试提示：
 #   输入 "Read the file /dev/null" 或 "List files in /tmp"

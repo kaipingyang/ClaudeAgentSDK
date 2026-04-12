@@ -37,7 +37,7 @@ R/
 **Rate limit event wire format** uses both snake_case (`resets_at`, `overage_status`) and camelCase (`resetsAt`, `overageStatus`) depending on CLI version. The parser checks both with `%||%` fallback.
 
 **Async tool approval** requires `permission_prompt_tool_name = "stdio"` in `ClaudeAgentOptions`.
-- **Message-driven** (`PermissionRequestMessage` + `approve_tool/deny_tool`): When no `can_use_tool` sync handler is configured, `can_use_tool` requests yield `PermissionRequestMessage` through the message stream. The request is stored in `private$pending_permissions` (an `env`). `client$approve_tool(request_id)` / `client$deny_tool(request_id)` resolve it. Use this with `coro::async + poll_messages` for reliable interrupt support (example 16).
+- **Message-driven** (`PermissionRequestMessage` + `approve_tool/deny_tool`): When no `can_use_tool` sync handler is configured, `can_use_tool` requests yield `PermissionRequestMessage` through the message stream. The request is stored in `private$pending_permissions` (an `env`). `client$approve_tool(request_id)` / `client$deny_tool(request_id)` resolve it. Use this with `coro::async + poll_messages` for reliable interrupt support (example 15).
 - **Sync callback** (`can_use_tool`): `ClaudeAgentOptions(can_use_tool = function(name, input, ctx) PermissionResultAllow())` — handled synchronously in the transport, no Shiny support.
 
 ### Type system
@@ -220,11 +220,11 @@ observeEvent(input$tool_allow, {
 })
 ```
 
-完整示例见 `examples/16_shinychat_tool_approval_msgdriven.R`。
+完整示例见 `examples/15_shinychat_tool_approval_msgdriven.R`。
 
 ### receive_response_async 的适用场景
 
-`receive_response_async(on_message, on_tool_request)` 适合：
+`receive_response_async(on_message)` 适合：
 - 不需要流式打断（等待完整回复后显示）
 - 工具审批期间不需要打断（弹窗时 later 不阻塞）
 - 简单集成（代码量更少）
