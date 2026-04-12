@@ -1,20 +1,44 @@
 # Changelog
 
+## 0.2.0 (2026-04-12)
+
+### Breaking Changes
+
+- **Removed `on_tool_request` in `receive_response_async()`**: The callback-based async tool approval API introduced in 0.1.4 has been removed. Use the message-driven API instead: set `permission_prompt_tool_name = "stdio"` in `ClaudeAgentOptions`, handle `PermissionRequestMessage` in your message loop, and call `client$approve_tool()` / `client$deny_tool()` from your UI event handlers. This design gives reliable interrupt support when combined with `coro::async` + `poll_messages()`.
+- **Removed `transport$set_tool_request_callback()`**: Internal method removed along with the callback API.
+
+### New Features
+
+- **`coro::async` + `poll_messages()` Shiny integration pattern**: Recommended pattern for Shiny streaming + interrupt. Uses `await()` to yield the R event loop between message batches, allowing `observeEvent` handlers (interrupt button, approval buttons) to fire between tokens. Documented in `CLAUDE.md` with a full code template.
+- **Shiny examples 14–19**: Six complete Shiny examples covering simple non-streaming (14), streaming with interrupt (13), modal approval (15), inline approval bar (16), conversational approval (17), insertUI approval cards (18), and native tool cards + thinking + inline approval with blank-bubble fix (19).
+
+### Bug Fixes
+
+- **Drain stale `ResultMessage` after interrupt**: After calling `client$interrupt()`, the loop now continues polling until `ResultMessage` arrives, ensuring no stale messages bleed into the next turn.
+- **Suppress `system2` timeout warning in `check_claude_version()`**: Eliminated spurious warning on systems where `claude --version` exits non-zero.
+
+### Examples
+
+- `16_shinychat_tool_approval_inline.R`: Fixed approval bar below `chat_ui`
+- `17_shinychat_tool_approval_conversational.R`: Type `allow`/`deny` in chat
+- `18_shinychat_tool_approval_insertui.R`: `insertUI` approval cards in chat history
+- `19_shinychat_tool_cards.R`: Native `<shiny-tool-request/result>` tool cards + `<details>` thinking blocks + inline approval. Fixes blank-bubble issue caused by `shiny-tool-request-hide` by replacing the `<shiny-tool-request>` element with a plain div before appending the approval card.
+
+---
+
 ## 0.1.4 (2026-04-10)
 
 ### New Features
 
-- **`on_tool_request` in `receive_response_async()`**: Async tool approval callback for Shiny interactive dialogs. When Claude requests permission to use a tool, the callback receives `(tool_name, tool_input, context, resolve)`. Call `resolve(PermissionResultAllow())` or `resolve(PermissionResultDeny())` asynchronously (e.g., from a Shiny button handler). The CLI blocks until resolved. The resolve function is one-shot (double-resolution warns and no-ops).
-- **`transport$set_tool_request_callback()`**: Internal method to inject/clear the async tool approval handler on the transport layer.
-- **Example 15**: `15_shinychat_tool_approval.R` — Full streaming chat with modal-based tool approval and interrupt button.
+- **`PermissionRequestMessage` + `approve_tool()` / `deny_tool()`**: Message-driven tool approval API. When no `can_use_tool` handler is configured and `permission_prompt_tool_name = "stdio"` is set, `can_use_tool` control requests are yielded as `PermissionRequestMessage` objects through the message stream. Call `client$approve_tool(request_id)` or `client$deny_tool(request_id)` to respond asynchronously (e.g., from a Shiny button handler).
+- **Example 15**: `15_shinychat_tool_approval_msgdriven.R` — Streaming chat with message-driven modal approval and interrupt button.
 - **Example 13**: Added interrupt button to streaming chat.
-- **`PermissionRequestMessage` + `approve_tool()` / `deny_tool()`**: Message-driven tool approval API. When no `can_use_tool` or `on_tool_request` handler is configured, `can_use_tool` control requests are yielded as `PermissionRequestMessage` objects through the message stream. Call `client$approve_tool(request_id)` or `client$deny_tool(request_id)` to respond. Coexists with the callback-based `on_tool_request` API.
 
 ### Tests
 
 - 661 tests total (up from 643)
-- Added unit tests: `on_tool_request` before connect, non-function rejection, approve/deny_tool before connect, PermissionRequestMessage constructor
-- Added integration tests: async tool approval allow/deny/deferred resolve, message-driven approve_tool/deny_tool
+- Added unit tests: approve/deny_tool before connect, PermissionRequestMessage constructor
+- Added integration tests: message-driven approve_tool/deny_tool allow/deny
 
 ## 0.1.3 (2026-04-10)
 
