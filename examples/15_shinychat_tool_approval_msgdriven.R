@@ -13,6 +13,11 @@
 #   使用 coro::async + await() 模式，每次 await() 让出 R 事件循环，
 #   使 Shiny 能及时处理 ESC 键 / Interrupt 按钮，实现真正的流式打断。
 #
+#   打断后缓冲区处理（关键）：
+#   打断时 CLI 会发出最后一条 ResultMessage。必须等到这条 ResultMessage
+#   被消费（drain 模式）才能 return，否则下次发消息时新的 do_stream 会
+#   立即拿到这条旧 ResultMessage 并提前退出，导致前端只显示三个点。
+#
 # 特点：
 #   - coro::async + poll_messages() + ExtendedTask：流式 + 可打断
 #   - 所有消息走同一个消息循环（含 PermissionRequestMessage）
@@ -56,7 +61,7 @@ ui <- page_fillable(
     card_header(
       div(
         class = "d-flex justify-content-between align-items-center",
-        span("API 2: PermissionRequestMessage + approve_tool"),
+        span("消息驱动式工具审批 + 流式打断"),
         actionButton("interrupt_btn", "Interrupt",
                      class = "btn-warning btn-sm")
       )
@@ -70,8 +75,6 @@ ui <- page_fillable(
 
 server <- function(input, output, session) {
 
-  # 不设 can_use_tool，不传 on_tool_request →
-  # can_use_tool 请求自动变成 PermissionRequestMessage
   client <- ClaudeSDKClient$new(ClaudeAgentOptions(
     max_turns                   = 5L,
     permission_prompt_tool_name = "stdio",
@@ -81,7 +84,7 @@ server <- function(input, output, session) {
   onStop(function() client$disconnect())
 
   interrupt_flag <- reactiveVal(FALSE)
-  pending_id     <- reactiveVal(NULL)   # 存 request_id 字符串
+  pending_id     <- reactiveVal(NULL)
 
   # --- 审批按钮 ---
   observeEvent(input$tool_allow, {
@@ -102,36 +105,59 @@ server <- function(input, output, session) {
     }
   })
 
-  # --- coro::async 流式函数（含工具审批 + 打断）---
+  # --- coro::async 流式函数 ---
   #
-  # 关键机制：
-  #   await(promise_resolve(TRUE))  — 每条消息处理后让出事件循环
-  #   await(50ms promise)           — 无消息时等待，给 Shiny 处理输入的时机
-  #   isolate(interrupt_flag())     — 在非 reactive 上下文中安全读取
+  # 打断处理流程：
+  #   1. 每次循环顶部检测 interrupt_flag
+  #   2. 首次检测到时：关闭弹窗（若有）→ deny_tool（若有挂起审批）→
+  #      client$interrupt() → 显示 "[Interrupted]"
+  #   3. 进入 drain 模式：跳过所有消息，等待 ResultMessage
+  #   4. 收到 ResultMessage → break，缓冲区清空，return "done"
   #
   do_stream <- coro::async(function(client, interrupt_flag, pending_id, session) {
     chunk_started <- FALSE
     interrupted   <- FALSE
 
     repeat {
+      # ---- 每次循环顶部检测打断 ----
+      if (!interrupted && shiny::isolate(interrupt_flag())) {
+        interrupted <- TRUE
+        rid <- shiny::isolate(pending_id())
+        if (!is.null(rid)) {
+          pending_id(NULL)
+          removeModal(session = session)
+          tryCatch(client$deny_tool(rid, "Interrupted"), error = function(e) NULL)
+        }
+        tryCatch(client$interrupt(), error = function(e) NULL)
+        if (chunk_started) {
+          chat_append_message("chat",
+            list(role = "assistant", content = "\n\n_[Interrupted]_"),
+            chunk = "end", session = session)
+          chunk_started <- FALSE
+        } else {
+          chat_append_message("chat",
+            list(role = "assistant", content = "_[Interrupted]_"),
+            chunk = FALSE, session = session)
+        }
+      }
+
       msgs <- tryCatch(client$poll_messages(), error = function(e) list())
 
       if (length(msgs) == 0L) {
-        # 让出 50ms，让 Shiny 处理 ESC / 按钮事件
         await(promises::promise(function(resolve, reject) {
           later::later(function() resolve(TRUE), 0.05)
         }))
         next
       }
 
+      drain_done <- FALSE
       for (msg in msgs) {
-        # 每条消息间让出控制权（关键：允许 observeEvent 触发）
         await(promises::promise_resolve(TRUE))
 
-        # 检查打断标志
-        if (shiny::isolate(interrupt_flag())) {
-          interrupted <- TRUE
-          break
+        # ---- Drain 模式：等待 ResultMessage 清空缓冲区 ----
+        if (interrupted) {
+          if (inherits(msg, "ResultMessage")) { drain_done <- TRUE; break }
+          next
         }
 
         # ---- 工具审批请求 ----
@@ -184,7 +210,7 @@ server <- function(input, output, session) {
           }
         }
 
-        # ---- 完整文本回退（无 include_partial_messages 时）----
+        # ---- 完整文本回退 ----
         if (inherits(msg, "AssistantMessage") && !chunk_started) {
           for (block in msg$content) {
             if (inherits(block, "TextBlock") && nzchar(block$text)) {
@@ -206,26 +232,7 @@ server <- function(input, output, session) {
         }
       }
 
-      if (interrupted) break
-    }
-
-    # 打断收尾
-    if (interrupted) {
-      rid <- shiny::isolate(pending_id())
-      if (!is.null(rid)) {
-        pending_id(NULL)
-        removeModal(session = session)
-      }
-      tryCatch(client$interrupt(), error = function(e) NULL)
-      if (chunk_started) {
-        chat_append_message("chat",
-          list(role = "assistant", content = "\n\n_[Interrupted]_"),
-          chunk = "end", session = session)
-      } else {
-        chat_append_message("chat",
-          list(role = "assistant", content = "_[Interrupted]_"),
-          chunk = FALSE, session = session)
-      }
+      if (drain_done) break
     }
 
     "done"
