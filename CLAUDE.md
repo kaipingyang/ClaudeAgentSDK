@@ -36,10 +36,9 @@ R/
 
 **Rate limit event wire format** uses both snake_case (`resets_at`, `overage_status`) and camelCase (`resetsAt`, `overageStatus`) depending on CLI version. The parser checks both with `%||%` fallback.
 
-**Async tool approval** has two coexisting APIs (both require `permission_prompt_tool_name = "stdio"`):
-1. **Callback API** (`on_tool_request`): `receive_response_async(on_tool_request = function(name, input, ctx, resolve) {...})` — the transport's `tool_request_callback` defers the response; `resolve()` sends it later. Cleaned up via `promises::finally()`.
-2. **Message API** (`PermissionRequestMessage` + `approve_tool/deny_tool`): When no `can_use_tool` or `on_tool_request` handler is configured, `can_use_tool` requests yield `PermissionRequestMessage` through the message stream. The request is stored in `private$pending_permissions` (an `env`). `client$approve_tool(request_id)` / `client$deny_tool(request_id)` resolve it.
-Priority: `on_tool_request` callback > `can_use_tool` sync > message-driven.
+**Async tool approval** requires `permission_prompt_tool_name = "stdio"` in `ClaudeAgentOptions`.
+- **Message-driven** (`PermissionRequestMessage` + `approve_tool/deny_tool`): When no `can_use_tool` sync handler is configured, `can_use_tool` requests yield `PermissionRequestMessage` through the message stream. The request is stored in `private$pending_permissions` (an `env`). `client$approve_tool(request_id)` / `client$deny_tool(request_id)` resolve it. Use this with `coro::async + poll_messages` for reliable interrupt support (example 16).
+- **Sync callback** (`can_use_tool`): `ClaudeAgentOptions(can_use_tool = function(name, input, ctx) PermissionResultAllow())` — handled synchronously in the transport, no Shiny support.
 
 ### Type system
 
@@ -230,8 +229,7 @@ observeEvent(input$tool_allow, {
 - 工具审批期间不需要打断（弹窗时 later 不阻塞）
 - 简单集成（代码量更少）
 
-完整示例见 `examples/14_shinychat_simple.R`（非流式）和
-`examples/15_shinychat_tool_approval.R`（on_tool_request 回调式）。
+完整示例见 `examples/14_shinychat_simple.R`（非流式）。
 
 ## Known remaining gaps
 

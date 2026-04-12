@@ -286,17 +286,6 @@ SubprocessCLITransport <- R6::R6Class(
       msgs
     },
 
-    #' @description Set or clear the async tool-approval callback.
-    #'   When set, `can_use_tool` control requests in `read_available_messages()`
-    #'   are deferred: the callback receives
-    #'   `(tool_name, tool_input, context, resolve)` and must eventually call
-    #'   `resolve(PermissionResultAllow())` or `resolve(PermissionResultDeny())`.
-    #' @param callback Function or NULL.
-    set_tool_request_callback = function(callback) {
-      private$tool_request_callback <- callback
-      invisible(self)
-    },
-
     #' @description Get a pending permission request by ID, or NULL.
     #' @param request_id Character.
     get_pending_permission = function(request_id) {
@@ -413,7 +402,6 @@ SubprocessCLITransport <- R6::R6Class(
     hook_callbacks  = NULL,   # named list: callback_id -> function
     next_callback_id = 0L,    # counter for unique IDs
     init_result     = NULL,   # captured from the initialize control_response
-    tool_request_callback = NULL,  # async tool approval: function(tool_name, tool_input, ctx, resolve)
     pending_permissions = NULL,    # env: request_id → request list (message-driven approval)
 
     # -----------------------------------------------------------------------
@@ -694,15 +682,8 @@ SubprocessCLITransport <- R6::R6Class(
       request    <- req[["request"]]
       subtype    <- request[["subtype"]]
 
-      # Priority 1: Async callback (on_tool_request)
-      if (identical(subtype, "can_use_tool") &&
-          is.function(private$tool_request_callback)) {
-        private$handle_permission_request_async(req)
-        return(NULL)
-      }
-
-      # Priority 2: Message-driven — yield PermissionRequestMessage
-      # when no handler is configured (user calls approve_tool/deny_tool)
+      # Message-driven approval: yield PermissionRequestMessage when no
+      # can_use_tool sync handler is configured (user calls approve_tool/deny_tool)
       if (identical(subtype, "can_use_tool") &&
           is.null(private$options$can_use_tool)) {
         assign(request_id, request, envir = private$pending_permissions)
@@ -776,71 +757,6 @@ SubprocessCLITransport <- R6::R6Class(
       }
       # Default: allow (behavior field required by CLI protocol)
       list(behavior = "allow")
-    },
-
-    # Async variant: builds a one-shot resolve closure and calls the
-    # external tool_request_callback without sending a response.  The
-    # response is sent later when resolve() is called.
-    handle_permission_request_async = function(req) {
-      request_id <- req[["request_id"]]
-      request    <- req[["request"]]
-      self_ref   <- self
-      resolved   <- FALSE
-
-      resolve <- function(result) {
-        if (resolved) {
-          warning("Tool request already resolved (request_id: ", request_id, ")",
-                  call. = FALSE)
-          return(invisible(NULL))
-        }
-        resolved <<- TRUE
-
-        response <- if (inherits(result, "PermissionResultAllow")) {
-          resp <- list(
-            behavior     = "allow",
-            updatedInput = result$updated_input %||% request[["input"]]
-          )
-          if (!is.null(result$updated_permissions)) {
-            resp[["updatedPermissions"]] <- result$updated_permissions
-          }
-          resp
-        } else {
-          resp <- list(behavior = "deny", message = result$message %||% "")
-          if (isTRUE(result$interrupt)) resp[["interrupt"]] <- TRUE
-          resp
-        }
-
-        tryCatch(
-          self_ref$send(build_control_response(request_id, response)),
-          error = function(e) {
-            warning("Failed to send tool approval response: ",
-                    conditionMessage(e), call. = FALSE)
-          }
-        )
-        invisible(NULL)
-      }
-
-      ctx <- list(
-        suggestions = request[["permission_suggestions"]] %||% list(),
-        tool_use_id = request[["tool_use_id"]],
-        agent_id    = request[["agent_id"]]
-      )
-
-      tryCatch(
-        private$tool_request_callback(
-          request[["tool_name"]], request[["input"]], ctx, resolve
-        ),
-        error = function(e) {
-          warning("on_tool_request callback error: ", conditionMessage(e),
-                  call. = FALSE)
-          if (!resolved) {
-            resolve(PermissionResultDeny(
-              paste("Callback error:", conditionMessage(e))
-            ))
-          }
-        }
-      )
-      invisible(NULL)
     },
 
     handle_hook = function(request) {
