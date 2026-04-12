@@ -130,6 +130,109 @@ Python's `create_sdk_mcp_server()` runs an MCP server **in-process** (same Pytho
 
 Python has `streaming_mode_trio.py`, `streaming_mode_ipython.py` (multiple async runtime examples) and `plugin_example.py`. R has only one concurrency model (`coro`), so async variant examples are N/A. Plugin support in R is not yet documented.
 
+## Shiny integration patterns
+
+### 流式输出 + 可靠打断（推荐模式）
+
+使用 `coro::async` + `poll_messages()` + `ExtendedTask`。
+`later::later()` 轮询（`receive_response_async` 内部用法）在 Shiny 中优先于输入事件，
+导致打断按钮只有在 promise 结束后才生效。`await()` 模式每次让出 R 事件循环，
+使 `observeEvent` 能在 token 之间触发。
+
+```r
+library(coro); library(promises)
+
+interrupt_flag <- reactiveVal(FALSE)
+
+do_stream <- coro::async(function(client, interrupt_flag, session) {
+  chunk_started <- FALSE
+  interrupted   <- FALSE
+
+  repeat {
+    msgs <- tryCatch(client$poll_messages(), error = function(e) list())
+
+    if (length(msgs) == 0L) {
+      # 无消息时等 50ms（让 Shiny 处理输入事件）
+      await(promises::promise(function(resolve, reject) {
+        later::later(function() resolve(TRUE), 0.05)
+      }))
+      next
+    }
+
+    for (msg in msgs) {
+      await(promises::promise_resolve(TRUE))  # 每条消息间让出事件循环
+
+      if (shiny::isolate(interrupt_flag())) { interrupted <- TRUE; break }
+
+      if (inherits(msg, "StreamEvent") && ...) { ... }   # 追加 token
+      if (inherits(msg, "ResultMessage")) { ...; return("done") }
+    }
+    if (interrupted) break
+  }
+
+  if (interrupted) {
+    tryCatch(client$interrupt(), error = function(e) NULL)
+    # 追加 "[Interrupted]" 消息
+  }
+  "done"
+})
+
+stream_task <- ExtendedTask$new(function(user_input) {
+  client$send(user_input)
+  do_stream(client, interrupt_flag, session)
+})
+
+# JS: ESC → priority:'event' 确保立即触发，不被 later 回调淹没
+# tags$script(HTML("document.addEventListener('keydown', function(e) {
+#   if (e.key === 'Escape') Shiny.setInputValue('esc', Math.random(), {priority:'event'});
+# });"))
+
+observeEvent(input$chat_user_input, {
+  if (stream_task$status() == "running") return()
+  interrupt_flag(FALSE)
+  stream_task$invoke(input$chat_user_input)
+})
+observeEvent(input$esc, { if (stream_task$status() == "running") interrupt_flag(TRUE) })
+```
+
+### 工具审批 + 打断（消息驱动模式）
+
+在上述模式基础上，在 coro::async 循环中处理 `PermissionRequestMessage`：
+
+```r
+# ClaudeAgentOptions 设置 permission_prompt_tool_name = "stdio"
+# 不传 on_tool_request → can_use_tool 自动变成 PermissionRequestMessage
+
+pending_id <- reactiveVal(NULL)
+
+# 在 do_stream 循环中：
+if (inherits(msg, "PermissionRequestMessage")) {
+  pending_id(msg$request_id)
+  showModal(modalDialog(..., footer = tagList(
+    actionButton("tool_allow", "Allow"), actionButton("tool_deny", "Deny")
+  )), session = session)
+  next  # 继续轮询（CLI 此时阻塞等待 control_response）
+}
+
+# 审批按钮（在轮询 await 间隙触发）
+observeEvent(input$tool_allow, {
+  rid <- pending_id()
+  if (!is.null(rid)) { pending_id(NULL); removeModal(); client$approve_tool(rid) }
+})
+```
+
+完整示例见 `examples/16_shinychat_tool_approval_msgdriven.R`。
+
+### receive_response_async 的适用场景
+
+`receive_response_async(on_message, on_tool_request)` 适合：
+- 不需要流式打断（等待完整回复后显示）
+- 工具审批期间不需要打断（弹窗时 later 不阻塞）
+- 简单集成（代码量更少）
+
+完整示例见 `examples/14_shinychat_simple.R`（非流式）和
+`examples/15_shinychat_tool_approval.R`（on_tool_request 回调式）。
+
 ## Known remaining gaps
 
 - `rewind_files()` / `stop_task()` — fire-and-forget control messages, no integration test
