@@ -5,11 +5,11 @@ R SDK for Claude Agent. Mirrors the [Python SDK](https://github.com/anthropics/c
 ## Installation
 
 ```r
-# Install from source (development)
-devtools::install("/path/to/ClaudeAgentSDK")
+# Install from GitHub
+remotes::install_github("kaipingyang/ClaudeAgentSDK")
 
-# Or from GitHub (once published)
-# remotes::install_github("your-org/ClaudeAgentSDK")
+# Or from source (development)
+devtools::install("/path/to/ClaudeAgentSDK")
 ```
 
 **Prerequisites:**
@@ -245,45 +245,65 @@ options <- ClaudeAgentOptions(
 )
 ```
 
-### Async Tool Approval (Shiny)
+### Tool Approval (Shiny)
 
-Use `on_tool_request` in `receive_response_async()` for interactive approval
-dialogs. The callback receives a `resolve` function — call it asynchronously
-when the user clicks Allow or Deny:
+Set `permission_prompt_tool_name = "stdio"` to receive `PermissionRequestMessage`
+objects in your message loop. Call `approve_tool()` / `deny_tool()` from your
+UI event handlers (e.g., button clicks):
 
 ```r
+library(coro); library(promises)
+
 client <- ClaudeSDKClient$new(ClaudeAgentOptions(
-  permission_prompt_tool_name = "stdio"  # required
+  permission_prompt_tool_name = "stdio",
+  include_partial_messages    = TRUE
 ))
 client$connect()
-client$send("Read the file /dev/null")
 
-p <- client$receive_response_async(
-  on_tool_request = function(tool_name, tool_input, ctx, resolve) {
-    # In Shiny: show a modal, store resolve, call it from a button handler
-    cat("Tool requested:", tool_name, "\n")
-    resolve(PermissionResultAllow())  # or PermissionResultDeny("reason")
-  }
-)
-```
+pending_id <- reactiveVal(NULL)
 
-See [`examples/15_shinychat_tool_approval.R`](examples/15_shinychat_tool_approval.R)
-for a full Shiny app with modal-based approval.
-
-### Message-Driven Tool Approval
-
-Alternative to the callback API: `PermissionRequestMessage` flows through the
-message stream, and you call `approve_tool()` / `deny_tool()` explicitly:
-
-```r
-p <- client$receive_response_async(on_message = function(msg) {
-  if (inherits(msg, "PermissionRequestMessage")) {
-    cat("Tool:", msg$tool_name, "\n")
-    client$approve_tool(msg$request_id)
-    # or: client$deny_tool(msg$request_id, "Not allowed")
+do_stream <- coro::async(function(client, pending_id, session) {
+  repeat {
+    msgs <- tryCatch(client$poll_messages(), error = function(e) list())
+    if (length(msgs) == 0L) {
+      await(promises::promise(function(resolve, reject) {
+        later::later(function() resolve(TRUE), 0.05)
+      }))
+      next
+    }
+    for (msg in msgs) {
+      await(promises::promise_resolve(TRUE))
+      if (inherits(msg, "PermissionRequestMessage")) {
+        pending_id(msg$request_id)
+        showModal(modalDialog(
+          title  = paste("Allow tool:", msg$tool_name),
+          footer = tagList(
+            actionButton("tool_allow", "Allow", class = "btn-success"),
+            actionButton("tool_deny",  "Deny",  class = "btn-danger")
+          )
+        ), session = session)
+        next
+      }
+      if (inherits(msg, "ResultMessage")) return("done")
+    }
   }
 })
+
+# In Shiny server:
+observeEvent(input$tool_allow, {
+  rid <- pending_id()
+  if (!is.null(rid)) { pending_id(NULL); removeModal(); client$approve_tool(rid) }
+})
+observeEvent(input$tool_deny, {
+  rid <- pending_id()
+  if (!is.null(rid)) { pending_id(NULL); removeModal(); client$deny_tool(rid, "Denied") }
+})
 ```
+
+See [`examples/15_shinychat_tool_approval_msgdriven.R`](examples/15_shinychat_tool_approval_msgdriven.R)
+for a full Shiny app with modal-based approval, and examples 16–19 for
+additional approval UI patterns (inline bar, conversational, insertUI, native
+tool cards).
 
 ### Runtime Control
 
@@ -514,9 +534,109 @@ example.
 
 ## Advanced: Async / Shiny Integration
 
-`receive_response_async()` returns a `promises::promise` that resolves to
-the `ResultMessage`. An `on_message` callback streams intermediate messages
-as they arrive — ideal for real-time UI updates in Shiny.
+### Recommended: `coro::async` + `poll_messages()`
+
+The recommended Shiny pattern uses `coro::async` with `poll_messages()` inside
+an `ExtendedTask`. Each `await()` call yields the R event loop, allowing Shiny
+input events (interrupt button, approval buttons) to fire between tokens.
+
+```r
+library(coro); library(promises); library(shinychat)
+
+client <- ClaudeSDKClient$new(ClaudeAgentOptions(
+  max_turns                = 5L,
+  include_partial_messages = TRUE
+))
+client$connect()
+onStop(function() client$disconnect())
+
+interrupt_flag <- reactiveVal(FALSE)
+
+do_stream <- coro::async(function(client, interrupt_flag, session) {
+  chunk_started <- FALSE
+  interrupted   <- FALSE
+
+  repeat {
+    if (!interrupted && shiny::isolate(interrupt_flag())) {
+      interrupted <- TRUE
+      tryCatch(client$interrupt(), error = function(e) NULL)
+    }
+
+    msgs <- tryCatch(client$poll_messages(), error = function(e) list())
+    if (length(msgs) == 0L) {
+      await(promises::promise(function(resolve, reject) {
+        later::later(function() resolve(TRUE), 0.05)
+      }))
+      next
+    }
+
+    drain_done <- FALSE
+    for (msg in msgs) {
+      await(promises::promise_resolve(TRUE))  # yield between each message
+
+      # drain after interrupt: skip until ResultMessage
+      if (interrupted) {
+        if (inherits(msg, "ResultMessage")) { drain_done <- TRUE; break }
+        next
+      }
+
+      # stream text tokens
+      if (inherits(msg, "StreamEvent") && is.list(msg$event)) {
+        evt <- msg$event
+        if (identical(evt$type, "content_block_delta") &&
+            identical(evt$delta$type, "text_delta")) {
+          if (!chunk_started) {
+            chunk_started <- TRUE
+            chat_append_message("chat",
+              list(role = "assistant", content = ""),
+              chunk = "start", session = session)
+          }
+          chat_append_message("chat",
+            list(role = "assistant", content = evt$delta$text),
+            chunk = TRUE, session = session)
+        }
+      }
+
+      if (inherits(msg, "ResultMessage")) {
+        if (chunk_started) {
+          chat_append_message("chat",
+            list(role = "assistant", content = ""),
+            chunk = "end", session = session)
+        }
+        return("done")
+      }
+    }
+    if (drain_done) break
+  }
+  "done"
+})
+
+stream_task <- ExtendedTask$new(function(user_input) {
+  client$send(user_input)
+  do_stream(client, interrupt_flag, session)
+})
+
+observeEvent(input$chat_user_input, {
+  if (stream_task$status() == "running") return()
+  interrupt_flag(FALSE)
+  stream_task$invoke(input$chat_user_input)
+})
+
+# ESC key interrupt (requires JS: Shiny.setInputValue('esc', Math.random(), {priority:'event'}))
+observeEvent(input$esc, {
+  if (stream_task$status() == "running") interrupt_flag(TRUE)
+})
+```
+
+See [`examples/13_shinychat_streaming.R`](examples/13_shinychat_streaming.R) for
+a minimal streaming chat, and [`examples/19_shinychat_tool_cards.R`](examples/19_shinychat_tool_cards.R)
+for a full-featured example with native tool cards, thinking blocks, and inline
+tool approval.
+
+### Simple non-streaming pattern (`receive_response_async`)
+
+For cases where streaming is not needed, `receive_response_async()` returns a
+`promises::promise` that resolves to the `ResultMessage`:
 
 ```r
 library(ClaudeAgentSDK)
@@ -541,45 +661,8 @@ cat("\nCost: $", result$total_cost_usd, "\n")
 client$disconnect()
 ```
 
-### Shiny ExtendedTask pattern
-
-```r
-# server.R
-client <- ClaudeSDKClient$new(ClaudeAgentOptions(max_turns = 1L))
-client$connect()
-onStop(function() client$disconnect())
-
-rv <- reactiveVal("")
-
-task <- shiny::ExtendedTask$new(function(prompt) {
-  client$send(prompt)
-  client$receive_response_async(on_message = function(msg) {
-    if (inherits(msg, "AssistantMessage")) {
-      rv(paste0(isolate(rv()), msg$content[[1]]$text))
-    }
-  })
-})
-
-observeEvent(input$send, {
-  rv("")
-  task$invoke(input$prompt)
-})
-```
-
-### Synchronous alternative (coro generator)
-
-```r
-client$send(user_input)
-
-gen <- client$receive_response()
-later::later(function() {
-  msg <- tryCatch(coro::generator_env(gen)$yield(), error = function(e) NULL)
-  if (!is.null(msg) && !coro::is_exhausted(msg)) {
-    handle_event(msg, session)
-    later::later(Recall, 0.05)
-  }
-}, 0)
-```
+See [`examples/14_shinychat_simple.R`](examples/14_shinychat_simple.R) for the
+Shiny `ExtendedTask` version.
 
 ## Available Tools
 
