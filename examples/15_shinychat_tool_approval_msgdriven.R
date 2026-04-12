@@ -1,24 +1,22 @@
 # examples/15_shinychat_tool_approval_msgdriven.R
 # =========================================================================
-# API 2: 消息驱动式工具审批（PermissionRequestMessage + approve_tool/deny_tool）
+# 消息驱动式工具审批（PermissionRequestMessage + approve_tool/deny_tool）
 # =========================================================================
 #
 # 原理：
-#   不设 on_tool_request 也不设 can_use_tool →
+#   不设 can_use_tool →
 #   CLI 的 can_use_tool 请求自动变成 PermissionRequestMessage 进入消息流 →
 #   Shiny 弹出审批框 → 用户点按钮 →
 #   调 client$approve_tool(request_id) 或 client$deny_tool(request_id)
 #
-# 打断机制（关键）：
+# 打断机制：
 #   使用 coro::async + await() 模式，每次 await() 让出 R 事件循环，
 #   使 Shiny 能及时处理 ESC 键 / Interrupt 按钮，实现真正的流式打断。
-#   （receive_response_async 的 later::later 轮询会在 Shiny 输入事件前优先
-#    执行，导致打断按钮只有在 promise 结束后才生效，不适合需要打断的场景。）
 #
 # 特点：
 #   - coro::async + poll_messages() + ExtendedTask：流式 + 可打断
 #   - 所有消息走同一个消息循环（含 PermissionRequestMessage）
-#   - 用 request_id 字符串做 key，不需要存闭包
+#   - 用 request_id 字符串做 key
 #   - approve_tool/deny_tool 是 client 上的独立方法
 #
 # 运行：
@@ -32,7 +30,6 @@
 # 相关示例：
 #   13 — 纯文本流式聊天 + 打断（coro::async 基础版）
 #   14 — 非流式聊天（最简通路）
-#   15 — 回调式工具审批（on_tool_request + resolve 闭包，无可靠打断）
 #
 # =========================================================================
 
