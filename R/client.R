@@ -124,6 +124,17 @@ ClaudeSDKClient <- R6::R6Class(
     # Message receiving
     # ------------------------------------------------------------------
 
+    #' @description Non-blocking single-cycle poll.  Returns a list of
+    #'   messages available right now (may be empty).  Designed for
+    #'   Shiny `observe()` + `invalidateLater()` polling patterns where
+    #'   `later::later()`-based approaches starve input processing.
+    #'
+    #' @return List of typed message objects (may be empty).
+    poll_messages = function() {
+      private$assert_connected()
+      private$transport$read_available_messages()
+    },
+
     #' @description Return a `coro` generator that yields ALL messages
     #'   (no automatic stop).  Use [receive_response()] for a single
     #'   request/response cycle.

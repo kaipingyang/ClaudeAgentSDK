@@ -1,19 +1,38 @@
 # examples/15_shinychat_tool_approval.R
 # =========================================================================
-# ClaudeAgentSDK + shinychat: 流式文本 + 工具审批弹窗
+# API 1: 回调式工具审批（on_tool_request + resolve 闭包）
 # =========================================================================
 #
-# 演示内容：
-#   1. 流式文本（StreamEvent 增量）
-#   2. Claude 请求使用工具时弹出审批对话框
-#   3. 用户点击 Allow/Deny 后 Claude 继续/停止
-#   4. 打断按钮（interrupt）
+# 原理：
+#   on_tool_request 回调收到 resolve 闭包 →
+#   存到 session$userData → 弹出审批框 →
+#   用户点按钮 → 从 session$userData 取出 resolve 调用
 #
-# 依赖:
-#   install.packages(c("shiny", "bslib", "shinychat", "promises"))
+# 特点：
+#   - resolve 闭包自包含（内含 request_id 和发送逻辑）
+#   - 需要跨 observer 传递闭包引用
+#   - 仅在 receive_response_async() 中可用
 #
-# 运行:
+# 打断机制的限制（重要）：
+#   receive_response_async() 内部用 later::later() 轮询。在 Shiny 中，
+#   later 回调优先于输入事件处理，导致打断按钮的点击事件只有在整个
+#   promise resolve 之后才会被 Shiny 处理。
+#   → 流式文本期间的打断不可靠（按钮会在流式结束后才生效）
+#   → 工具审批弹窗期间打断可靠（此时 later 轮询得到空消息，不阻塞 Shiny）
+#
+#   如需可靠的流式打断，请使用 example 16（coro::async + poll_messages）。
+#
+# 运行：
 #   shiny::runApp("examples/15_shinychat_tool_approval.R")
+#
+# 测试提示：
+#   输入 "Read the file /dev/null" 或 "List files in /tmp"
+#   Claude 会请求使用 Read/Bash 工具 → 弹出审批框
+#
+# 相关示例：
+#   13 — 纯文本流式聊天 + 可靠打断（coro::async 版）
+#   14 — 非流式聊天（最简通路）
+#   16 — 消息驱动式工具审批（推荐：coro::async + 可靠打断）
 #
 # =========================================================================
 
@@ -31,13 +50,13 @@ ui <- page_fillable(
     card_header(
       div(
         class = "d-flex justify-content-between align-items-center",
-        span("Claude + Tool Approval"),
+        span("API 1: on_tool_request + resolve"),
         actionButton("interrupt_btn", "Interrupt",
                      class = "btn-warning btn-sm")
       )
     ),
     chat_ui("chat", fill = TRUE,
-            placeholder = "Try: 'Read the file /dev/null' or 'List files in /tmp'")
+            placeholder = "Try: 'Read the file /dev/null'")
   )
 )
 
@@ -45,9 +64,7 @@ ui <- page_fillable(
 
 server <- function(input, output, session) {
 
-  # --- 初始化 ---
-  # permission_prompt_tool_name = "stdio" 让 CLI 通过控制协议发送权限请求
-  # （而不是自己弹 CLI 提示符）
+  # permission_prompt_tool_name = "stdio" 让 CLI 发送权限请求
   client <- ClaudeSDKClient$new(ClaudeAgentOptions(
     max_turns                   = 5L,
     permission_prompt_tool_name = "stdio",
@@ -56,14 +73,23 @@ server <- function(input, output, session) {
   client$connect()
   onStop(function() client$disconnect())
 
-  is_busy <- reactiveVal(FALSE)
+  is_busy       <- reactiveVal(FALSE)
+  chunk_started <- FALSE
 
   # --- 打断 ---
   observeEvent(input$interrupt_btn, {
     tryCatch(client$interrupt(), error = function(e) NULL)
+    if (chunk_started) {
+      chat_append_message("chat",
+        list(role = "assistant", content = "\n\n_[Interrupted]_"),
+        chunk = "end", session = session)
+      chunk_started <<- FALSE
+    }
+    is_busy(FALSE)
+    removeModal()
   })
 
-  # --- 审批按钮 ---
+  # --- 审批按钮（存的是 resolve 闭包）---
   observeEvent(input$tool_allow, {
     resolve <- session$userData$pending_resolve
     if (!is.null(resolve)) {
@@ -89,14 +115,14 @@ server <- function(input, output, session) {
 
     user_msg <- input$chat_user_input
     sess <- session
-    chunk_started <- FALSE
+    chunk_started <<- FALSE
     fallback_text <- ""
 
     client$send(user_msg)
 
     p <- client$receive_response_async(
       on_message = function(msg) {
-        # ---- 流式文本增量 ----
+        # 流式文本
         if (inherits(msg, "StreamEvent") && is.list(msg$event)) {
           evt <- msg$event
           if (identical(evt$type, "content_block_delta") &&
@@ -114,7 +140,6 @@ server <- function(input, output, session) {
               chunk = TRUE, session = sess)
           }
         }
-
         # 回退用完整文本
         if (inherits(msg, "AssistantMessage")) {
           for (block in msg$content) {
@@ -125,8 +150,9 @@ server <- function(input, output, session) {
         }
       },
 
+      # ========== API 1 核心：on_tool_request 回调 ==========
       on_tool_request = function(tool_name, tool_input, ctx, resolve) {
-        # 结束当前流式块（如有）
+        # 结束当前流式块
         if (chunk_started) {
           chat_append_message("chat",
             list(role = "assistant", content = ""),
@@ -134,7 +160,7 @@ server <- function(input, output, session) {
           chunk_started <<- FALSE
         }
 
-        # 在聊天中显示工具请求
+        # 在聊天中显示工具请求信息
         input_json <- jsonlite::toJSON(tool_input, auto_unbox = TRUE, pretty = TRUE)
         chat_append_message("chat",
           list(role = "assistant", content = paste0(
@@ -143,7 +169,7 @@ server <- function(input, output, session) {
           )),
           chunk = FALSE, session = sess)
 
-        # 存储 resolve，弹出审批框
+        # 存 resolve 闭包，弹出审批框
         sess$userData$pending_resolve <- resolve
         showModal(modalDialog(
           title = paste("Allow tool:", tool_name),
@@ -157,13 +183,13 @@ server <- function(input, output, session) {
       }
     )
 
-    # --- Promise 完成 ---
     then(p,
       onFulfilled = function(result) {
         if (chunk_started) {
           chat_append_message("chat",
             list(role = "assistant", content = ""),
             chunk = "end", session = sess)
+          chunk_started <<- FALSE
         } else if (nzchar(fallback_text)) {
           chat_append_message("chat",
             list(role = "assistant", content = fallback_text),
@@ -177,6 +203,7 @@ server <- function(input, output, session) {
           chat_append_message("chat",
             list(role = "assistant", content = paste0("\n\n", err_text)),
             chunk = "end", session = sess)
+          chunk_started <<- FALSE
         } else {
           chat_append_message("chat",
             list(role = "assistant", content = err_text),
@@ -187,7 +214,5 @@ server <- function(input, output, session) {
     )
   })
 }
-
-# ---- Run -----------------------------------------------------------------
 
 shinyApp(ui, server)
