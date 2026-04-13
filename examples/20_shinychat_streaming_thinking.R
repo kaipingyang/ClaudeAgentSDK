@@ -552,9 +552,13 @@ server <- function(input, output, session) {
               tid    <- blk$tool_use_id
               tname  <- tool_names_env[[tid]] %||% "unknown"
               ttitle <- tool_titles_env[[tid]]
-              cstr   <- if (is.character(blk$content)) blk$content else
-                tryCatch(jsonlite::toJSON(blk$content, auto_unbox = TRUE),
-                         error = function(e) "")
+              if (is.character(blk$content)) {
+                cstr <- blk$content
+              } else {
+                cstr <- tryCatch(
+                  jsonlite::toJSON(blk$content, auto_unbox = TRUE),
+                  error = function(e) "")
+              }
               if (isTRUE(approved_tool_ids[[tid]])) {
                 chat_append_message("chat",
                   list(role = "assistant",
