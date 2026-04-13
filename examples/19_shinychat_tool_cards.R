@@ -81,15 +81,25 @@ library(htmltools)
 
 # ---- Helper: HTML 卡片 ---------------------------------------------------
 
-.thinking_html <- function(text) {
-  display <- if (nchar(text) > 3000L)
-    paste0(substr(text, 1L, 3000L), "\n\u2026(truncated)")
-  else text
-  as.character(tags$details(
-    class = "sdk-thinking-card",
-    tags$summary(class = "sdk-thinking-summary", "\U0001f4a1 Thinking\u2026"),
-    tags$div(class = "sdk-thinking-body", display)
-  ))
+.thinking_html <- function(text = "", in_progress = FALSE) {
+  if (in_progress) {
+    # 思考进行中：转圈动画 + 空 body（内容由 CSS spinner 暗示）
+    as.character(tags$details(
+      class = "sdk-thinking-card thinking-active",
+      tags$summary(class = "sdk-thinking-summary", "\U0001f4a1 Thinking"),
+      tags$div(class = "sdk-thinking-body")
+    ))
+  } else {
+    # 思考结束：改为 "Thought"，显示完整内容
+    display <- if (nchar(text) > 3000L)
+      paste0(substr(text, 1L, 3000L), "\n\u2026(truncated)")
+    else text
+    as.character(tags$details(
+      class = "sdk-thinking-card",
+      tags$summary(class = "sdk-thinking-summary", "\U0001f4a1 Thought"),
+      tags$div(class = "sdk-thinking-body", display)
+    ))
+  }
 }
 
 .tool_req_html <- function(tool_id, tool_name,
@@ -159,10 +169,25 @@ ui <- page_fillable(
     .sdk-thinking-summary {
       padding: 6px 10px; cursor: pointer; color: #495057;
       font-style: italic; list-style: none;
+      display: flex; align-items: center; gap: 6px;
     }
     .sdk-thinking-body {
       padding: 8px 12px; white-space: pre-wrap;
       font-family: monospace; font-size: 0.9em; color: #555;
+    }
+    /* 转圈动画：仅 thinking-active 状态显示 */
+    @keyframes sdk-spin {
+      to { transform: rotate(360deg); }
+    }
+    .sdk-thinking-card.thinking-active .sdk-thinking-summary::after {
+      content: '';
+      display: inline-block;
+      width: 11px; height: 11px;
+      border: 2px solid #ced4da;
+      border-top-color: #6c757d;
+      border-radius: 50%;
+      animation: sdk-spin 0.75s linear infinite;
+      flex-shrink: 0;
     }
     /* 审批卡片 */
     .sdk-approval-card {
@@ -380,7 +405,7 @@ server <- function(input, output, session) {
               thinking_buf <- ""
               chat_append_message("chat",
                 list(role = "assistant",
-                     content = .thinking_html("...")),
+                     content = .thinking_html(in_progress = TRUE)),
                 chunk = FALSE, session = session)
             }
           }
@@ -439,7 +464,7 @@ server <- function(input, output, session) {
             if (identical(cur_block_type, "thinking") && is_thinking) {
               chat_append_message("chat",
                 list(role = "assistant",
-                     content = .thinking_html(thinking_buf)),
+                     content = .thinking_html(thinking_buf, in_progress = FALSE)),
                 chunk = TRUE, operation = "replace",
                 session = session)
               is_thinking  <- FALSE
