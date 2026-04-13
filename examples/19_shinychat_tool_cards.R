@@ -227,7 +227,7 @@ ui <- page_fillable(
         Shiny.setInputValue('esc', Math.random(), {priority: 'event'});
     });
 
-    /* shadow DOM 感知：按 ID 查找 */
+    /* shadow DOM 感知的元素查找：先在顶层 document 找，再遍历各 shadowRoot */
     function findInDom(id) {
       var el = document.getElementById(id);
       if (el) return el;
@@ -240,40 +240,6 @@ ui <- page_fillable(
       }
       return null;
     }
-
-    /* shadow DOM 感知：按 CSS selector 查找 */
-    function queryInDom(sel) {
-      var el = document.querySelector(sel);
-      if (el) return el;
-      var hosts = document.querySelectorAll('*');
-      for (var i = 0; i < hosts.length; i++) {
-        if (hosts[i].shadowRoot) {
-          var found = hosts[i].shadowRoot.querySelector(sel);
-          if (found) return found;
-        }
-      }
-      return null;
-    }
-
-    /* 流式追加 thinking 内容到进行中的思考卡片 */
-    Shiny.addCustomMessageHandler('appendThinking', function(data) {
-      var body = queryInDom('.sdk-thinking-card.thinking-active .sdk-thinking-body');
-      if (body) body.textContent += data.text;
-    });
-
-    /* 思考结束：移除转圈、改标题、截断超长内容 */
-    Shiny.addCustomMessageHandler('finalizeThinking', function(data) {
-      var card = queryInDom('.sdk-thinking-card.thinking-active');
-      if (!card) return;
-      card.classList.remove('thinking-active');
-      var summary = card.querySelector('.sdk-thinking-summary');
-      if (summary) summary.textContent = '\ud83d\udca1 Thought';
-      if (data.truncated) {
-        var body = card.querySelector('.sdk-thinking-body');
-        if (body) body.textContent =
-          body.textContent.substring(0, 3000) + '\n\u2026(truncated)';
-      }
-    });
 
     /* 绑定 chat 中动态插入的 Shiny 输入（审批按钮） */
     Shiny.addCustomMessageHandler('bindNewInputs', function(data) {
@@ -464,9 +430,6 @@ server <- function(input, output, session) {
             if (identical(delta$type, "thinking_delta") &&
                 !is.null(delta$thinking)) {
               thinking_buf <- paste0(thinking_buf, delta$thinking)
-              # 流式追加到浏览器（JS 直接 textContent+= 效率高）
-              session$sendCustomMessage("appendThinking",
-                                        list(text = delta$thinking))
             }
 
             if (identical(delta$type, "input_json_delta") &&
@@ -499,10 +462,11 @@ server <- function(input, output, session) {
             }
 
             if (identical(cur_block_type, "thinking") && is_thinking) {
-              # 思考结束：JS 负责移除转圈 + 改标题 + 截断
-              # 不再需要 operation="replace"（内容已由 appendThinking 流式写入）
-              session$sendCustomMessage("finalizeThinking",
-                list(truncated = nchar(thinking_buf) > 3000L))
+              chat_append_message("chat",
+                list(role = "assistant",
+                     content = .thinking_html(thinking_buf, in_progress = FALSE)),
+                chunk = TRUE, operation = "replace",
+                session = session)
               is_thinking  <- FALSE
               thinking_buf <- ""
             }
