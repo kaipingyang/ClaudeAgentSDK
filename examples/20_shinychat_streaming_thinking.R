@@ -387,7 +387,7 @@ server <- function(input, output, session) {
               is_thinking      <- TRUE
               thinking_buf     <- ""
               # 唯一 ID（毫秒时间戳），JS 用 findInDom 定位，无需 class 选择器
-              ts               <- as.character(as.integer(Sys.time() * 1000))
+              ts               <- as.character(as.integer(as.numeric(Sys.time()) * 1000))
               thinking_card_id <- paste0("thk_", ts)
               thinking_body_id <- paste0("thk_body_", ts)
               chat_append_message("chat",
