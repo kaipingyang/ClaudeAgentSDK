@@ -46,3 +46,11 @@ PermissionUpdate(
 ## Value
 
 Object of class `PermissionUpdate`.
+
+## Examples
+
+``` r
+pu <- PermissionUpdate("setMode", mode = "acceptEdits", destination = "session")
+pu$type
+#> [1] "setMode"
+```

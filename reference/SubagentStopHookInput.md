@@ -54,3 +54,15 @@ SubagentStopHookInput(
 ## Value
 
 Object of class `SubagentStopHookInput`.
+
+## Examples
+
+``` r
+h <- SubagentStopHookInput(
+  session_id = "s1", transcript_path = "/tmp/t.jsonl", cwd = "/tmp",
+  stop_hook_active = FALSE, agent_id = "a1",
+  agent_transcript_path = "/tmp/a.jsonl", agent_type = "subagent"
+)
+h$agent_type
+#> [1] "subagent"
+```

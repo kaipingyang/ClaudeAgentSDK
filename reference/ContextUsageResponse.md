@@ -21,3 +21,12 @@ ContextUsageResponse(categories, total_tokens)
 ## Value
 
 Object of class `ContextUsageResponse`.
+
+## Examples
+
+``` r
+cats <- list(ContextUsageCategory("user", 1024L, "#4e79a7"))
+resp <- ContextUsageResponse(cats, total_tokens = 1024L)
+resp$totalTokens
+#> [1] 1024
+```

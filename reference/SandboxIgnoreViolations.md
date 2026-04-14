@@ -21,3 +21,11 @@ SandboxIgnoreViolations(file = NULL, network = NULL)
 ## Value
 
 Object of class `SandboxIgnoreViolations`.
+
+## Examples
+
+``` r
+ig <- SandboxIgnoreViolations(file = c("/tmp/ok.txt"))
+ig$file
+#> [1] "/tmp/ok.txt"
+```

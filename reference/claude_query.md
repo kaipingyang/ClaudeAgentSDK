@@ -37,3 +37,17 @@ A `coro` generator yielding message objects (see types.R).
 The caller is responsible for disconnecting the transport after the
 generator is exhausted. For a simpler synchronous API see
 [`claude_run()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/claude_run.md).
+
+## Examples
+
+``` r
+if (FALSE) { # \dontrun{
+gen <- claude_query("What is 2 + 2?", ClaudeAgentOptions(max_turns = 1L))
+coro::loop(for (msg in gen) {
+  if (inherits(msg, "AssistantMessage")) {
+    for (blk in msg$content)
+      if (inherits(blk, "TextBlock")) cat(blk$text)
+  }
+})
+} # }
+```

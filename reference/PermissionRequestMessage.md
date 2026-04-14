@@ -48,3 +48,15 @@ PermissionRequestMessage(
 ## Value
 
 Object of class `PermissionRequestMessage`.
+
+## Examples
+
+``` r
+msg <- PermissionRequestMessage(
+  request_id = "req1",
+  tool_name  = "Bash",
+  tool_input = list(command = "ls /tmp")
+)
+msg$tool_name
+#> [1] "Bash"
+```

@@ -28,3 +28,14 @@ HookMatcher(matcher, hooks, timeout = NULL)
 ## Value
 
 Object of class `HookMatcher`.
+
+## Examples
+
+``` r
+hm <- HookMatcher(
+  matcher = "Bash",
+  hooks   = list(function(input, id, ctx) list(continue_ = TRUE))
+)
+hm$matcher
+#> [1] "Bash"
+```

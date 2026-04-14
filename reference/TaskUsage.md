@@ -21,3 +21,11 @@ TaskUsage(total_tokens, tool_uses)
 ## Value
 
 Object of class `TaskUsage`.
+
+## Examples
+
+``` r
+usage <- TaskUsage(total_tokens = 500L, tool_uses = 3L)
+usage$total_tokens
+#> [1] 500
+```

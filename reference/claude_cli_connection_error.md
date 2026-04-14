@@ -17,3 +17,14 @@ claude_cli_connection_error(message, ...)
 - ...:
 
   Additional fields.
+
+## Examples
+
+``` r
+err <- tryCatch(
+  claude_cli_connection_error("Connection refused"),
+  error = function(e) e
+)
+inherits(err, "claude_error_cli_connection")
+#> [1] TRUE
+```

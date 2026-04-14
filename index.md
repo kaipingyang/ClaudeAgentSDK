@@ -1,10 +1,14 @@
 # Claude Agent SDK for R
 
+> **Unofficial community port.** Not affiliated with or endorsed by
+> Anthropic. This is an R implementation of Anthropic’s
+> [claude-code-sdk](https://github.com/anthropics/claude-agent-sdk-python).
+
 R SDK for Claude Agent. Mirrors the [Python
 SDK](https://github.com/anthropics/claude-agent-sdk-python) with
 idiomatic R internals. See the [Claude Agent SDK
-documentation](https://docs.anthropic.com/en/docs/claude-code/sdk) for
-more information.
+documentation](https://code.claude.com/docs/en/sdk) for more
+information.
 
 ## Installation
 
@@ -313,11 +317,13 @@ observeEvent(input$tool_deny, {
 })
 ```
 
-See
-[`examples/15_shinychat_tool_approval_msgdriven.R`](https://kaipingyang.github.io/ClaudeAgentSDK/examples/15_shinychat_tool_approval_msgdriven.R)
-for a full Shiny app with modal-based approval, and examples 16–19 for
-additional approval UI patterns (inline bar, conversational, insertUI,
-native tool cards).
+See the [Shiny Tool
+Approval](https://kaipingyang.github.io/ClaudeAgentSDK/articles/shiny-tool-approval.html)
+article for a full walkthrough, or browse
+[`examples/15_shinychat_tool_approval_msgdriven.R`](https://github.com/kaipingyang/ClaudeAgentSDK/blob/main/examples/15_shinychat_tool_approval_msgdriven.R)
+directly. Additional experimental UI patterns (inline, conversational,
+insertUI, tool cards) are available in [examples
+16–19](https://github.com/kaipingyang/ClaudeAgentSDK/tree/main/examples).
 
 ### Runtime Control
 
@@ -411,7 +417,7 @@ tryCatch(
 | `claude_error_cli_connection` | `CLIConnectionError` | Connection/startup failure     |
 | `claude_error_process`        | `ProcessError`       | CLI process exited with error  |
 | `claude_error_json_decode`    | `CLIJSONDecodeError` | Malformed JSON from CLI        |
-| `claude_error_message_parse`  | `MessageParseError`  | Unrecognised message structure |
+| `claude_error_message_parse`  | `MessageParseError`  | Unrecognized message structure |
 
 ## Session Management
 
@@ -529,7 +535,7 @@ options <- ClaudeAgentOptions(
 
 The Python SDK provides `create_sdk_mcp_server()` for defining tools
 in-process. The R SDK uses
-[`mcptools`](https://github.com/tidyverse/mcptools) instead, which runs
+[`mcptools`](https://github.com/posit-dev/mcptools) instead, which runs
 tools in a separate R subprocess via the standard MCP protocol.
 Functionally equivalent — the only difference is shared-memory access.
 
@@ -557,7 +563,7 @@ result <- claude_run("What is 3 + 4?", options = options)
 ```
 
 See
-[`examples/11_mcp_server.R`](https://kaipingyang.github.io/ClaudeAgentSDK/examples/11_mcp_server.R)
+[`examples/11_mcp_server.R`](https://github.com/kaipingyang/ClaudeAgentSDK/blob/main/examples/11_mcp_server.R)
 for a complete example.
 
 ## Advanced: Async / Shiny Integration
@@ -659,12 +665,11 @@ observeEvent(input$esc, {
 })
 ```
 
-See
-[`examples/13_shinychat_streaming.R`](https://kaipingyang.github.io/ClaudeAgentSDK/examples/13_shinychat_streaming.R)
-for a minimal streaming chat, and
-[`examples/19_shinychat_tool_cards.R`](https://kaipingyang.github.io/ClaudeAgentSDK/examples/19_shinychat_tool_cards.R)
-for a full-featured example with native tool cards, thinking blocks, and
-inline tool approval.
+See the [Shiny
+Streaming](https://kaipingyang.github.io/ClaudeAgentSDK/articles/shiny-streaming.html)
+article for a full walkthrough, or browse
+[`examples/13_shinychat_streaming.R`](https://github.com/kaipingyang/ClaudeAgentSDK/blob/main/examples/13_shinychat_streaming.R)
+directly.
 
 ### Simple non-streaming pattern (`receive_response_async`)
 
@@ -697,7 +702,7 @@ client$disconnect()
 ```
 
 See
-[`examples/14_shinychat_simple.R`](https://kaipingyang.github.io/ClaudeAgentSDK/examples/14_shinychat_simple.R)
+[`examples/14_shinychat_simple.R`](https://github.com/kaipingyang/ClaudeAgentSDK/blob/main/examples/14_shinychat_simple.R)
 for the Shiny `ExtendedTask` version.
 
 ## Available Tools

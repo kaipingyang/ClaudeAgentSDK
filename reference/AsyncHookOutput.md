@@ -17,3 +17,11 @@ AsyncHookOutput(async_timeout = NULL)
 ## Value
 
 Object of class `AsyncHookOutput`.
+
+## Examples
+
+``` r
+out <- AsyncHookOutput(async_timeout = 5000L)
+out$asyncTimeout
+#> [1] 5000
+```

@@ -49,3 +49,11 @@ SandboxSettings(
 ## Value
 
 Object of class `SandboxSettings`.
+
+## Examples
+
+``` r
+sb <- SandboxSettings(enabled = TRUE, allow_unsandboxed_commands = FALSE)
+sb$enabled
+#> [1] TRUE
+```

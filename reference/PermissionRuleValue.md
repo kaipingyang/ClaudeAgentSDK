@@ -21,3 +21,11 @@ PermissionRuleValue(tool_name, rule_content = NULL)
 ## Value
 
 Object of class `PermissionRuleValue`.
+
+## Examples
+
+``` r
+rv <- PermissionRuleValue("Bash", rule_content = "allow")
+rv$tool_name
+#> [1] "Bash"
+```

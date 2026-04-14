@@ -21,3 +21,11 @@ ThinkingBlock(thinking, signature)
 ## Value
 
 Object of class `ThinkingBlock`.
+
+## Examples
+
+``` r
+blk <- ThinkingBlock("Let me reason step by step...", signature = "sig123")
+blk$thinking
+#> [1] "Let me reason step by step..."
+```

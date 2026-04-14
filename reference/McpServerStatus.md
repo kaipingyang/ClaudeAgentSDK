@@ -50,3 +50,11 @@ McpServerStatus(
 ## Value
 
 Object of class `McpServerStatus`.
+
+## Examples
+
+``` r
+s <- McpServerStatus("calculator", "connected")
+s$status
+#> [1] "connected"
+```

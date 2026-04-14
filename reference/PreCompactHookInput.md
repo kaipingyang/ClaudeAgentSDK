@@ -44,3 +44,14 @@ PreCompactHookInput(
 ## Value
 
 Object of class `PreCompactHookInput`.
+
+## Examples
+
+``` r
+h <- PreCompactHookInput(
+  session_id = "s1", transcript_path = "/tmp/t.jsonl",
+  cwd = "/tmp", trigger = "auto"
+)
+h$trigger
+#> [1] "auto"
+```

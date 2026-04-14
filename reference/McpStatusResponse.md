@@ -17,3 +17,11 @@ McpStatusResponse(mcp_servers)
 ## Value
 
 Object of class `McpStatusResponse`.
+
+## Examples
+
+``` r
+resp <- McpStatusResponse(list(McpServerStatus("calc", "connected")))
+length(resp$mcpServers)
+#> [1] 1
+```

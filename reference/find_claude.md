@@ -19,3 +19,15 @@ find_claude(cli_path = NULL)
 ## Value
 
 Character. Absolute path to the `claude` binary.
+
+## Examples
+
+``` r
+if (FALSE) { # \dontrun{
+path <- find_claude()
+cat("CLI found at:", path, "\n")
+
+# Validate a custom path
+path2 <- find_claude("/usr/local/bin/claude")
+} # }
+```

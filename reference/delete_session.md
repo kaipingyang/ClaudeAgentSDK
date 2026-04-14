@@ -21,3 +21,12 @@ delete_session(session_id, directory = NULL)
 ## Value
 
 Invisibly `TRUE`.
+
+## Examples
+
+``` r
+# \donttest{
+# Only run this if you have a session you want to delete
+# delete_session("xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx")
+# }
+```

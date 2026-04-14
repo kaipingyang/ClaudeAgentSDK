@@ -31,3 +31,15 @@ get_session_messages(session_id, directory = NULL, limit = NULL, offset = 0L)
 ## Value
 
 List of `SessionMessage` objects.
+
+## Examples
+
+``` r
+# \donttest{
+sessions <- list_sessions(limit = 1L)
+if (length(sessions) > 0) {
+  msgs <- get_session_messages(sessions[[1]]$session_id, limit = 5L)
+  length(msgs)
+}
+# }
+```

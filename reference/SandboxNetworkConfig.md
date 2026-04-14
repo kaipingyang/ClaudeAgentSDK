@@ -39,3 +39,11 @@ SandboxNetworkConfig(
 ## Value
 
 Object of class `SandboxNetworkConfig`.
+
+## Examples
+
+``` r
+nc <- SandboxNetworkConfig(allow_local_binding = TRUE)
+nc$allowLocalBinding
+#> [1] TRUE
+```

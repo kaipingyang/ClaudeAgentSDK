@@ -34,3 +34,11 @@ UserMessage(
 ## Value
 
 Object of class `UserMessage`.
+
+## Examples
+
+``` r
+msg <- UserMessage("Hello, Claude!")
+msg$content
+#> [1] "Hello, Claude!"
+```

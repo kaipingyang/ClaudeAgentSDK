@@ -11,3 +11,11 @@ ThinkingConfigAdaptive()
 ## Value
 
 Object of class `ThinkingConfigAdaptive`.
+
+## Examples
+
+``` r
+cfg <- ThinkingConfigAdaptive()
+cfg$type  # "adaptive"
+#> [1] "adaptive"
+```

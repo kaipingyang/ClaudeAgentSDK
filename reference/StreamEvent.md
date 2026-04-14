@@ -29,3 +29,11 @@ StreamEvent(uuid, session_id, event, parent_tool_use_id = NULL)
 ## Value
 
 Object of class `StreamEvent`.
+
+## Examples
+
+``` r
+evt <- StreamEvent("u1", "s1", list(type = "ping"))
+evt$event$type
+#> [1] "ping"
+```

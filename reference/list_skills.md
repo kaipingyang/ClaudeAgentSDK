@@ -19,3 +19,11 @@ list_skills(cwd = getwd())
 ## Value
 
 Character vector of skill names (file stem, no extension).
+
+## Examples
+
+``` r
+skills <- list_skills()
+length(skills)  # 0 if no skills installed
+#> [1] 0
+```

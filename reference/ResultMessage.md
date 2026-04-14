@@ -89,3 +89,18 @@ ResultMessage(
 ## Value
 
 Object of class `ResultMessage`.
+
+## Examples
+
+``` r
+msg <- ResultMessage(
+  subtype         = "result",
+  duration_ms     = 1200L,
+  duration_api_ms = 900L,
+  is_error        = FALSE,
+  num_turns       = 1L,
+  session_id      = "s1"
+)
+msg$is_error
+#> [1] FALSE
+```

@@ -17,3 +17,11 @@ ThinkingConfigEnabled(budget_tokens)
 ## Value
 
 Object of class `ThinkingConfigEnabled`.
+
+## Examples
+
+``` r
+cfg <- ThinkingConfigEnabled(budget_tokens = 5000L)
+cfg$budget_tokens
+#> [1] 5000
+```

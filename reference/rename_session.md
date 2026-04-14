@@ -31,3 +31,14 @@ rename_session(session_id, title, directory = NULL)
 ## Value
 
 Invisibly `NULL`.
+
+## Examples
+
+``` r
+# \donttest{
+sessions <- list_sessions(limit = 1L)
+if (length(sessions) > 0) {
+  rename_session(sessions[[1]]$session_id, "My renamed session")
+}
+# }
+```

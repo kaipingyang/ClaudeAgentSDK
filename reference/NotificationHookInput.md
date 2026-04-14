@@ -49,3 +49,14 @@ NotificationHookInput(
 ## Value
 
 Object of class `NotificationHookInput`.
+
+## Examples
+
+``` r
+h <- NotificationHookInput(
+  session_id = "s1", transcript_path = "/tmp/t.jsonl", cwd = "/tmp",
+  message = "Build finished.", notification_type = "info"
+)
+h$message
+#> [1] "Build finished."
+```

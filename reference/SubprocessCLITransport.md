@@ -53,7 +53,7 @@ interrupt).
 
 ### Method `new()`
 
-Initialise the transport with a `ClaudeAgentOptions` object.
+Initialize the transport with a `ClaudeAgentOptions` object.
 
 #### Usage
 

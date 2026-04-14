@@ -19,4 +19,4 @@ parse_message(line)
 
 A typed message object (one of the classes defined in `types.R`), a raw
 control-request list (passed through to the transport layer), or `NULL`
-for unrecognized message types (forward-compatible behaviour).
+for unrecognized message types (forward-compatible behavior).

@@ -59,3 +59,14 @@ AssistantMessage(
 ## Value
 
 Object of class `AssistantMessage`.
+
+## Examples
+
+``` r
+msg <- AssistantMessage(
+  content = list(TextBlock("The answer is 42.")),
+  model   = "claude-sonnet-4-6"
+)
+inherits(msg, "AssistantMessage")
+#> [1] TRUE
+```

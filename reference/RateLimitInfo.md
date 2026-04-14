@@ -54,3 +54,11 @@ RateLimitInfo(
 ## Value
 
 Object of class `RateLimitInfo`.
+
+## Examples
+
+``` r
+info <- RateLimitInfo("allowed", utilization = 0.4)
+info$status
+#> [1] "allowed"
+```

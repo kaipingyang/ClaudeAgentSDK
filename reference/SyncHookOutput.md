@@ -51,3 +51,14 @@ SyncHookOutput(
 ## Value
 
 Object of class `SyncHookOutput`.
+
+## Examples
+
+``` r
+out <- SyncHookOutput(continue_ = TRUE)
+out$continue_
+#> [1] TRUE
+
+# Block execution from a hook
+out2 <- SyncHookOutput(decision = "block", reason = "Command is destructive.")
+```

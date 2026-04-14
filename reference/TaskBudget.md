@@ -19,3 +19,11 @@ TaskBudget(max_tokens)
 ## Value
 
 Object of class `TaskBudget`.
+
+## Examples
+
+``` r
+budget <- TaskBudget(max_tokens = 10000L)
+budget$max_tokens
+#> [1] 10000
+```

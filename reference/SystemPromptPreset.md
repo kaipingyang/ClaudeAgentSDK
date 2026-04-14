@@ -21,3 +21,11 @@ SystemPromptPreset(exclude_dynamic_sections = NULL, append = NULL)
 ## Value
 
 Object of class `SystemPromptPreset`.
+
+## Examples
+
+``` r
+sp <- SystemPromptPreset(exclude_dynamic_sections = TRUE)
+sp$type  # "preset"
+#> [1] "preset"
+```

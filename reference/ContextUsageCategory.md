@@ -29,3 +29,11 @@ ContextUsageCategory(name, tokens, color, is_deferred = NULL)
 ## Value
 
 Object of class `ContextUsageCategory`.
+
+## Examples
+
+``` r
+cat <- ContextUsageCategory("user", 1024L, "#4e79a7")
+cat$name
+#> [1] "user"
+```

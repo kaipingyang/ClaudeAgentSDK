@@ -39,3 +39,18 @@ list_sessions(
 ## Value
 
 List of `SDKSessionInfo` objects sorted by `last_modified` descending.
+
+## Examples
+
+``` r
+# \donttest{
+# All sessions
+sessions <- list_sessions(limit = 5L)
+length(sessions)
+#> [1] 0
+
+# Sessions for a specific project
+sessions <- list_sessions(directory = getwd(), limit = 10L)
+if (length(sessions) > 0) cat(sessions[[1]]$session_id, "\n")
+# }
+```

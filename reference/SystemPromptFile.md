@@ -17,3 +17,11 @@ SystemPromptFile(path)
 ## Value
 
 Object of class `SystemPromptFile`.
+
+## Examples
+
+``` r
+sp <- SystemPromptFile("/path/to/prompt.md")
+sp$path
+#> [1] "/path/to/prompt.md"
+```

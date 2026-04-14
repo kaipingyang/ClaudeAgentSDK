@@ -25,3 +25,11 @@ ToolResultBlock(tool_use_id, content = NULL, is_error = NULL)
 ## Value
 
 Object of class `ToolResultBlock`.
+
+## Examples
+
+``` r
+blk <- ToolResultBlock("tool1", content = "file contents", is_error = FALSE)
+blk$tool_use_id
+#> [1] "tool1"
+```

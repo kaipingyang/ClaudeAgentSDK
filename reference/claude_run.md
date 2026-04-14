@@ -39,3 +39,21 @@ A list of class `ClaudeRunResult` with:
 - `$messages` — all messages in order
 
 - `$result` — the `ResultMessage` (or `NULL` if not received)
+
+## Examples
+
+``` r
+if (FALSE) { # \dontrun{
+# Simple one-shot query
+result <- claude_run("What is 2 + 2?", max_turns = 1L)
+cat(result$result$result, "\n")
+
+# With custom options
+opts <- ClaudeAgentOptions(
+  max_turns       = 1L,
+  permission_mode = "bypassPermissions",
+  system_prompt   = "You are a helpful assistant."
+)
+result <- claude_run("Summarise R in one sentence.", options = opts)
+} # }
+```

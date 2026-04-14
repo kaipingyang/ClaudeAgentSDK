@@ -25,3 +25,11 @@ ToolUseBlock(id, name, input)
 ## Value
 
 Object of class `ToolUseBlock`.
+
+## Examples
+
+``` r
+blk <- ToolUseBlock("tool1", "Bash", list(command = "ls -la"))
+blk$name
+#> [1] "Bash"
+```

@@ -81,3 +81,16 @@ AgentDefinition(
 ## Value
 
 Object of class `AgentDefinition`.
+
+## Examples
+
+``` r
+agent <- AgentDefinition(
+  description = "A code review assistant",
+  prompt      = "Review code for correctness and style.",
+  tools       = c("Read", "Bash"),
+  max_turns   = 10L
+)
+agent$description
+#> [1] "A code review assistant"
+```

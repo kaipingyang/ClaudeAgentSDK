@@ -39,3 +39,14 @@ StopHookInput(
 ## Value
 
 Object of class `StopHookInput`.
+
+## Examples
+
+``` r
+h <- StopHookInput(
+  session_id = "s1", transcript_path = "/tmp/t.jsonl",
+  cwd = "/tmp", stop_hook_active = FALSE
+)
+h$stop_hook_active
+#> [1] FALSE
+```

@@ -21,3 +21,11 @@ SystemMessage(subtype, data)
 ## Value
 
 Object of class `SystemMessage`.
+
+## Examples
+
+``` r
+msg <- SystemMessage("init", list(session_id = "abc"))
+msg$subtype
+#> [1] "init"
+```

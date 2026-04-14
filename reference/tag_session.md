@@ -28,3 +28,16 @@ tag_session(session_id, tag = NULL, directory = NULL)
 ## Value
 
 Invisibly `NULL`.
+
+## Examples
+
+``` r
+# \donttest{
+sessions <- list_sessions(limit = 1L)
+if (length(sessions) > 0) {
+  tag_session(sessions[[1]]$session_id, "important")
+  # Clear the tag
+  tag_session(sessions[[1]]$session_id, NULL)
+}
+# }
+```

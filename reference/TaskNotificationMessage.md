@@ -64,3 +64,16 @@ TaskNotificationMessage(
 ## Value
 
 Object of class `c("TaskNotificationMessage","SystemMessage")`.
+
+## Examples
+
+``` r
+msg <- TaskNotificationMessage(
+  subtype = "task_notification", data = list(),
+  task_id = "t1", status = "completed",
+  output_file = "/tmp/out.txt", summary = "Done.",
+  uuid = "u1", session_id = "s1"
+)
+msg$status
+#> [1] "completed"
+```

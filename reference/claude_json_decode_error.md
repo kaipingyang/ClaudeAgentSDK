@@ -21,3 +21,14 @@ claude_json_decode_error(line, original_error = NULL, ...)
 - ...:
 
   Additional fields.
+
+## Examples
+
+``` r
+err <- tryCatch(
+  claude_json_decode_error("{bad json"),
+  error = function(e) e
+)
+inherits(err, "claude_error_json_decode")
+#> [1] TRUE
+```

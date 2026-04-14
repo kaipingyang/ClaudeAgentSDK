@@ -64,3 +64,15 @@ PostToolUseHookInput(
 ## Value
 
 Object of class `PostToolUseHookInput`.
+
+## Examples
+
+``` r
+h <- PostToolUseHookInput(
+  session_id = "s1", transcript_path = "/tmp/t.jsonl", cwd = "/tmp",
+  tool_name = "Bash", tool_input = list(command = "ls"),
+  tool_response = "file.txt\n", tool_use_id = "t1"
+)
+h$tool_name
+#> [1] "Bash"
+```

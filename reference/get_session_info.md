@@ -22,3 +22,15 @@ get_session_info(session_id, directory = NULL)
 ## Value
 
 An `SDKSessionInfo` object, or `NULL` if not found.
+
+## Examples
+
+``` r
+# \donttest{
+sessions <- list_sessions(limit = 1L)
+if (length(sessions) > 0) {
+  info <- get_session_info(sessions[[1]]$session_id)
+  info$session_id
+}
+# }
+```

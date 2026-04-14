@@ -22,3 +22,14 @@ claude_message_parse_error(message, data = NULL, ...)
 - ...:
 
   Additional fields.
+
+## Examples
+
+``` r
+err <- tryCatch(
+  claude_message_parse_error("Unknown message type", data = list(type = "x")),
+  error = function(e) e
+)
+inherits(err, "claude_error_message_parse")
+#> [1] TRUE
+```

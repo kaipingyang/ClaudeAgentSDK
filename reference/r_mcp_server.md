@@ -72,3 +72,22 @@ Then pass the script path:
       mcp_servers   = list(my_tools = r_mcp_server("my_tools.R")),
       allowed_tools = "mcp__my_tools__add"
     )
+
+## Examples
+
+``` r
+# Create an MCP server entry from a tools script
+entry <- r_mcp_server("my_tools.R")
+entry$type    # "stdio"
+#> [1] "stdio"
+entry$command # path to Rscript
+#> [1] "/opt/R/4.5.3/lib/R/bin/Rscript"
+
+# Use in ClaudeAgentOptions
+if (FALSE) { # \dontrun{
+opts <- ClaudeAgentOptions(
+  mcp_servers   = list(my_tools = r_mcp_server("my_tools.R")),
+  allowed_tools = "mcp__my_tools__add"
+)
+} # }
+```

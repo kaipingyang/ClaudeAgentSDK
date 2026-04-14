@@ -44,3 +44,14 @@ SubagentStartHookInput(
 ## Value
 
 Object of class `SubagentStartHookInput`.
+
+## Examples
+
+``` r
+h <- SubagentStartHookInput(
+  session_id = "s1", transcript_path = "/tmp/t.jsonl", cwd = "/tmp",
+  agent_id = "a1", agent_type = "subagent"
+)
+h$agent_id
+#> [1] "a1"
+```

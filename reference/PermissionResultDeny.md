@@ -21,3 +21,13 @@ PermissionResultDeny(message = "", interrupt = FALSE)
 ## Value
 
 Object of class `PermissionResultDeny`.
+
+## Examples
+
+``` r
+result <- PermissionResultDeny("Not allowed in this context.")
+result$behavior  # "deny"
+#> [1] "deny"
+result$message
+#> [1] "Not allowed in this context."
+```

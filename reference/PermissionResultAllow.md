@@ -21,3 +21,17 @@ PermissionResultAllow(updated_input = NULL, updated_permissions = NULL)
 ## Value
 
 Object of class `PermissionResultAllow`.
+
+## Examples
+
+``` r
+# Allow with default input
+result <- PermissionResultAllow()
+result$behavior  # "allow"
+#> [1] "allow"
+
+# Use in a can_use_tool callback
+opts <- ClaudeAgentOptions(
+  can_use_tool = function(name, input, ctx) PermissionResultAllow()
+)
+```

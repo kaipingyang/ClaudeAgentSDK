@@ -69,3 +69,15 @@ PostToolUseFailureHookInput(
 ## Value
 
 Object of class `PostToolUseFailureHookInput`.
+
+## Examples
+
+``` r
+h <- PostToolUseFailureHookInput(
+  session_id = "s1", transcript_path = "/tmp/t.jsonl", cwd = "/tmp",
+  tool_name = "Write", tool_input = list(path = "/x"), tool_use_id = "t1",
+  error = "Permission denied"
+)
+h$error
+#> [1] "Permission denied"
+```

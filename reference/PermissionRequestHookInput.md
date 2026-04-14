@@ -59,3 +59,14 @@ PermissionRequestHookInput(
 ## Value
 
 Object of class `PermissionRequestHookInput`.
+
+## Examples
+
+``` r
+h <- PermissionRequestHookInput(
+  session_id = "s1", transcript_path = "/tmp/t.jsonl", cwd = "/tmp",
+  tool_name = "Bash", tool_input = list(command = "rm -rf /tmp/test")
+)
+h$tool_name
+#> [1] "Bash"
+```

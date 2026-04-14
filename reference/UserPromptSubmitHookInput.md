@@ -39,3 +39,14 @@ UserPromptSubmitHookInput(
 ## Value
 
 Object of class `UserPromptSubmitHookInput`.
+
+## Examples
+
+``` r
+h <- UserPromptSubmitHookInput(
+  session_id = "s1", transcript_path = "/tmp/t.jsonl",
+  cwd = "/tmp", prompt = "Hello!"
+)
+h$prompt
+#> [1] "Hello!"
+```

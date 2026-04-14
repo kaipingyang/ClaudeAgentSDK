@@ -25,3 +25,11 @@ McpToolInfo(name, description = NULL, annotations = NULL)
 ## Value
 
 Object of class `McpToolInfo`.
+
+## Examples
+
+``` r
+tool <- McpToolInfo("add", description = "Add two numbers")
+tool$name
+#> [1] "add"
+```

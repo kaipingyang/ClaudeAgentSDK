@@ -38,3 +38,15 @@ fork_session(
 ## Value
 
 Named list with `session_id` — the UUID of the new forked session.
+
+## Examples
+
+``` r
+# \donttest{
+sessions <- list_sessions(limit = 1L)
+if (length(sessions) > 0) {
+  forked <- fork_session(sessions[[1]]$session_id, title = "Branch A")
+  forked$session_id  # UUID of the new session
+}
+# }
+```
