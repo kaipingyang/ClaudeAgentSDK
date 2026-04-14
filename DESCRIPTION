@@ -7,7 +7,7 @@ Description: Unofficial community R port of Anthropic's claude-code-sdk. Not
     affiliated with or endorsed by Anthropic. Spawns the Claude Code CLI as a
     subprocess and communicates via newline-delimited JSON stream protocol,
     including the full bidirectional control protocol (permission requests, hooks,
-    interrupt). Mirrors the Python claude-code-sdk API.
+    interrupt). Mirrors the Python claude-agent-sdk API.
 License: MIT + file LICENSE
 URL: https://kaipingyang.github.io/ClaudeAgentSDK/, https://github.com/kaipingyang/ClaudeAgentSDK
 BugReports: https://github.com/kaipingyang/ClaudeAgentSDK/issues
