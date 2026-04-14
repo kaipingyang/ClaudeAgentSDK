@@ -7,8 +7,8 @@
 R SDK for Claude Agent. Mirrors the [Python
 SDK](https://github.com/anthropics/claude-agent-sdk-python) with
 idiomatic R internals. See the [Claude Agent SDK
-documentation](https://code.claude.com/docs/en/sdk) for more
-information.
+documentation](https://code.claude.com/docs/en/agent-sdk/overview) for
+more information.
 
 ## Installation
 
