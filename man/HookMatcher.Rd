@@ -22,3 +22,10 @@ Object of class \code{HookMatcher}.
 Pairs a tool/event matcher with a list of hook callback functions.
 Mirrors Python's \code{HookMatcher} dataclass in \code{types.py}.
 }
+\examples{
+hm <- HookMatcher(
+  matcher = "Bash",
+  hooks   = list(function(input, id, ctx) list(continue_ = TRUE))
+)
+hm$matcher
+}

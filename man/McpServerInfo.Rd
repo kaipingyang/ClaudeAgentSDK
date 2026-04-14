@@ -17,3 +17,7 @@ Object of class \code{McpServerInfo}.
 \description{
 Create a McpServerInfo
 }
+\examples{
+info <- McpServerInfo("my_server", "1.0.0")
+info$version
+}

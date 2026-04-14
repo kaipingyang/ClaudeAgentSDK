@@ -15,3 +15,7 @@ Object of class \code{TextBlock}.
 \description{
 Create a TextBlock
 }
+\examples{
+blk <- TextBlock("Hello, world!")
+blk$text
+}

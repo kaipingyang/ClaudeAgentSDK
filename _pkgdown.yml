@@ -151,6 +151,13 @@ reference:
       - claude_json_decode_error
       - claude_message_parse_error
 
+articles:
+  - title: "Shiny Integration"
+    desc: "Patterns for embedding ClaudeAgentSDK in Shiny applications."
+    contents:
+      - shiny-streaming
+      - shiny-tool-approval
+
 news:
   releases:
   - text: "Version 0.2.0"

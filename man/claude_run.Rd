@@ -30,3 +30,18 @@ Equivalent to the Python pattern:
 async for msg in query(prompt, options): messages.append(msg)
 }\if{html}{\out{</div>}}
 }
+\examples{
+\dontrun{
+# Simple one-shot query
+result <- claude_run("What is 2 + 2?", max_turns = 1L)
+cat(result$result$result, "\n")
+
+# With custom options
+opts <- ClaudeAgentOptions(
+  max_turns       = 1L,
+  permission_mode = "bypassPermissions",
+  system_prompt   = "You are a helpful assistant."
+)
+result <- claude_run("Summarise R in one sentence.", options = opts)
+}
+}

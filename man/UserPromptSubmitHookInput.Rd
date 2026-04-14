@@ -29,3 +29,10 @@ Object of class \code{UserPromptSubmitHookInput}.
 \description{
 Create a UserPromptSubmitHookInput
 }
+\examples{
+h <- UserPromptSubmitHookInput(
+  session_id = "s1", transcript_path = "/tmp/t.jsonl",
+  cwd = "/tmp", prompt = "Hello!"
+)
+h$prompt
+}

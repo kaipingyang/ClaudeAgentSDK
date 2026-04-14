@@ -30,3 +30,12 @@ Copies transcript messages from the source session into a new JSONL file
 with fresh UUIDs, preserving the \code{parentUuid} chain. Supports
 \code{up_to_message_id} for branching from a specific point.
 }
+\examples{
+\donttest{
+sessions <- list_sessions(limit = 1L)
+if (length(sessions) > 0) {
+  forked <- fork_session(sessions[[1]]$session_id, title = "Branch A")
+  forked$session_id  # UUID of the new session
+}
+}
+}

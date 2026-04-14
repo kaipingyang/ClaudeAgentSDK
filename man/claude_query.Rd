@@ -28,3 +28,14 @@ The generator terminates automatically after the \code{ResultMessage}.
 The caller is responsible for disconnecting the transport after the
 generator is exhausted.  For a simpler synchronous API see \code{\link[=claude_run]{claude_run()}}.
 }
+\examples{
+\dontrun{
+gen <- claude_query("What is 2 + 2?", ClaudeAgentOptions(max_turns = 1L))
+coro::loop(for (msg in gen) {
+  if (inherits(msg, "AssistantMessage")) {
+    for (blk in msg$content)
+      if (inherits(blk, "TextBlock")) cat(blk$text)
+  }
+})
+}
+}

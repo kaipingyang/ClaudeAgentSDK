@@ -18,3 +18,12 @@ An \code{SDKSessionInfo} object, or \code{NULL} if not found.
 \description{
 Get metadata for a single session
 }
+\examples{
+\donttest{
+sessions <- list_sessions(limit = 1L)
+if (length(sessions) > 0) {
+  info <- get_session_info(sessions[[1]]$session_id)
+  info$session_id
+}
+}
+}

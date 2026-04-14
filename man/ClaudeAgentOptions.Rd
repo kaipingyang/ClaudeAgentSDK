@@ -160,3 +160,22 @@ Constructs an options object controlling every aspect of a Claude Code
 session.  Mirrors the Python SDK's \code{ClaudeAgentOptions} dataclass
 field-for-field.
 }
+\examples{
+# Basic options — no CLI required
+opts <- ClaudeAgentOptions(
+  max_turns       = 3L,
+  permission_mode = "bypassPermissions"
+)
+opts$max_turns  # 3
+
+# With synchronous permission callback
+opts2 <- ClaudeAgentOptions(
+  permission_mode = "default",
+  can_use_tool    = function(name, input, ctx) PermissionResultAllow()
+)
+
+# With thinking enabled
+opts3 <- ClaudeAgentOptions(
+  thinking = list(type = "adaptive")
+)
+}

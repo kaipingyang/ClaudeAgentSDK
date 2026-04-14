@@ -12,3 +12,7 @@ Object of class \code{ThinkingConfigAdaptive}.
 \description{
 Create a ThinkingConfigAdaptive
 }
+\examples{
+cfg <- ThinkingConfigAdaptive()
+cfg$type  # "adaptive"
+}

@@ -16,3 +16,10 @@ claude_json_decode_error(line, original_error = NULL, ...)
 \description{
 Raised when a line from the CLI stdout cannot be decoded as JSON.
 }
+\examples{
+err <- tryCatch(
+  claude_json_decode_error("{bad json"),
+  error = function(e) e
+)
+inherits(err, "claude_error_json_decode")
+}

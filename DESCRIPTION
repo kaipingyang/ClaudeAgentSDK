@@ -25,6 +25,8 @@ Suggests:
     promises,
     shiny,
     testthat (>= 3.0.0),
-    withr
+    withr,
+    knitr,
+    rmarkdown
 SystemRequirements: Claude Code CLI (>= 2.0.0)
 Config/testthat/edition: 3

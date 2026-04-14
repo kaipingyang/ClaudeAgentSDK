@@ -15,3 +15,7 @@ Object of class \code{AsyncHookOutput}.
 \description{
 Signals that the hook will complete asynchronously.
 }
+\examples{
+out <- AsyncHookOutput(async_timeout = 5000L)
+out$asyncTimeout
+}

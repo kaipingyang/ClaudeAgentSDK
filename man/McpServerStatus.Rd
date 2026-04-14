@@ -36,3 +36,7 @@ Object of class \code{McpServerStatus}.
 \description{
 Create a McpServerStatus
 }
+\examples{
+s <- McpServerStatus("calculator", "connected")
+s$status
+}

@@ -38,3 +38,7 @@ Object of class \code{RateLimitInfo}.
 \description{
 Create a RateLimitInfo
 }
+\examples{
+info <- RateLimitInfo("allowed", utilization = 0.4)
+info$status
+}

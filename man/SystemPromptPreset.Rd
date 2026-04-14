@@ -17,3 +17,7 @@ Object of class \code{SystemPromptPreset}.
 \description{
 Create a SystemPromptPreset
 }
+\examples{
+sp <- SystemPromptPreset(exclude_dynamic_sections = TRUE)
+sp$type  # "preset"
+}

@@ -35,3 +35,10 @@ Object of class \code{NotificationHookInput}.
 \description{
 Create a NotificationHookInput
 }
+\examples{
+h <- NotificationHookInput(
+  session_id = "s1", transcript_path = "/tmp/t.jsonl", cwd = "/tmp",
+  message = "Build finished.", notification_type = "info"
+)
+h$message
+}

@@ -17,3 +17,7 @@ Object of class \code{ThinkingBlock}.
 \description{
 Create a ThinkingBlock
 }
+\examples{
+blk <- ThinkingBlock("Let me reason step by step...", signature = "sig123")
+blk$thinking
+}

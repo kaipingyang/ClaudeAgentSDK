@@ -15,3 +15,7 @@ Object of class \code{SystemPromptFile}.
 \description{
 Create a SystemPromptFile
 }
+\examples{
+sp <- SystemPromptFile("/path/to/prompt.md")
+sp$path
+}

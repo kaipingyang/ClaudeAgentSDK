@@ -28,6 +28,13 @@ NULL
 #'   `list_sessions(directory = ...)`). When `NULL`, all project directories
 #'   are searched.
 #' @return Invisibly `NULL`.
+#' @examples
+#' \donttest{
+#' sessions <- list_sessions(limit = 1L)
+#' if (length(sessions) > 0) {
+#'   rename_session(sessions[[1]]$session_id, "My renamed session")
+#' }
+#' }
 #' @export
 rename_session <- function(session_id, title, directory = NULL) {
   uuid <- .validate_uuid(session_id)
@@ -56,6 +63,15 @@ rename_session <- function(session_id, title, directory = NULL) {
 #' @param tag Character or NULL. Tag string, or `NULL` to clear.
 #' @param directory Character or NULL. Project directory.
 #' @return Invisibly `NULL`.
+#' @examples
+#' \donttest{
+#' sessions <- list_sessions(limit = 1L)
+#' if (length(sessions) > 0) {
+#'   tag_session(sessions[[1]]$session_id, "important")
+#'   # Clear the tag
+#'   tag_session(sessions[[1]]$session_id, NULL)
+#' }
+#' }
 #' @export
 tag_session <- function(session_id, tag = NULL, directory = NULL) {
   uuid <- .validate_uuid(session_id)
@@ -85,6 +101,11 @@ tag_session <- function(session_id, tag = NULL, directory = NULL) {
 #' @param session_id Character. UUID of the session.
 #' @param directory Character or NULL. Project directory.
 #' @return Invisibly `TRUE`.
+#' @examples
+#' \donttest{
+#' # Only run this if you have a session you want to delete
+#' # delete_session("xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx")
+#' }
 #' @export
 delete_session <- function(session_id, directory = NULL) {
   uuid <- .validate_uuid(session_id)
@@ -116,6 +137,14 @@ delete_session <- function(session_id, directory = NULL) {
 #' @param title Character or NULL. Custom title for the fork. If `NULL`,
 #'   derives title from the original + " (fork)".
 #' @return Named list with `session_id` — the UUID of the new forked session.
+#' @examples
+#' \donttest{
+#' sessions <- list_sessions(limit = 1L)
+#' if (length(sessions) > 0) {
+#'   forked <- fork_session(sessions[[1]]$session_id, title = "Branch A")
+#'   forked$session_id  # UUID of the new session
+#' }
+#' }
 #' @export
 fork_session <- function(session_id,
                           directory         = NULL,

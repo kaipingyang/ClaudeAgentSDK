@@ -17,3 +17,8 @@ Object of class \code{ContextUsageResponse}.
 \description{
 Create a ContextUsageResponse
 }
+\examples{
+cats <- list(ContextUsageCategory("user", 1024L, "#4e79a7"))
+resp <- ContextUsageResponse(cats, total_tokens = 1024L)
+resp$totalTokens
+}

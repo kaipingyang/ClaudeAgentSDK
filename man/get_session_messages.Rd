@@ -23,3 +23,12 @@ Reads the full JSONL transcript, reconstructs the conversation chain via
 \code{parentUuid} links, and returns \code{user}/\code{assistant} messages in
 chronological order.
 }
+\examples{
+\donttest{
+sessions <- list_sessions(limit = 1L)
+if (length(sessions) > 0) {
+  msgs <- get_session_messages(sessions[[1]]$session_id, limit = 5L)
+  length(msgs)
+}
+}
+}

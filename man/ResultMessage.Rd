@@ -59,3 +59,14 @@ Object of class \code{ResultMessage}.
 \description{
 Create a ResultMessage
 }
+\examples{
+msg <- ResultMessage(
+  subtype         = "result",
+  duration_ms     = 1200L,
+  duration_api_ms = 900L,
+  is_error        = FALSE,
+  num_turns       = 1L,
+  session_id      = "s1"
+)
+msg$is_error
+}

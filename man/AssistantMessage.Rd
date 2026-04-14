@@ -41,3 +41,10 @@ Object of class \code{AssistantMessage}.
 \description{
 Create an AssistantMessage
 }
+\examples{
+msg <- AssistantMessage(
+  content = list(TextBlock("The answer is 42.")),
+  model   = "claude-sonnet-4-6"
+)
+inherits(msg, "AssistantMessage")
+}

@@ -19,3 +19,7 @@ Object of class \code{ToolResultBlock}.
 \description{
 Create a ToolResultBlock
 }
+\examples{
+blk <- ToolResultBlock("tool1", content = "file contents", is_error = FALSE)
+blk$tool_use_id
+}

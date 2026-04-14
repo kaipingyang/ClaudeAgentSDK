@@ -19,3 +19,8 @@ Object of class \code{RateLimitEvent}.
 \description{
 Create a RateLimitEvent
 }
+\examples{
+info <- RateLimitInfo("allowed_warning", utilization = 0.85)
+evt  <- RateLimitEvent(info, uuid = "u1", session_id = "s1")
+evt$rate_limit_info$status
+}

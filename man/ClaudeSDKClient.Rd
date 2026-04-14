@@ -26,6 +26,23 @@ client$disconnect()
 }\if{html}{\out{</div>}}
 }
 
+\examples{
+\dontrun{
+# Multi-turn conversation
+client <- ClaudeSDKClient$new(ClaudeAgentOptions(max_turns = 3L))
+client$connect()
+
+client$send("What is the capital of France?")
+coro::loop(for (msg in client$receive_response()) {
+  if (inherits(msg, "AssistantMessage")) {
+    for (blk in msg$content)
+      if (inherits(blk, "TextBlock")) cat(blk$text, "\n")
+  }
+})
+
+client$disconnect()
+}
+}
 \section{Public fields}{
 \if{html}{\out{<div class="r6-fields">}}
 \describe{

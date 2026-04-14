@@ -12,3 +12,7 @@ Object of class \code{ThinkingConfigDisabled}.
 \description{
 Create a ThinkingConfigDisabled
 }
+\examples{
+cfg <- ThinkingConfigDisabled()
+cfg$type  # "disabled"
+}

@@ -15,3 +15,7 @@ Object of class \code{ThinkingConfigEnabled}.
 \description{
 Create a ThinkingConfigEnabled
 }
+\examples{
+cfg <- ThinkingConfigEnabled(budget_tokens = 5000L)
+cfg$budget_tokens
+}

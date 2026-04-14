@@ -21,6 +21,16 @@ NULL
 #'   supplied, `connect()` is NOT called automatically — the caller must
 #'   have already connected.
 #' @return A `coro` generator yielding message objects (see types.R).
+#' @examples
+#' \dontrun{
+#' gen <- claude_query("What is 2 + 2?", ClaudeAgentOptions(max_turns = 1L))
+#' coro::loop(for (msg in gen) {
+#'   if (inherits(msg, "AssistantMessage")) {
+#'     for (blk in msg$content)
+#'       if (inherits(blk, "TextBlock")) cat(blk$text)
+#'   }
+#' })
+#' }
 #' @export
 claude_query <- function(prompt,
                           options   = ClaudeAgentOptions(),
@@ -50,6 +60,20 @@ claude_query <- function(prompt,
 #' @return A list of class `ClaudeRunResult` with:
 #'   * `$messages` — all messages in order
 #'   * `$result` — the `ResultMessage` (or `NULL` if not received)
+#' @examples
+#' \dontrun{
+#' # Simple one-shot query
+#' result <- claude_run("What is 2 + 2?", max_turns = 1L)
+#' cat(result$result$result, "\n")
+#'
+#' # With custom options
+#' opts <- ClaudeAgentOptions(
+#'   max_turns       = 1L,
+#'   permission_mode = "bypassPermissions",
+#'   system_prompt   = "You are a helpful assistant."
+#' )
+#' result <- claude_run("Summarise R in one sentence.", options = opts)
+#' }
 #' @export
 claude_run <- function(prompt, options = ClaudeAgentOptions(), ...) {
   dots <- Filter(Negate(is.null), list(...))

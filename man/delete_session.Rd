@@ -17,3 +17,9 @@ Invisibly \code{TRUE}.
 \description{
 Removes the session's JSONL file permanently.
 }
+\examples{
+\donttest{
+# Only run this if you have a session you want to delete
+# delete_session("xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx")
+}
+}

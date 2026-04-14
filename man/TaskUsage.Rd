@@ -17,3 +17,7 @@ Object of class \code{TaskUsage}.
 \description{
 Create a TaskUsage
 }
+\examples{
+usage <- TaskUsage(total_tokens = 500L, tool_uses = 3L)
+usage$total_tokens
+}

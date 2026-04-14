@@ -41,3 +41,10 @@ Object of class \code{PermissionRequestHookInput}.
 \description{
 Create a PermissionRequestHookInput
 }
+\examples{
+h <- PermissionRequestHookInput(
+  session_id = "s1", transcript_path = "/tmp/t.jsonl", cwd = "/tmp",
+  tool_name = "Bash", tool_input = list(command = "rm -rf /tmp/test")
+)
+h$tool_name
+}

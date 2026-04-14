@@ -21,6 +21,9 @@ NULL
 #' Create a TextBlock
 #' @param text Character. The text content.
 #' @return Object of class `TextBlock`.
+#' @examples
+#' blk <- TextBlock("Hello, world!")
+#' blk$text
 #' @export
 TextBlock <- function(text) {
   .new_obj(list(text = text), "TextBlock")
@@ -30,6 +33,9 @@ TextBlock <- function(text) {
 #' @param thinking Character. The thinking content.
 #' @param signature Character. Signature for extended thinking.
 #' @return Object of class `ThinkingBlock`.
+#' @examples
+#' blk <- ThinkingBlock("Let me reason step by step...", signature = "sig123")
+#' blk$thinking
 #' @export
 ThinkingBlock <- function(thinking, signature) {
   .new_obj(list(thinking = thinking, signature = signature), "ThinkingBlock")
@@ -40,6 +46,9 @@ ThinkingBlock <- function(thinking, signature) {
 #' @param name Character. Tool name.
 #' @param input List. Tool input parameters.
 #' @return Object of class `ToolUseBlock`.
+#' @examples
+#' blk <- ToolUseBlock("tool1", "Bash", list(command = "ls -la"))
+#' blk$name
 #' @export
 ToolUseBlock <- function(id, name, input) {
   .new_obj(list(id = id, name = name, input = input), "ToolUseBlock")
@@ -50,6 +59,9 @@ ToolUseBlock <- function(id, name, input) {
 #' @param content Character, list, or NULL. Tool result content.
 #' @param is_error Logical or NULL. Whether this is an error result.
 #' @return Object of class `ToolResultBlock`.
+#' @examples
+#' blk <- ToolResultBlock("tool1", content = "file contents", is_error = FALSE)
+#' blk$tool_use_id
 #' @export
 ToolResultBlock <- function(tool_use_id, content = NULL, is_error = NULL) {
   .new_obj(
@@ -68,6 +80,9 @@ ToolResultBlock <- function(tool_use_id, content = NULL, is_error = NULL) {
 #' @param parent_tool_use_id Character or NULL.
 #' @param tool_use_result List or NULL.
 #' @return Object of class `UserMessage`.
+#' @examples
+#' msg <- UserMessage("Hello, Claude!")
+#' msg$content
 #' @export
 UserMessage <- function(content,
                         uuid               = NULL,
@@ -95,6 +110,12 @@ UserMessage <- function(content,
 #' @param session_id Character or NULL.
 #' @param uuid Character or NULL.
 #' @return Object of class `AssistantMessage`.
+#' @examples
+#' msg <- AssistantMessage(
+#'   content = list(TextBlock("The answer is 42.")),
+#'   model   = "claude-sonnet-4-6"
+#' )
+#' inherits(msg, "AssistantMessage")
 #' @export
 AssistantMessage <- function(content,
                              model,
@@ -125,6 +146,9 @@ AssistantMessage <- function(content,
 #' @param subtype Character. Subtype string.
 #' @param data List. Raw data dict.
 #' @return Object of class `SystemMessage`.
+#' @examples
+#' msg <- SystemMessage("init", list(session_id = "abc"))
+#' msg$subtype
 #' @export
 SystemMessage <- function(subtype, data) {
   .new_obj(list(subtype = subtype, data = data), "SystemMessage")
@@ -140,6 +164,13 @@ SystemMessage <- function(subtype, data) {
 #' @param tool_use_id Character or NULL.
 #' @param task_type Character or NULL.
 #' @return Object of class `c("TaskStartedMessage","SystemMessage")`.
+#' @examples
+#' msg <- TaskStartedMessage(
+#'   subtype = "task_started", data = list(),
+#'   task_id = "t1", description = "Run tests",
+#'   uuid = "u1", session_id = "s1"
+#' )
+#' msg$task_id
 #' @export
 TaskStartedMessage <- function(subtype, data, task_id, description,
                                uuid, session_id,
@@ -170,6 +201,14 @@ TaskStartedMessage <- function(subtype, data, task_id, description,
 #' @param tool_use_id Character or NULL.
 #' @param last_tool_name Character or NULL.
 #' @return Object of class `c("TaskProgressMessage","SystemMessage")`.
+#' @examples
+#' msg <- TaskProgressMessage(
+#'   subtype = "task_progress", data = list(),
+#'   task_id = "t1", description = "50% done",
+#'   usage = list(tokens = 100L),
+#'   uuid = "u1", session_id = "s1"
+#' )
+#' msg$description
 #' @export
 TaskProgressMessage <- function(subtype, data, task_id, description,
                                 usage, uuid, session_id,
@@ -203,6 +242,14 @@ TaskProgressMessage <- function(subtype, data, task_id, description,
 #' @param tool_use_id Character or NULL.
 #' @param usage List or NULL.
 #' @return Object of class `c("TaskNotificationMessage","SystemMessage")`.
+#' @examples
+#' msg <- TaskNotificationMessage(
+#'   subtype = "task_notification", data = list(),
+#'   task_id = "t1", status = "completed",
+#'   output_file = "/tmp/out.txt", summary = "Done.",
+#'   uuid = "u1", session_id = "s1"
+#' )
+#' msg$status
 #' @export
 TaskNotificationMessage <- function(subtype, data, task_id, status,
                                     output_file, summary, uuid, session_id,
@@ -241,6 +288,16 @@ TaskNotificationMessage <- function(subtype, data, task_id, status,
 #' @param errors List or NULL.
 #' @param uuid Character or NULL.
 #' @return Object of class `ResultMessage`.
+#' @examples
+#' msg <- ResultMessage(
+#'   subtype         = "result",
+#'   duration_ms     = 1200L,
+#'   duration_api_ms = 900L,
+#'   is_error        = FALSE,
+#'   num_turns       = 1L,
+#'   session_id      = "s1"
+#' )
+#' msg$is_error
 #' @export
 ResultMessage <- function(subtype, duration_ms, duration_api_ms,
                           is_error, num_turns, session_id,
@@ -281,6 +338,9 @@ ResultMessage <- function(subtype, duration_ms, duration_api_ms,
 #' @param event List. Raw Anthropic API stream event.
 #' @param parent_tool_use_id Character or NULL.
 #' @return Object of class `StreamEvent`.
+#' @examples
+#' evt <- StreamEvent("u1", "s1", list(type = "ping"))
+#' evt$event$type
 #' @export
 StreamEvent <- function(uuid, session_id, event, parent_tool_use_id = NULL) {
   .new_obj(
@@ -304,6 +364,9 @@ StreamEvent <- function(uuid, session_id, event, parent_tool_use_id = NULL) {
 #' @param overage_disabled_reason Character or NULL.
 #' @param raw List. Full raw dict from CLI.
 #' @return Object of class `RateLimitInfo`.
+#' @examples
+#' info <- RateLimitInfo("allowed", utilization = 0.4)
+#' info$status
 #' @export
 RateLimitInfo <- function(status,
                           resets_at               = NULL,
@@ -333,6 +396,10 @@ RateLimitInfo <- function(status,
 #' @param uuid Character.
 #' @param session_id Character.
 #' @return Object of class `RateLimitEvent`.
+#' @examples
+#' info <- RateLimitInfo("allowed_warning", utilization = 0.85)
+#' evt  <- RateLimitEvent(info, uuid = "u1", session_id = "s1")
+#' evt$rate_limit_info$status
 #' @export
 RateLimitEvent <- function(rate_limit_info, uuid, session_id) {
   .new_obj(
@@ -353,6 +420,15 @@ RateLimitEvent <- function(rate_limit_info, uuid, session_id) {
 #' @param updated_input List or NULL. Modified tool input.
 #' @param updated_permissions List or NULL. Permission updates.
 #' @return Object of class `PermissionResultAllow`.
+#' @examples
+#' # Allow with default input
+#' result <- PermissionResultAllow()
+#' result$behavior  # "allow"
+#'
+#' # Use in a can_use_tool callback
+#' opts <- ClaudeAgentOptions(
+#'   can_use_tool = function(name, input, ctx) PermissionResultAllow()
+#' )
 #' @export
 PermissionResultAllow <- function(updated_input = NULL,
                                   updated_permissions = NULL) {
@@ -370,6 +446,10 @@ PermissionResultAllow <- function(updated_input = NULL,
 #' @param message Character. Reason for denial.
 #' @param interrupt Logical. Whether to interrupt the current operation.
 #' @return Object of class `PermissionResultDeny`.
+#' @examples
+#' result <- PermissionResultDeny("Not allowed in this context.")
+#' result$behavior  # "deny"
+#' result$message
 #' @export
 PermissionResultDeny <- function(message = "", interrupt = FALSE) {
   .new_obj(
@@ -392,6 +472,13 @@ PermissionResultDeny <- function(message = "", interrupt = FALSE) {
 #' @param agent_id Character or NULL.
 #' @param suggestions List or NULL. Permission suggestions from the CLI.
 #' @return Object of class `PermissionRequestMessage`.
+#' @examples
+#' msg <- PermissionRequestMessage(
+#'   request_id = "req1",
+#'   tool_name  = "Bash",
+#'   tool_input = list(command = "ls /tmp")
+#' )
+#' msg$tool_name
 #' @export
 PermissionRequestMessage <- function(request_id,
                                      tool_name,
@@ -478,6 +565,14 @@ session_message_obj <- function(type, uuid, session_id, message,
 #'   `"medium"`, `"high"`, `"max"`, or an integer.
 #' @param permission_mode Character or NULL. Permission mode for the agent.
 #' @return Object of class `AgentDefinition`.
+#' @examples
+#' agent <- AgentDefinition(
+#'   description = "A code review assistant",
+#'   prompt      = "Review code for correctness and style.",
+#'   tools       = c("Read", "Bash"),
+#'   max_turns   = 10L
+#' )
+#' agent$description
 #' @export
 AgentDefinition <- function(description,
                              prompt           = NULL,
@@ -523,6 +618,12 @@ AgentDefinition <- function(description,
 #'   `function(input_data, tool_use_id, context)` and returns a named list.
 #' @param timeout Integer or NULL. Timeout in milliseconds for each hook call.
 #' @return Object of class `HookMatcher`.
+#' @examples
+#' hm <- HookMatcher(
+#'   matcher = "Bash",
+#'   hooks   = list(function(input, id, ctx) list(continue_ = TRUE))
+#' )
+#' hm$matcher
 #' @export
 HookMatcher <- function(matcher, hooks, timeout = NULL) {
   .new_obj(
@@ -540,6 +641,9 @@ HookMatcher <- function(matcher, hooks, timeout = NULL) {
 #' @param description Character or NULL.
 #' @param annotations List or NULL.
 #' @return Object of class `McpToolInfo`.
+#' @examples
+#' tool <- McpToolInfo("add", description = "Add two numbers")
+#' tool$name
 #' @export
 McpToolInfo <- function(name, description = NULL, annotations = NULL) {
   .new_obj(list(name = name, description = description,
@@ -550,6 +654,9 @@ McpToolInfo <- function(name, description = NULL, annotations = NULL) {
 #' @param name Character.
 #' @param version Character.
 #' @return Object of class `McpServerInfo`.
+#' @examples
+#' info <- McpServerInfo("my_server", "1.0.0")
+#' info$version
 #' @export
 McpServerInfo <- function(name, version) {
   .new_obj(list(name = name, version = version), "McpServerInfo")
@@ -565,6 +672,9 @@ McpServerInfo <- function(name, version) {
 #' @param scope Character or NULL.
 #' @param tools List of `McpToolInfo` or NULL.
 #' @return Object of class `McpServerStatus`.
+#' @examples
+#' s <- McpServerStatus("calculator", "connected")
+#' s$status
 #' @export
 McpServerStatus <- function(name, status, server_info = NULL, error = NULL,
                              config = NULL, scope = NULL, tools = NULL) {
@@ -582,6 +692,9 @@ McpServerStatus <- function(name, status, server_info = NULL, error = NULL,
 #' Create a McpStatusResponse
 #' @param mcp_servers List of `McpServerStatus`.
 #' @return Object of class `McpStatusResponse`.
+#' @examples
+#' resp <- McpStatusResponse(list(McpServerStatus("calc", "connected")))
+#' length(resp$mcpServers)
 #' @export
 McpStatusResponse <- function(mcp_servers) {
   .new_obj(list(mcpServers = mcp_servers), "McpStatusResponse")
@@ -593,6 +706,9 @@ McpStatusResponse <- function(mcp_servers) {
 
 #' Create a ThinkingConfigAdaptive
 #' @return Object of class `ThinkingConfigAdaptive`.
+#' @examples
+#' cfg <- ThinkingConfigAdaptive()
+#' cfg$type  # "adaptive"
 #' @export
 ThinkingConfigAdaptive <- function() {
   .new_obj(list(type = "adaptive"), "ThinkingConfigAdaptive")
@@ -601,6 +717,9 @@ ThinkingConfigAdaptive <- function() {
 #' Create a ThinkingConfigEnabled
 #' @param budget_tokens Integer. Token budget for thinking.
 #' @return Object of class `ThinkingConfigEnabled`.
+#' @examples
+#' cfg <- ThinkingConfigEnabled(budget_tokens = 5000L)
+#' cfg$budget_tokens
 #' @export
 ThinkingConfigEnabled <- function(budget_tokens) {
   .new_obj(list(type = "enabled", budget_tokens = budget_tokens),
@@ -609,6 +728,9 @@ ThinkingConfigEnabled <- function(budget_tokens) {
 
 #' Create a ThinkingConfigDisabled
 #' @return Object of class `ThinkingConfigDisabled`.
+#' @examples
+#' cfg <- ThinkingConfigDisabled()
+#' cfg$type  # "disabled"
 #' @export
 ThinkingConfigDisabled <- function() {
   .new_obj(list(type = "disabled"), "ThinkingConfigDisabled")
@@ -625,6 +747,9 @@ ThinkingConfigDisabled <- function() {
 #'
 #' @param max_tokens Integer. Maximum token budget for the task.
 #' @return Object of class `TaskBudget`.
+#' @examples
+#' budget <- TaskBudget(max_tokens = 10000L)
+#' budget$max_tokens
 #' @export
 TaskBudget <- function(max_tokens) {
   .new_obj(list(max_tokens = max_tokens), "TaskBudget")
@@ -634,6 +759,9 @@ TaskBudget <- function(max_tokens) {
 #' @param total_tokens Integer.
 #' @param tool_uses Integer.
 #' @return Object of class `TaskUsage`.
+#' @examples
+#' usage <- TaskUsage(total_tokens = 500L, tool_uses = 3L)
+#' usage$total_tokens
 #' @export
 TaskUsage <- function(total_tokens, tool_uses) {
   .new_obj(list(total_tokens = total_tokens, tool_uses = tool_uses),
@@ -650,6 +778,9 @@ TaskUsage <- function(total_tokens, tool_uses) {
 #' @param color Character.
 #' @param is_deferred Logical or NULL.
 #' @return Object of class `ContextUsageCategory`.
+#' @examples
+#' cat <- ContextUsageCategory("user", 1024L, "#4e79a7")
+#' cat$name
 #' @export
 ContextUsageCategory <- function(name, tokens, color, is_deferred = NULL) {
   .new_obj(list(
@@ -664,6 +795,10 @@ ContextUsageCategory <- function(name, tokens, color, is_deferred = NULL) {
 #' @param categories List of `ContextUsageCategory`.
 #' @param total_tokens Integer.
 #' @return Object of class `ContextUsageResponse`.
+#' @examples
+#' cats <- list(ContextUsageCategory("user", 1024L, "#4e79a7"))
+#' resp <- ContextUsageResponse(cats, total_tokens = 1024L)
+#' resp$totalTokens
 #' @export
 ContextUsageResponse <- function(categories, total_tokens) {
   .new_obj(list(
@@ -687,6 +822,12 @@ ContextUsageResponse <- function(categories, total_tokens) {
 #' @param agent_id Character or NULL.
 #' @param agent_type Character or NULL.
 #' @return Object of class `PreToolUseHookInput`.
+#' @examples
+#' h <- PreToolUseHookInput(
+#'   session_id = "s1", transcript_path = "/tmp/t.jsonl", cwd = "/tmp",
+#'   tool_name = "Bash", tool_input = list(command = "ls"), tool_use_id = "t1"
+#' )
+#' h$tool_name
 #' @export
 PreToolUseHookInput <- function(session_id, transcript_path, cwd,
                                 tool_name, tool_input, tool_use_id,
@@ -718,6 +859,13 @@ PreToolUseHookInput <- function(session_id, transcript_path, cwd,
 #' @param agent_id Character or NULL.
 #' @param agent_type Character or NULL.
 #' @return Object of class `PostToolUseHookInput`.
+#' @examples
+#' h <- PostToolUseHookInput(
+#'   session_id = "s1", transcript_path = "/tmp/t.jsonl", cwd = "/tmp",
+#'   tool_name = "Bash", tool_input = list(command = "ls"),
+#'   tool_response = "file.txt\n", tool_use_id = "t1"
+#' )
+#' h$tool_name
 #' @export
 PostToolUseHookInput <- function(session_id, transcript_path, cwd,
                                  tool_name, tool_input, tool_response,
@@ -752,6 +900,13 @@ PostToolUseHookInput <- function(session_id, transcript_path, cwd,
 #' @param agent_id Character or NULL.
 #' @param agent_type Character or NULL.
 #' @return Object of class `PostToolUseFailureHookInput`.
+#' @examples
+#' h <- PostToolUseFailureHookInput(
+#'   session_id = "s1", transcript_path = "/tmp/t.jsonl", cwd = "/tmp",
+#'   tool_name = "Write", tool_input = list(path = "/x"), tool_use_id = "t1",
+#'   error = "Permission denied"
+#' )
+#' h$error
 #' @export
 PostToolUseFailureHookInput <- function(session_id, transcript_path, cwd,
                                         tool_name, tool_input, tool_use_id,
@@ -782,6 +937,12 @@ PostToolUseFailureHookInput <- function(session_id, transcript_path, cwd,
 #' @param prompt Character.
 #' @param permission_mode Character or NULL.
 #' @return Object of class `UserPromptSubmitHookInput`.
+#' @examples
+#' h <- UserPromptSubmitHookInput(
+#'   session_id = "s1", transcript_path = "/tmp/t.jsonl",
+#'   cwd = "/tmp", prompt = "Hello!"
+#' )
+#' h$prompt
 #' @export
 UserPromptSubmitHookInput <- function(session_id, transcript_path, cwd,
                                       prompt,
@@ -803,6 +964,12 @@ UserPromptSubmitHookInput <- function(session_id, transcript_path, cwd,
 #' @param stop_hook_active Logical.
 #' @param permission_mode Character or NULL.
 #' @return Object of class `StopHookInput`.
+#' @examples
+#' h <- StopHookInput(
+#'   session_id = "s1", transcript_path = "/tmp/t.jsonl",
+#'   cwd = "/tmp", stop_hook_active = FALSE
+#' )
+#' h$stop_hook_active
 #' @export
 StopHookInput <- function(session_id, transcript_path, cwd,
                            stop_hook_active,
@@ -827,6 +994,13 @@ StopHookInput <- function(session_id, transcript_path, cwd,
 #' @param agent_type Character.
 #' @param permission_mode Character or NULL.
 #' @return Object of class `SubagentStopHookInput`.
+#' @examples
+#' h <- SubagentStopHookInput(
+#'   session_id = "s1", transcript_path = "/tmp/t.jsonl", cwd = "/tmp",
+#'   stop_hook_active = FALSE, agent_id = "a1",
+#'   agent_transcript_path = "/tmp/a.jsonl", agent_type = "subagent"
+#' )
+#' h$agent_type
 #' @export
 SubagentStopHookInput <- function(session_id, transcript_path, cwd,
                                    stop_hook_active,
@@ -854,6 +1028,12 @@ SubagentStopHookInput <- function(session_id, transcript_path, cwd,
 #' @param custom_instructions Character or NULL.
 #' @param permission_mode Character or NULL.
 #' @return Object of class `PreCompactHookInput`.
+#' @examples
+#' h <- PreCompactHookInput(
+#'   session_id = "s1", transcript_path = "/tmp/t.jsonl",
+#'   cwd = "/tmp", trigger = "auto"
+#' )
+#' h$trigger
 #' @export
 PreCompactHookInput <- function(session_id, transcript_path, cwd,
                                  trigger, custom_instructions = NULL,
@@ -878,6 +1058,12 @@ PreCompactHookInput <- function(session_id, transcript_path, cwd,
 #' @param title Character or NULL.
 #' @param permission_mode Character or NULL.
 #' @return Object of class `NotificationHookInput`.
+#' @examples
+#' h <- NotificationHookInput(
+#'   session_id = "s1", transcript_path = "/tmp/t.jsonl", cwd = "/tmp",
+#'   message = "Build finished.", notification_type = "info"
+#' )
+#' h$message
 #' @export
 NotificationHookInput <- function(session_id, transcript_path, cwd,
                                    message, notification_type,
@@ -903,6 +1089,12 @@ NotificationHookInput <- function(session_id, transcript_path, cwd,
 #' @param agent_type Character.
 #' @param permission_mode Character or NULL.
 #' @return Object of class `SubagentStartHookInput`.
+#' @examples
+#' h <- SubagentStartHookInput(
+#'   session_id = "s1", transcript_path = "/tmp/t.jsonl", cwd = "/tmp",
+#'   agent_id = "a1", agent_type = "subagent"
+#' )
+#' h$agent_id
 #' @export
 SubagentStartHookInput <- function(session_id, transcript_path, cwd,
                                     agent_id, agent_type,
@@ -929,6 +1121,12 @@ SubagentStartHookInput <- function(session_id, transcript_path, cwd,
 #' @param agent_id Character or NULL.
 #' @param agent_type Character or NULL.
 #' @return Object of class `PermissionRequestHookInput`.
+#' @examples
+#' h <- PermissionRequestHookInput(
+#'   session_id = "s1", transcript_path = "/tmp/t.jsonl", cwd = "/tmp",
+#'   tool_name = "Bash", tool_input = list(command = "rm -rf /tmp/test")
+#' )
+#' h$tool_name
 #' @export
 PermissionRequestHookInput <- function(session_id, transcript_path, cwd,
                                         tool_name, tool_input,
@@ -967,6 +1165,12 @@ PermissionRequestHookInput <- function(session_id, transcript_path, cwd,
 #' @param reason Character or NULL.
 #' @param hook_specific_output List or NULL.
 #' @return Object of class `SyncHookOutput`.
+#' @examples
+#' out <- SyncHookOutput(continue_ = TRUE)
+#' out$continue_
+#'
+#' # Block execution from a hook
+#' out2 <- SyncHookOutput(decision = "block", reason = "Command is destructive.")
 #' @export
 SyncHookOutput <- function(continue_            = NULL,
                             suppress_output      = NULL,
@@ -992,6 +1196,9 @@ SyncHookOutput <- function(continue_            = NULL,
 #'
 #' @param async_timeout Integer or NULL. Timeout in milliseconds.
 #' @return Object of class `AsyncHookOutput`.
+#' @examples
+#' out <- AsyncHookOutput(async_timeout = 5000L)
+#' out$asyncTimeout
 #' @export
 AsyncHookOutput <- function(async_timeout = NULL) {
   .new_obj(list(
@@ -1008,6 +1215,9 @@ AsyncHookOutput <- function(async_timeout = NULL) {
 #' @param tool_name Character. Tool name pattern.
 #' @param rule_content Character or NULL.
 #' @return Object of class `PermissionRuleValue`.
+#' @examples
+#' rv <- PermissionRuleValue("Bash", rule_content = "allow")
+#' rv$tool_name
 #' @export
 PermissionRuleValue <- function(tool_name, rule_content = NULL) {
   .new_obj(
@@ -1029,6 +1239,9 @@ PermissionRuleValue <- function(tool_name, rule_content = NULL) {
 #' @param destination Character or NULL. `"userSettings"`, `"projectSettings"`,
 #'   `"localSettings"`, or `"session"`.
 #' @return Object of class `PermissionUpdate`.
+#' @examples
+#' pu <- PermissionUpdate("setMode", mode = "acceptEdits", destination = "session")
+#' pu$type
 #' @export
 PermissionUpdate <- function(type, rules = NULL, behavior = NULL,
                               mode = NULL, directories = NULL,
@@ -1051,6 +1264,9 @@ PermissionUpdate <- function(type, rules = NULL, behavior = NULL,
 #' @param exclude_dynamic_sections Logical or NULL.
 #' @param append Character or NULL. Additional instructions to append.
 #' @return Object of class `SystemPromptPreset`.
+#' @examples
+#' sp <- SystemPromptPreset(exclude_dynamic_sections = TRUE)
+#' sp$type  # "preset"
 #' @export
 SystemPromptPreset <- function(exclude_dynamic_sections = NULL,
                                 append = NULL) {
@@ -1064,6 +1280,9 @@ SystemPromptPreset <- function(exclude_dynamic_sections = NULL,
 #' Create a SystemPromptFile
 #' @param path Character. Path to the system prompt file.
 #' @return Object of class `SystemPromptFile`.
+#' @examples
+#' sp <- SystemPromptFile("/path/to/prompt.md")
+#' sp$path
 #' @export
 SystemPromptFile <- function(path) {
   .new_obj(list(type = "file", path = path), "SystemPromptFile")
@@ -1080,6 +1299,9 @@ SystemPromptFile <- function(path) {
 #' @param http_proxy_port Integer or NULL.
 #' @param socks_proxy_port Integer or NULL.
 #' @return Object of class `SandboxNetworkConfig`.
+#' @examples
+#' nc <- SandboxNetworkConfig(allow_local_binding = TRUE)
+#' nc$allowLocalBinding
 #' @export
 SandboxNetworkConfig <- function(allow_unix_sockets     = NULL,
                                   allow_all_unix_sockets = NULL,
@@ -1099,6 +1321,9 @@ SandboxNetworkConfig <- function(allow_unix_sockets     = NULL,
 #' @param file Character vector or NULL.
 #' @param network Character vector or NULL.
 #' @return Object of class `SandboxIgnoreViolations`.
+#' @examples
+#' ig <- SandboxIgnoreViolations(file = c("/tmp/ok.txt"))
+#' ig$file
 #' @export
 SandboxIgnoreViolations <- function(file = NULL, network = NULL) {
   .new_obj(list(file = file, network = network), "SandboxIgnoreViolations")
@@ -1113,6 +1338,9 @@ SandboxIgnoreViolations <- function(file = NULL, network = NULL) {
 #' @param ignore_violations `SandboxIgnoreViolations` or NULL.
 #' @param enable_weaker_nested_sandbox Logical or NULL.
 #' @return Object of class `SandboxSettings`.
+#' @examples
+#' sb <- SandboxSettings(enabled = TRUE, allow_unsandboxed_commands = FALSE)
+#' sb$enabled
 #' @export
 SandboxSettings <- function(enabled                      = NULL,
                              auto_allow_bash_if_sandboxed = NULL,

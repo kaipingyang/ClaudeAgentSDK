@@ -1,4 +1,6 @@
-# examples/13_shinychat_streaming.R — 流式聊天 + 可靠打断
+# examples/13_shinychat_streaming.R — Streaming chat with reliable interrupt
+#
+# Run: shiny::runApp("examples/13_shinychat_streaming.R")
 
 library(shiny)
 library(bslib)
@@ -30,20 +32,20 @@ server <- function(input, output, session) {
 
   interrupt_flag <- reactiveVal(FALSE)
 
-  # --- coro::async 协程 ---
+  # ---- coro::async coroutine ----
   #
-  # 打断处理：
-  #   1. 每次循环顶部检测 interrupt_flag
-  #   2. 首次检测到时：立即清理 UI + 调 client$interrupt()
-  #   3. 之后进入 drain 模式：跳过所有消息直到 ResultMessage
-  #   4. 收到 ResultMessage 后 break，缓冲区清空，下次调用可正常使用
+  # Interrupt flow:
+  #   1. Check interrupt_flag at the top of every loop iteration.
+  #   2. On first detection: clean up UI, call client$interrupt().
+  #   3. Enter drain mode: skip all messages until ResultMessage arrives.
+  #      This clears the buffer so the next send() starts clean.
   #
   do_stream <- coro::async(function(client, interrupt_flag, session) {
     chunk_started <- FALSE
     interrupted   <- FALSE
 
     repeat {
-      # ---- 每次循环顶部检测打断 ----
+      # ---- Check for interrupt at the top of each iteration ----
       if (!interrupted && shiny::isolate(interrupt_flag())) {
         interrupted <- TRUE
         tryCatch(client$interrupt(), error = function(e) NULL)
@@ -72,13 +74,13 @@ server <- function(input, output, session) {
       for (msg in msgs) {
         await(promises::promise_resolve(TRUE))
 
-        # ---- Drain 模式：等待 ResultMessage 清空缓冲区 ----
+        # ---- Drain mode: wait for ResultMessage to clear the buffer ----
         if (interrupted) {
           if (inherits(msg, "ResultMessage")) { drain_done <- TRUE; break }
           next
         }
 
-        # ---- StreamEvent 文本 ----
+        # ---- StreamEvent text tokens ----
         if (inherits(msg, "StreamEvent") && is.list(msg$event)) {
           evt <- msg$event
           if (identical(evt$type, "content_block_delta") &&
@@ -97,7 +99,7 @@ server <- function(input, output, session) {
           }
         }
 
-        # ---- 完成 ----
+        # ---- Done ----
         if (inherits(msg, "ResultMessage")) {
           if (chunk_started) {
             shinychat::chat_append_message("chat",
@@ -114,7 +116,7 @@ server <- function(input, output, session) {
     "done"
   })
 
-  # --- ExtendedTask ---
+  # ---- ExtendedTask ----
   stream_task <- ExtendedTask$new(function(user_input) {
     client$send(user_input)
     do_stream(client, interrupt_flag, session)

@@ -24,6 +24,22 @@ NULL
 #' client$disconnect()
 #' ```
 #'
+#' @examples
+#' \dontrun{
+#' # Multi-turn conversation
+#' client <- ClaudeSDKClient$new(ClaudeAgentOptions(max_turns = 3L))
+#' client$connect()
+#'
+#' client$send("What is the capital of France?")
+#' coro::loop(for (msg in client$receive_response()) {
+#'   if (inherits(msg, "AssistantMessage")) {
+#'     for (blk in msg$content)
+#'       if (inherits(blk, "TextBlock")) cat(blk$text, "\n")
+#'   }
+#' })
+#'
+#' client$disconnect()
+#' }
 #' @export
 ClaudeSDKClient <- R6::R6Class(
   "ClaudeSDKClient",

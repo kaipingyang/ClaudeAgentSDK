@@ -12,5 +12,6 @@
 ^_pkgdown\.yml$
 ^pkgdown$
 ^docs$
+^vignettes/articles$
 ^CHANGELOG\.md$
 ^\.lintr$

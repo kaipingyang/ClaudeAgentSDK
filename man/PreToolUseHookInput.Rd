@@ -41,3 +41,10 @@ Object of class \code{PreToolUseHookInput}.
 \description{
 Create a PreToolUseHookInput
 }
+\examples{
+h <- PreToolUseHookInput(
+  session_id = "s1", transcript_path = "/tmp/t.jsonl", cwd = "/tmp",
+  tool_name = "Bash", tool_input = list(command = "ls"), tool_use_id = "t1"
+)
+h$tool_name
+}

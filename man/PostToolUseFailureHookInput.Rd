@@ -47,3 +47,11 @@ Object of class \code{PostToolUseFailureHookInput}.
 \description{
 Create a PostToolUseFailureHookInput
 }
+\examples{
+h <- PostToolUseFailureHookInput(
+  session_id = "s1", transcript_path = "/tmp/t.jsonl", cwd = "/tmp",
+  tool_name = "Write", tool_input = list(path = "/x"), tool_use_id = "t1",
+  error = "Permission denied"
+)
+h$error
+}

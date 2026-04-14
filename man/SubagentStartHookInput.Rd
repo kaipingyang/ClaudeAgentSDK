@@ -32,3 +32,10 @@ Object of class \code{SubagentStartHookInput}.
 \description{
 Create a SubagentStartHookInput
 }
+\examples{
+h <- SubagentStartHookInput(
+  session_id = "s1", transcript_path = "/tmp/t.jsonl", cwd = "/tmp",
+  agent_id = "a1", agent_type = "subagent"
+)
+h$agent_id
+}

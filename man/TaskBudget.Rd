@@ -16,3 +16,7 @@ Object of class \code{TaskBudget}.
 API-side task budget in tokens. When set, the model is made aware of its
 remaining token budget so it can pace tool use and wrap up before the limit.
 }
+\examples{
+budget <- TaskBudget(max_tokens = 10000L)
+budget$max_tokens
+}

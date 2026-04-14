@@ -56,3 +56,12 @@ Object of class \code{AgentDefinition}.
 Defines a custom sub-agent that Claude Code can delegate tasks to.
 Mirrors Python's \code{AgentDefinition} dataclass in \code{types.py}.
 }
+\examples{
+agent <- AgentDefinition(
+  description = "A code review assistant",
+  prompt      = "Review code for correctness and style.",
+  tools       = c("Read", "Bash"),
+  max_turns   = 10L
+)
+agent$description
+}

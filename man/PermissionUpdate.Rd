@@ -34,3 +34,7 @@ Object of class \code{PermissionUpdate}.
 \description{
 Specifies a permission rule change to apply.
 }
+\examples{
+pu <- PermissionUpdate("setMode", mode = "acceptEdits", destination = "session")
+pu$type
+}

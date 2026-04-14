@@ -17,3 +17,13 @@ Object of class \code{PermissionResultAllow}.
 \description{
 Allow permission result
 }
+\examples{
+# Allow with default input
+result <- PermissionResultAllow()
+result$behavior  # "allow"
+
+# Use in a can_use_tool callback
+opts <- ClaudeAgentOptions(
+  can_use_tool = function(name, input, ctx) PermissionResultAllow()
+)
+}

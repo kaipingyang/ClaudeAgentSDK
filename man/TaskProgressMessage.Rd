@@ -41,3 +41,12 @@ Object of class \code{c("TaskProgressMessage","SystemMessage")}.
 \description{
 Create a TaskProgressMessage
 }
+\examples{
+msg <- TaskProgressMessage(
+  subtype = "task_progress", data = list(),
+  task_id = "t1", description = "50\% done",
+  usage = list(tokens = 100L),
+  uuid = "u1", session_id = "s1"
+)
+msg$description
+}

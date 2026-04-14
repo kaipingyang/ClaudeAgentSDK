@@ -35,3 +35,11 @@ arrives and no handler (\code{can_use_tool} / \code{on_tool_request}) is configu
 The caller must eventually call \link{ClaudeSDKClient}\verb{$approve_tool()} or
 \verb{$deny_tool()} with the \code{request_id} to unblock the CLI.
 }
+\examples{
+msg <- PermissionRequestMessage(
+  request_id = "req1",
+  tool_name  = "Bash",
+  tool_input = list(command = "ls /tmp")
+)
+msg$tool_name
+}

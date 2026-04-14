@@ -18,3 +18,10 @@ claude_process_error(message, exit_code = NULL, stderr = NULL, ...)
 \description{
 Raised when the Claude Code CLI subprocess exits with a non-zero status.
 }
+\examples{
+err <- tryCatch(
+  claude_process_error("Process failed", exit_code = 1L),
+  error = function(e) e
+)
+inherits(err, "claude_error_process")
+}

@@ -21,3 +21,13 @@ Appends a \code{tag} JSONL entry. Pass \code{NULL} to clear the tag.
 \code{list_sessions()} reads the LAST tag — most recent wins.
 Tags are Unicode-sanitized before storing.
 }
+\examples{
+\donttest{
+sessions <- list_sessions(limit = 1L)
+if (length(sessions) > 0) {
+  tag_session(sessions[[1]]$session_id, "important")
+  # Clear the tag
+  tag_session(sessions[[1]]$session_id, NULL)
+}
+}
+}

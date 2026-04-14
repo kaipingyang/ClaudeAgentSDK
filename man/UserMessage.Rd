@@ -26,3 +26,7 @@ Object of class \code{UserMessage}.
 \description{
 Create a UserMessage
 }
+\examples{
+msg <- UserMessage("Hello, Claude!")
+msg$content
+}

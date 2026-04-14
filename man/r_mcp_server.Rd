@@ -67,3 +67,17 @@ Then pass the script path:
 }\if{html}{\out{</div>}}
 }
 }
+\examples{
+# Create an MCP server entry from a tools script
+entry <- r_mcp_server("my_tools.R")
+entry$type    # "stdio"
+entry$command # path to Rscript
+
+# Use in ClaudeAgentOptions
+\dontrun{
+opts <- ClaudeAgentOptions(
+  mcp_servers   = list(my_tools = r_mcp_server("my_tools.R")),
+  allowed_tools = "mcp__my_tools__add"
+)
+}
+}

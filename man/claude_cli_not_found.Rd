@@ -13,3 +13,10 @@ message when not NULL.}
 \description{
 Raised when the Claude Code CLI binary cannot be located.
 }
+\examples{
+err <- tryCatch(
+  claude_cli_not_found("/bad/path/claude"),
+  error = function(e) e
+)
+inherits(err, "claude_error_cli_not_found")
+}

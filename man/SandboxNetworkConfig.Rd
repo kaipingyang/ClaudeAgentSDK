@@ -29,3 +29,7 @@ Object of class \code{SandboxNetworkConfig}.
 \description{
 Create a SandboxNetworkConfig
 }
+\examples{
+nc <- SandboxNetworkConfig(allow_local_binding = TRUE)
+nc$allowLocalBinding
+}

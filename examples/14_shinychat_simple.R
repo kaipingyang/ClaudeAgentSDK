@@ -1,28 +1,27 @@
 # examples/14_shinychat_simple.R
 # =========================================================================
-# 非流式聊天（一次性显示完整回复，无工具调用）
+# Non-streaming chat (display full reply at once, no tool calls)
 # =========================================================================
 #
-# 功能：
-#   - 等待完整 AssistantMessage 后一次性显示（不逐 token 流式）
-#   - 不使用 include_partial_messages（无 StreamEvent）
-#   - max_turns = 1，Claude 只回复文本，不调用任何工具
+# Features:
+#   - Wait for the complete AssistantMessage then display it all at once
+#   - No include_partial_messages (no StreamEvent tokens)
+#   - max_turns = 1, Claude replies with text only, no tool calls
 #
-# 适用场景：
-#   验证 ClaudeAgentSDK + shinychat 的最简单通路
-#   排查流式问题时的对照组
+# Use case:
+#   Simplest possible ClaudeAgentSDK + shinychat integration.
+#   Good as a baseline when debugging streaming issues.
 #
-# 不包含：
-#   - 流式显示（见 example 13）
-#   - 工具调用 / 审批（见 example 15/16）
-#   - 打断按钮
+# Not included:
+#   - Streaming display (see example 13)
+#   - Tool calls / approval (see example 15)
+#   - Interrupt button
 #
-# 相关示例：
-#   13 — 流式版本（逐 token 显示）
-#   15 — 回调式工具审批（on_tool_request + resolve）
-#   16 — 消息驱动式工具审批（PermissionRequestMessage + approve_tool）
+# Related examples:
+#   13 — streaming version (token-by-token display)
+#   15 — message-driven tool approval
 #
-# 运行：
+# Run:
 #   shiny::runApp("examples/14_shinychat_simple.R")
 #
 # =========================================================================

@@ -15,3 +15,7 @@ Object of class \code{McpStatusResponse}.
 \description{
 Create a McpStatusResponse
 }
+\examples{
+resp <- McpStatusResponse(list(McpServerStatus("calc", "connected")))
+length(resp$mcpServers)
+}

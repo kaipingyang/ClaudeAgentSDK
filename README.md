@@ -300,10 +300,12 @@ observeEvent(input$tool_deny, {
 })
 ```
 
-See [`examples/15_shinychat_tool_approval_msgdriven.R`](examples/15_shinychat_tool_approval_msgdriven.R)
-for a full Shiny app with modal-based approval, and examples 16–19 for
-additional approval UI patterns (inline bar, conversational, insertUI, native
-tool cards).
+See the [Shiny Tool Approval](https://kaipingyang.github.io/ClaudeAgentSDK/articles/shiny-tool-approval.html)
+article for a full walkthrough, or browse
+[`examples/15_shinychat_tool_approval_msgdriven.R`](https://github.com/kaipingyang/ClaudeAgentSDK/blob/main/examples/15_shinychat_tool_approval_msgdriven.R)
+directly. Additional experimental UI patterns (inline, conversational,
+insertUI, tool cards) are available in
+[examples 16–19](https://github.com/kaipingyang/ClaudeAgentSDK/tree/main/examples).
 
 ### Runtime Control
 
@@ -529,8 +531,8 @@ options <- ClaudeAgentOptions(
 result <- claude_run("What is 3 + 4?", options = options)
 ```
 
-See [`examples/11_mcp_server.R`](examples/11_mcp_server.R) for a complete
-example.
+See [`examples/11_mcp_server.R`](https://github.com/kaipingyang/ClaudeAgentSDK/blob/main/examples/11_mcp_server.R)
+for a complete example.
 
 ## Advanced: Async / Shiny Integration
 
@@ -628,10 +630,10 @@ observeEvent(input$esc, {
 })
 ```
 
-See [`examples/13_shinychat_streaming.R`](examples/13_shinychat_streaming.R) for
-a minimal streaming chat, and [`examples/19_shinychat_tool_cards.R`](examples/19_shinychat_tool_cards.R)
-for a full-featured example with native tool cards, thinking blocks, and inline
-tool approval.
+See the [Shiny Streaming](https://kaipingyang.github.io/ClaudeAgentSDK/articles/shiny-streaming.html)
+article for a full walkthrough, or browse
+[`examples/13_shinychat_streaming.R`](https://github.com/kaipingyang/ClaudeAgentSDK/blob/main/examples/13_shinychat_streaming.R)
+directly.
 
 ### Simple non-streaming pattern (`receive_response_async`)
 
@@ -661,8 +663,8 @@ cat("\nCost: $", result$total_cost_usd, "\n")
 client$disconnect()
 ```
 
-See [`examples/14_shinychat_simple.R`](examples/14_shinychat_simple.R) for the
-Shiny `ExtendedTask` version.
+See [`examples/14_shinychat_simple.R`](https://github.com/kaipingyang/ClaudeAgentSDK/blob/main/examples/14_shinychat_simple.R)
+for the Shiny `ExtendedTask` version.
 
 ## Available Tools
 

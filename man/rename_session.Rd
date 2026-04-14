@@ -24,3 +24,11 @@ Appends a \code{custom-title} JSONL entry to the session file.
 \code{list_sessions()} reads the LAST custom-title from the tail, so repeated
 calls are safe — most recent wins.
 }
+\examples{
+\donttest{
+sessions <- list_sessions(limit = 1L)
+if (length(sessions) > 0) {
+  rename_session(sessions[[1]]$session_id, "My renamed session")
+}
+}
+}

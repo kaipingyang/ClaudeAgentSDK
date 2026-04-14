@@ -17,3 +17,7 @@ Object of class \code{SystemMessage}.
 \description{
 Create a SystemMessage
 }
+\examples{
+msg <- SystemMessage("init", list(session_id = "abc"))
+msg$subtype
+}

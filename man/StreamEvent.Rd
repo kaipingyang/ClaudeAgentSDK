@@ -21,3 +21,7 @@ Object of class \code{StreamEvent}.
 \description{
 Create a StreamEvent
 }
+\examples{
+evt <- StreamEvent("u1", "s1", list(type = "ping"))
+evt$event$type
+}

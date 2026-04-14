@@ -27,6 +27,14 @@ MINIMUM_CLAUDE_CODE_VERSION <- "2.0.0"
 #' @param cli_path Character or NULL. If non-NULL, that path is validated and
 #'   returned directly (skipping the search).
 #' @return Character. Absolute path to the `claude` binary.
+#' @examples
+#' \dontrun{
+#' path <- find_claude()
+#' cat("CLI found at:", path, "\n")
+#'
+#' # Validate a custom path
+#' path2 <- find_claude("/usr/local/bin/claude")
+#' }
 #' @export
 find_claude <- function(cli_path = NULL) {
   # User-supplied explicit path
@@ -122,6 +130,9 @@ check_claude_version <- function(cli_path,
 #' @param cwd Character. Project directory to scan for local skills (default
 #'   current working directory).
 #' @return Character vector of skill names (file stem, no extension).
+#' @examples
+#' skills <- list_skills()
+#' length(skills)  # 0 if no skills installed
 #' @export
 list_skills <- function(cwd = getwd()) {
   dirs <- c(
@@ -193,6 +204,19 @@ list_skills <- function(cwd = getwd()) {
 #'   Pass an explicit path to use a specific R installation.
 #' @return A named list with `type`, `command`, and `args` suitable for use
 #'   as a value inside `ClaudeAgentOptions(mcp_servers = list(...))`.
+#' @examples
+#' # Create an MCP server entry from a tools script
+#' entry <- r_mcp_server("my_tools.R")
+#' entry$type    # "stdio"
+#' entry$command # path to Rscript
+#'
+#' # Use in ClaudeAgentOptions
+#' \dontrun{
+#' opts <- ClaudeAgentOptions(
+#'   mcp_servers   = list(my_tools = r_mcp_server("my_tools.R")),
+#'   allowed_tools = "mcp__my_tools__add"
+#' )
+#' }
 #' @export
 r_mcp_server <- function(
     tools_script  = NULL,

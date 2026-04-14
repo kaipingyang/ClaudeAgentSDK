@@ -17,3 +17,7 @@ Character vector of skill names (file stem, no extension).
 Scans \verb{~/.claude/skills/} and the per-project \verb{.claude/skills/} directory
 for \verb{*.md} skill files.
 }
+\examples{
+skills <- list_skills()
+length(skills)  # 0 if no skills installed
+}

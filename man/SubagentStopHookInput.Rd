@@ -38,3 +38,11 @@ Object of class \code{SubagentStopHookInput}.
 \description{
 Create a SubagentStopHookInput
 }
+\examples{
+h <- SubagentStopHookInput(
+  session_id = "s1", transcript_path = "/tmp/t.jsonl", cwd = "/tmp",
+  stop_hook_active = FALSE, agent_id = "a1",
+  agent_transcript_path = "/tmp/a.jsonl", agent_type = "subagent"
+)
+h$agent_type
+}

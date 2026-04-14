@@ -19,3 +19,7 @@ Object of class \code{ToolUseBlock}.
 \description{
 Create a ToolUseBlock
 }
+\examples{
+blk <- ToolUseBlock("tool1", "Bash", list(command = "ls -la"))
+blk$name
+}

@@ -38,3 +38,11 @@ Object of class \code{c("TaskStartedMessage","SystemMessage")}.
 \description{
 Create a TaskStartedMessage
 }
+\examples{
+msg <- TaskStartedMessage(
+  subtype = "task_started", data = list(),
+  task_id = "t1", description = "Run tests",
+  uuid = "u1", session_id = "s1"
+)
+msg$task_id
+}

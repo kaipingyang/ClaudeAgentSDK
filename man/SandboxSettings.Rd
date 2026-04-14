@@ -35,3 +35,7 @@ Object of class \code{SandboxSettings}.
 \description{
 Create SandboxSettings
 }
+\examples{
+sb <- SandboxSettings(enabled = TRUE, allow_unsandboxed_commands = FALSE)
+sb$enabled
+}

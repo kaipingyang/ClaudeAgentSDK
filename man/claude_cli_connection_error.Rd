@@ -14,3 +14,10 @@ claude_cli_connection_error(message, ...)
 \description{
 Raised when a connection to the Claude Code CLI fails.
 }
+\examples{
+err <- tryCatch(
+  claude_cli_connection_error("Connection refused"),
+  error = function(e) e
+)
+inherits(err, "claude_error_cli_connection")
+}

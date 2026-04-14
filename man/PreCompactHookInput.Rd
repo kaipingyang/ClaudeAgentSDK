@@ -32,3 +32,10 @@ Object of class \code{PreCompactHookInput}.
 \description{
 Create a PreCompactHookInput
 }
+\examples{
+h <- PreCompactHookInput(
+  session_id = "s1", transcript_path = "/tmp/t.jsonl",
+  cwd = "/tmp", trigger = "auto"
+)
+h$trigger
+}

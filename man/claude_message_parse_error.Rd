@@ -16,3 +16,10 @@ claude_message_parse_error(message, data = NULL, ...)
 \description{
 Raised when a parsed JSON object cannot be converted into a typed message.
 }
+\examples{
+err <- tryCatch(
+  claude_message_parse_error("Unknown message type", data = list(type = "x")),
+  error = function(e) e
+)
+inherits(err, "claude_error_message_parse")
+}

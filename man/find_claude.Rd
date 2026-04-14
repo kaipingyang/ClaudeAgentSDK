@@ -17,3 +17,12 @@ Character. Absolute path to the \code{claude} binary.
 Searches common install locations and the system PATH.  Raises
 \code{claude_error_cli_not_found} if the binary cannot be found.
 }
+\examples{
+\dontrun{
+path <- find_claude()
+cat("CLI found at:", path, "\n")
+
+# Validate a custom path
+path2 <- find_claude("/usr/local/bin/claude")
+}
+}

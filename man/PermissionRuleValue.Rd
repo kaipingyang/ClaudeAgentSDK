@@ -17,3 +17,7 @@ Object of class \code{PermissionRuleValue}.
 \description{
 Create a PermissionRuleValue
 }
+\examples{
+rv <- PermissionRuleValue("Bash", rule_content = "allow")
+rv$tool_name
+}

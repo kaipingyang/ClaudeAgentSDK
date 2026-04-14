@@ -35,6 +35,12 @@ claude_error <- function(message, class, ...) {
 #'
 #' @param cli_path Character or NULL. Path that was searched, appended to the
 #'   message when not NULL.
+#' @examples
+#' err <- tryCatch(
+#'   claude_cli_not_found("/bad/path/claude"),
+#'   error = function(e) e
+#' )
+#' inherits(err, "claude_error_cli_not_found")
 #' @export
 claude_cli_not_found <- function(cli_path = NULL) {
   msg <- "Claude Code not found. Install with:\n  npm install -g @anthropic-ai/claude-code"
@@ -58,6 +64,12 @@ claude_cli_not_found <- function(cli_path = NULL) {
 #'
 #' @param message Character. Human-readable description.
 #' @param ... Additional fields.
+#' @examples
+#' err <- tryCatch(
+#'   claude_cli_connection_error("Connection refused"),
+#'   error = function(e) e
+#' )
+#' inherits(err, "claude_error_cli_connection")
 #' @export
 claude_cli_connection_error <- function(message, ...) {
   claude_error(
@@ -79,6 +91,12 @@ claude_cli_connection_error <- function(message, ...) {
 #' @param exit_code Integer or NULL. Process exit code.
 #' @param stderr Character or NULL. Captured stderr text.
 #' @param ... Additional fields.
+#' @examples
+#' err <- tryCatch(
+#'   claude_process_error("Process failed", exit_code = 1L),
+#'   error = function(e) e
+#' )
+#' inherits(err, "claude_error_process")
 #' @export
 claude_process_error <- function(message, exit_code = NULL, stderr = NULL, ...) {
   full_msg <- message
@@ -108,6 +126,12 @@ claude_process_error <- function(message, exit_code = NULL, stderr = NULL, ...) 
 #' @param line Character. The raw line that failed to parse.
 #' @param original_error Condition or NULL. The underlying parse error.
 #' @param ... Additional fields.
+#' @examples
+#' err <- tryCatch(
+#'   claude_json_decode_error("{bad json"),
+#'   error = function(e) e
+#' )
+#' inherits(err, "claude_error_json_decode")
 #' @export
 claude_json_decode_error <- function(line, original_error = NULL, ...) {
   preview <- substr(line, 1, 100)
@@ -132,6 +156,12 @@ claude_json_decode_error <- function(line, original_error = NULL, ...) {
 #' @param message Character. Description.
 #' @param data List or NULL. The raw parsed object.
 #' @param ... Additional fields.
+#' @examples
+#' err <- tryCatch(
+#'   claude_message_parse_error("Unknown message type", data = list(type = "x")),
+#'   error = function(e) e
+#' )
+#' inherits(err, "claude_error_message_parse")
 #' @export
 claude_message_parse_error <- function(message, data = NULL, ...) {
   claude_error(

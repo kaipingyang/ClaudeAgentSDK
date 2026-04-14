@@ -32,3 +32,14 @@ Scans \verb{~/.claude/projects/} (or the project-specific sub-directory) for
 \code{.jsonl} session files and extracts metadata from \code{stat} + head/tail reads
 — no full JSONL parsing required.
 }
+\examples{
+\donttest{
+# All sessions
+sessions <- list_sessions(limit = 5L)
+length(sessions)
+
+# Sessions for a specific project
+sessions <- list_sessions(directory = getwd(), limit = 10L)
+if (length(sessions) > 0) cat(sessions[[1]]$session_id, "\n")
+}
+}

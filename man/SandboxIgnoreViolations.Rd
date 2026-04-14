@@ -17,3 +17,7 @@ Object of class \code{SandboxIgnoreViolations}.
 \description{
 Create a SandboxIgnoreViolations
 }
+\examples{
+ig <- SandboxIgnoreViolations(file = c("/tmp/ok.txt"))
+ig$file
+}

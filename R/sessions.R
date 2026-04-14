@@ -358,6 +358,16 @@ NULL
 #' @param include_worktrees Logical. Scan git worktrees (default `TRUE`).
 #' @return List of `SDKSessionInfo` objects sorted by `last_modified`
 #'   descending.
+#' @examples
+#' \donttest{
+#' # All sessions
+#' sessions <- list_sessions(limit = 5L)
+#' length(sessions)
+#'
+#' # Sessions for a specific project
+#' sessions <- list_sessions(directory = getwd(), limit = 10L)
+#' if (length(sessions) > 0) cat(sessions[[1]]$session_id, "\n")
+#' }
 #' @export
 list_sessions <- function(directory       = NULL,
                            limit           = NULL,
@@ -413,6 +423,14 @@ list_sessions <- function(directory       = NULL,
 #' @param directory Character or NULL. Project directory; when `NULL` all
 #'   project directories are searched.
 #' @return An `SDKSessionInfo` object, or `NULL` if not found.
+#' @examples
+#' \donttest{
+#' sessions <- list_sessions(limit = 1L)
+#' if (length(sessions) > 0) {
+#'   info <- get_session_info(sessions[[1]]$session_id)
+#'   info$session_id
+#' }
+#' }
 #' @export
 get_session_info <- function(session_id, directory = NULL) {
   uuid <- .validate_uuid(session_id)
@@ -460,6 +478,14 @@ get_session_info <- function(session_id, directory = NULL) {
 #' @param limit Integer or NULL. Maximum messages to return.
 #' @param offset Integer. Messages to skip.
 #' @return List of `SessionMessage` objects.
+#' @examples
+#' \donttest{
+#' sessions <- list_sessions(limit = 1L)
+#' if (length(sessions) > 0) {
+#'   msgs <- get_session_messages(sessions[[1]]$session_id, limit = 5L)
+#'   length(msgs)
+#' }
+#' }
 #' @export
 get_session_messages <- function(session_id,
                                   directory = NULL,

@@ -19,3 +19,7 @@ Object of class \code{McpToolInfo}.
 \description{
 Create a McpToolInfo
 }
+\examples{
+tool <- McpToolInfo("add", description = "Add two numbers")
+tool$name
+}

@@ -17,3 +17,8 @@ Object of class \code{PermissionResultDeny}.
 \description{
 Deny permission result
 }
+\examples{
+result <- PermissionResultDeny("Not allowed in this context.")
+result$behavior  # "deny"
+result$message
+}

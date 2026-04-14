@@ -21,3 +21,7 @@ Object of class \code{ContextUsageCategory}.
 \description{
 Create a ContextUsageCategory
 }
+\examples{
+cat <- ContextUsageCategory("user", 1024L, "#4e79a7")
+cat$name
+}
