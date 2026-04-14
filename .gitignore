@@ -20,5 +20,12 @@ build/
 *.swp
 .claude/
 
+# test
+examples/test_path_to_claude_code.R
+
+# Local secrets — never commit
+.Renviron
+
 # Python SDK reference copy (not part of this R package)
 claude-agent-sdk-python/
+docs/

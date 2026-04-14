@@ -3,6 +3,7 @@
 #'   CLI into typed R objects, and builds outgoing JSON messages.
 #'   Mirrors `_internal/message_parser.py`.
 #' @name protocol
+#' @keywords internal
 NULL
 
 # ---------------------------------------------------------------------------

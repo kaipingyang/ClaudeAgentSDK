@@ -3,6 +3,7 @@
 #'   and I/O buffer management. Mirrors helpers scattered across the Python
 #'   SDK's `subprocess_cli.py` and the TypeScript SDK.
 #' @name utils
+#' @keywords internal
 NULL
 
 MINIMUM_CLAUDE_CODE_VERSION <- "2.0.0"

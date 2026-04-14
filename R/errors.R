@@ -2,6 +2,7 @@
 #' @description Error classes mirroring Python claude-agent-sdk `_errors.py`.
 #' All errors inherit from `claude_error` (S3 class).
 #' @name errors
+#' @keywords internal
 NULL
 
 # ---------------------------------------------------------------------------

@@ -4,6 +4,7 @@
 #'
 #'   For simple one-shot queries use [claude_run()] or [claude_query()].
 #' @name client
+#' @keywords internal
 NULL
 
 #' ClaudeSDKClient R6 Class
@@ -113,7 +114,7 @@ ClaudeSDKClient <- R6::R6Class(
     },
 
     #' @description Send a new request in streaming mode.
-    #'   Alias for [send()] that matches the Python SDK's `client.query()` API.
+    #'   Alias for `send()` that matches the Python SDK's `client.query()` API.
     #' @param prompt Character(1) or list. Prompt text or list of content blocks.
     #' @param session_id Character(1). Session identifier (default `"default"`).
     query = function(prompt, session_id = "default") {
@@ -136,7 +137,7 @@ ClaudeSDKClient <- R6::R6Class(
     },
 
     #' @description Return a `coro` generator that yields ALL messages
-    #'   (no automatic stop).  Use [receive_response()] for a single
+    #'   (no automatic stop).  Use `receive_response()` for a single
     #'   request/response cycle.
     receive_messages = function() {
       private$assert_connected()

@@ -1,0 +1,157 @@
+url: https://kaipingyang.github.io/ClaudeAgentSDK/
+
+template:
+  bootstrap: 5
+  bootswatch: flatly
+
+home:
+  title: "ClaudeAgentSDK — R SDK for Claude Code Agent"
+  description: >
+    R implementation of the Claude Agent SDK. Spawns the Claude Code CLI
+    as a subprocess and communicates via newline-delimited JSON stream
+    protocol, including bidirectional control (permission requests, hooks,
+    interrupt).
+  sidebar:
+    structure: [links, license, community, citation, authors, dev]
+
+navbar:
+  structure:
+    left:  [home, reference, articles, news]
+    right: [github]
+  components:
+    github:
+      icon: fab fa-github fa-lg
+      href: https://github.com/kaipingyang/ClaudeAgentSDK
+      aria-label: GitHub repository
+
+reference:
+  - title: "Core Client"
+    desc: "High-level stateful client for multi-turn conversations."
+    contents:
+      - ClaudeSDKClient
+      - ClaudeAgentOptions
+
+  - title: "One-Shot Query"
+    desc: "Simple functions for single-turn queries without managing a client."
+    contents:
+      - claude_query
+      - claude_run
+
+  - title: "Session Management"
+    desc: "Read and browse saved Claude Code sessions from disk."
+    contents:
+      - list_sessions
+      - get_session_info
+      - get_session_messages
+
+  - title: "Session Mutations"
+    desc: "Rename, tag, delete, or fork existing sessions."
+    contents:
+      - rename_session
+      - tag_session
+      - delete_session
+      - fork_session
+
+  - title: "Permission Types"
+    desc: "Return values for `can_use_tool` callbacks and message-driven approval."
+    contents:
+      - PermissionResultAllow
+      - PermissionResultDeny
+      - PermissionRequestMessage
+      - PermissionRuleValue
+      - PermissionUpdate
+
+  - title: "Message Types"
+    desc: "S3 classes representing messages yielded by `claude_query()` and the client."
+    contents:
+      - UserMessage
+      - AssistantMessage
+      - SystemMessage
+      - ResultMessage
+      - StreamEvent
+      - RateLimitEvent
+      - RateLimitInfo
+      - TaskStartedMessage
+      - TaskProgressMessage
+      - TaskNotificationMessage
+
+  - title: "Content Block Types"
+    desc: "Blocks that appear inside `AssistantMessage$content`."
+    contents:
+      - TextBlock
+      - ThinkingBlock
+      - ToolUseBlock
+      - ToolResultBlock
+
+  - title: "Hook Types"
+    desc: "Input and output types for the hook system."
+    contents:
+      - PreToolUseHookInput
+      - PostToolUseHookInput
+      - PostToolUseFailureHookInput
+      - UserPromptSubmitHookInput
+      - StopHookInput
+      - SubagentStopHookInput
+      - SubagentStartHookInput
+      - PreCompactHookInput
+      - NotificationHookInput
+      - PermissionRequestHookInput
+      - SyncHookOutput
+      - AsyncHookOutput
+      - HookMatcher
+
+  - title: "Agent & MCP Types"
+    desc: "Configuration and status types for agents and MCP servers."
+    contents:
+      - AgentDefinition
+      - McpToolInfo
+      - McpServerInfo
+      - McpServerStatus
+      - McpStatusResponse
+
+  - title: "Thinking & Effort Types"
+    desc: "Configuration for extended thinking / effort level."
+    contents:
+      - ThinkingConfigAdaptive
+      - ThinkingConfigEnabled
+      - ThinkingConfigDisabled
+
+  - title: "System Prompt & Sandbox Types"
+    desc: "Typed helpers for system prompt and sandbox configuration."
+    contents:
+      - SystemPromptPreset
+      - SystemPromptFile
+      - SandboxSettings
+      - SandboxNetworkConfig
+      - SandboxIgnoreViolations
+
+  - title: "Task & Context Budget Types"
+    desc: "Budget and usage tracking for API tasks."
+    contents:
+      - TaskBudget
+      - TaskUsage
+      - ContextUsageCategory
+      - ContextUsageResponse
+
+  - title: "Utilities"
+    desc: "Helper functions for CLI discovery and MCP server setup."
+    contents:
+      - find_claude
+      - check_claude_version
+      - list_skills
+      - r_mcp_server
+      - split_lines_with_buffer
+
+  - title: "Error Constructors"
+    desc: "Typed error objects raised by the SDK."
+    contents:
+      - claude_cli_not_found
+      - claude_cli_connection_error
+      - claude_process_error
+      - claude_json_decode_error
+      - claude_message_parse_error
+
+news:
+  releases:
+  - text: "Version 0.2.0"
+    href: https://github.com/kaipingyang/ClaudeAgentSDK/blob/main/NEWS.md

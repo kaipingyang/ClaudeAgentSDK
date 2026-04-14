@@ -8,6 +8,7 @@
 #'   process, the CLI will absorb SDK-written entries on its next metadata
 #'   re-read (tail-scan window). Safe to call from any SDK host process.
 #' @name session_mutations
+#' @keywords internal
 NULL
 
 # ---------------------------------------------------------------------------
