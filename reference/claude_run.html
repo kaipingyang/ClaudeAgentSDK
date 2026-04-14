@@ -43,7 +43,7 @@ async for msg in query(prompt, options): messages.append(msg)
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Run Claude Code synchronously and collect all messages</h1>
-      <small class="dont-index">Source: <a href="https://github.com/kaipingyang/ClaudeAgentSDK/blob/HEAD/R/query.R" class="external-link"><code>R/query.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/kaipingyang/ClaudeAgentSDK/blob/main/R/query.R" class="external-link"><code>R/query.R</code></a></small>
       <div class="d-none name"><code>claude_run.Rd</code></div>
     </div>
 
@@ -51,8 +51,8 @@ async for msg in query(prompt, options): messages.append(msg)
     <p>Convenience wrapper around <code><a href="claude_query.html">claude_query()</a></code> that blocks until the
 <code>ResultMessage</code> is received and returns a structured result list.
 Equivalent to the Python pattern:</p>
-<p></p><div class="sourceCode python"><pre><code><span id="cb1-1"><a href="#cb1-1" aria-hidden="true"></a>messages <span class="op">=</span> []</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true"></a><span class="cf">async</span> <span class="cf">for</span> msg <span class="kw">in</span> query(prompt, options): messages.append(msg)</span></code></pre><p></p></div>
+<p></p><div class="sourceCode python"><pre><code><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a>messages <span class="op">=</span> []</span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="cf">async</span> <span class="cf">for</span> msg <span class="kw">in</span> query(prompt, options): messages.append(msg)</span></code></pre><p></p></div>
     </div>
 
     <div class="section level2">
@@ -92,7 +92,7 @@ values in <code>options</code>.  E.g. <code>claude_run("...", max_turns = 1L)</c
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
 </div>
 
     </footer></div>

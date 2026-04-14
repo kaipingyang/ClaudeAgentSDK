@@ -33,10 +33,11 @@
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>ClaudeAgentSDK — Developer Notes</h1>
-      <small class="dont-index">Source: <a href="https://github.com/kaipingyang/ClaudeAgentSDK/blob/HEAD/CLAUDE.md" class="external-link"><code>CLAUDE.md</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/kaipingyang/ClaudeAgentSDK/blob/main/CLAUDE.md" class="external-link"><code>CLAUDE.md</code></a></small>
     </div>
 
 <div id="claudeagentsdk--developer-notes" class="section level1">
+
 <p>R implementation of the Claude Agent SDK. Mirrors the Python SDK (<code>claude-agent-sdk-python/</code>) at the API level; idiomatic R internals.</p>
 <div class="section level2">
 <h2 id="architecture">Architecture<a class="anchor" aria-label="anchor" href="#architecture"></a></h2>
@@ -107,7 +108,7 @@
 <div class="section level2">
 <h2 id="running-tests">Running tests<a class="anchor" aria-label="anchor" href="#running-tests"></a></h2>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/test.html" class="external-link">test</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">test</span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <p>643+ tests. Integration tests require a real Claude Code CLI and skip automatically if not found.</p>
 <div class="section level3">
 <h3 id="test-files">Test files<a class="anchor" aria-label="anchor" href="#test-files"></a></h3>
@@ -156,8 +157,8 @@
 <h2 id="github">GitHub<a class="anchor" aria-label="anchor" href="#github"></a></h2>
 <p>Remote: <code>https://github.com/kaipingyang/ClaudeAgentSDK</code></p>
 <p>Push without <code>gh</code> CLI (token in <code>~/.Renviron</code>):</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true"></a><span class="bu">source</span> ~/.Renviron</span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true"></a><span class="fu">git</span> push https://kaipingyang:<span class="va">${GITHUB_TOKEN}</span>@github.com/kaipingyang/ClaudeAgentSDK.git main</span></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="bu">source</span> ~/.Renviron</span>
+<span id="cb3-2"><a href="#cb3-2" tabindex="-1"></a><span class="fu">git</span> push https://kaipingyang:<span class="va">${GITHUB_TOKEN}</span>@github.com/kaipingyang/ClaudeAgentSDK.git main</span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="development-scripts">Development scripts<a class="anchor" aria-label="anchor" href="#development-scripts"></a></h2>
@@ -321,7 +322,7 @@
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
 </div>
 
     </footer></div>

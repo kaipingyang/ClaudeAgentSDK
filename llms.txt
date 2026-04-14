@@ -1,0 +1,975 @@
+# Claude Agent SDK for R
+
+R SDK for Claude Agent. Mirrors the [Python
+SDK](https://github.com/anthropics/claude-agent-sdk-python) with
+idiomatic R internals. See the [Claude Agent SDK
+documentation](https://docs.anthropic.com/en/docs/claude-code/sdk) for
+more information.
+
+## Installation
+
+``` r
+# Install from GitHub
+remotes::install_github("kaipingyang/ClaudeAgentSDK")
+
+# Or from source (development)
+devtools::install("/path/to/ClaudeAgentSDK")
+```
+
+**Prerequisites:**
+
+- R 4.1+
+- Required packages: `processx`, `jsonlite`, `R6`, `later`, `coro`,
+  `rlang`, `cli`
+
+**Note:** The Claude Code CLI must be installed separately:
+
+``` bash
+curl -fsSL https://claude.ai/install.sh | bash
+# or
+npm install -g @anthropic-ai/claude-code
+```
+
+You can specify a custom path via
+`ClaudeAgentOptions(cli_path = "/path/to/claude")`.
+
+## Quick Start
+
+``` r
+library(ClaudeAgentSDK)
+
+
+# Simple one-shot query (synchronous)
+result <- claude_run("What is 2 + 2?")
+print(result)
+
+# Stream messages with claude_query()
+gen <- claude_query("What is 2 + 2?")
+coro::loop(for (msg in gen) {
+  print(msg)
+})
+```
+
+## Basic Usage: `claude_query()` and `claude_run()`
+
+[`claude_query()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/claude_query.md)
+is the R equivalent of Python’s
+[`query()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/query.md).
+It returns a `coro` generator that yields typed message objects. See
+[`R/query.R`](https://kaipingyang.github.io/ClaudeAgentSDK/R/query.R).
+
+``` r
+library(ClaudeAgentSDK)
+
+# Stream through messages
+gen <- claude_query("Hello Claude")
+coro::loop(for (msg in gen) {
+  if (inherits(msg, "AssistantMessage")) {
+    for (block in msg$content) {
+      if (inherits(block, "TextBlock")) {
+        cat(block$text)
+      }
+    }
+  }
+})
+
+# With options
+options <- ClaudeAgentOptions(
+  system_prompt = "You are a helpful assistant",
+  max_turns     = 1L
+)
+
+gen <- claude_query("Tell me a joke", options = options)
+coro::loop(for (msg in gen) {
+  print(msg)
+})
+```
+
+### Synchronous helper: `claude_run()`
+
+For simple blocking use,
+[`claude_run()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/claude_run.md)
+collects all messages and returns a `ClaudeRunResult`:
+
+``` r
+result <- claude_run("What is 2 + 2?",
+  options = ClaudeAgentOptions(max_turns = 1L))
+
+# Access the ResultMessage
+print(result$result)            # <ResultMessage ...>
+cat(result$result$total_cost_usd, "\n")
+
+# Walk all messages
+for (msg in result$messages) {
+  if (inherits(msg, "AssistantMessage")) {
+    cat(msg$content[[1]]$text, "\n")
+  }
+}
+```
+
+### Using Tools
+
+By default, Claude has access to the full Claude Code toolset (Read,
+Write, Edit, Bash, and others). `allowed_tools` is a permission
+allowlist: listed tools are auto-approved, and unlisted tools fall
+through to `permission_mode` and `can_use_tool` for a decision. To block
+specific tools use `disallowed_tools`.
+
+``` r
+options <- ClaudeAgentOptions(
+  allowed_tools   = c("Read", "Write", "Bash"),   # auto-approve these
+  permission_mode = "acceptEdits"                 # auto-accept file edits
+)
+
+gen <- claude_query("Create a hello.R file", options = options)
+coro::loop(for (msg in gen) {
+  # process tool use and results
+})
+```
+
+### Working Directory
+
+``` r
+options <- ClaudeAgentOptions(
+  cwd = "/path/to/project"
+)
+```
+
+## `ClaudeSDKClient`
+
+`ClaudeSDKClient` is an R6 class that supports bidirectional,
+interactive conversations with Claude Code. See
+[`R/client.R`](https://kaipingyang.github.io/ClaudeAgentSDK/R/client.R).
+
+Unlike
+[`claude_query()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/claude_query.md),
+`ClaudeSDKClient` additionally enables **hooks** and **runtime control**
+(interrupt, permission-mode changes, model switching).
+
+### Interactive Client
+
+``` r
+library(ClaudeAgentSDK)
+
+client <- ClaudeSDKClient$new(
+  ClaudeAgentOptions(cwd = getwd())
+)
+client$connect()
+
+# Send a prompt and receive the response (query() is an alias for send())
+client$query("What files are in the current directory?")
+coro::loop(for (msg in client$receive_response()) {
+  if (inherits(msg, "AssistantMessage")) {
+    for (block in msg$content) {
+      if (inherits(block, "TextBlock")) cat(block$text)
+    }
+  }
+  if (inherits(msg, "ResultMessage")) {
+    cat("\nCost: $", msg$total_cost_usd, "\n")
+  }
+})
+
+# Send a follow-up in the same session
+client$query("Now count how many R files there are.")
+coro::loop(for (msg in client$receive_response()) {
+  if (inherits(msg, "AssistantMessage")) {
+    cat(msg$content[[1]]$text, "\n")
+  }
+})
+
+client$disconnect()
+```
+
+### Hooks
+
+A **hook** is an R function that the Claude Code application invokes at
+specific points of the agent loop. Hooks can intercept tool calls,
+validate commands, and provide deterministic feedback.
+
+``` r
+library(ClaudeAgentSDK)
+
+check_bash_command <- function(input_data, tool_use_id, context) {
+  if (!identical(input_data$hook_event_name, "PreToolUse")) return(list())
+  command <- input_data$tool_input$command %||% ""
+  block_patterns <- c("rm -rf", "sudo")
+  for (pattern in block_patterns) {
+    if (grepl(pattern, command, fixed = TRUE)) {
+      return(list(
+        hookSpecificOutput = list(
+          hookEventName         = "PreToolUse",
+          permissionDecision    = "deny",
+          permissionDecisionReason = paste("Command contains blocked pattern:", pattern)
+        )
+      ))
+    }
+  }
+  list()
+}
+
+options <- ClaudeAgentOptions(
+  allowed_tools = "Bash",
+  hooks = list(
+    PreToolUse = list(
+      list(
+        matcher = "Bash",
+        hooks   = list(check_bash_command)
+      )
+    )
+  )
+)
+
+client <- ClaudeSDKClient$new(options)
+client$connect()
+
+# Test 1: Command with forbidden pattern (will be blocked)
+client$send("Run: rm -rf /tmp/test")
+coro::loop(for (msg in client$receive_response()) {
+  print(msg)
+})
+
+# Test 2: Safe command
+client$send("Run: echo 'Hello from hooks!'")
+coro::loop(for (msg in client$receive_response()) {
+  if (inherits(msg, "AssistantMessage")) cat(msg$content[[1]]$text, "\n")
+})
+
+client$disconnect()
+```
+
+### Permission Callbacks
+
+Use `can_use_tool` for programmatic tool permission control:
+
+``` r
+my_permission <- function(tool_name, tool_input, context) {
+  if (tool_name == "Bash") {
+    cmd <- tool_input$command %||% ""
+    if (grepl("sudo", cmd, fixed = TRUE)) {
+      return(PermissionResultDeny("sudo commands are not allowed"))
+    }
+  }
+  PermissionResultAllow()
+}
+
+options <- ClaudeAgentOptions(
+  can_use_tool = my_permission
+)
+```
+
+### Tool Approval (Shiny)
+
+Set `permission_prompt_tool_name = "stdio"` to receive
+`PermissionRequestMessage` objects in your message loop. Call
+`approve_tool()` / `deny_tool()` from your UI event handlers (e.g.,
+button clicks):
+
+``` r
+library(coro); library(promises)
+
+client <- ClaudeSDKClient$new(ClaudeAgentOptions(
+  permission_prompt_tool_name = "stdio",
+  include_partial_messages    = TRUE
+))
+client$connect()
+
+pending_id <- reactiveVal(NULL)
+
+do_stream <- coro::async(function(client, pending_id, session) {
+  repeat {
+    msgs <- tryCatch(client$poll_messages(), error = function(e) list())
+    if (length(msgs) == 0L) {
+      await(promises::promise(function(resolve, reject) {
+        later::later(function() resolve(TRUE), 0.05)
+      }))
+      next
+    }
+    for (msg in msgs) {
+      await(promises::promise_resolve(TRUE))
+      if (inherits(msg, "PermissionRequestMessage")) {
+        pending_id(msg$request_id)
+        showModal(modalDialog(
+          title  = paste("Allow tool:", msg$tool_name),
+          footer = tagList(
+            actionButton("tool_allow", "Allow", class = "btn-success"),
+            actionButton("tool_deny",  "Deny",  class = "btn-danger")
+          )
+        ), session = session)
+        next
+      }
+      if (inherits(msg, "ResultMessage")) return("done")
+    }
+  }
+})
+
+# In Shiny server:
+observeEvent(input$tool_allow, {
+  rid <- pending_id()
+  if (!is.null(rid)) { pending_id(NULL); removeModal(); client$approve_tool(rid) }
+})
+observeEvent(input$tool_deny, {
+  rid <- pending_id()
+  if (!is.null(rid)) { pending_id(NULL); removeModal(); client$deny_tool(rid, "Denied") }
+})
+```
+
+See
+[`examples/15_shinychat_tool_approval_msgdriven.R`](https://kaipingyang.github.io/ClaudeAgentSDK/examples/15_shinychat_tool_approval_msgdriven.R)
+for a full Shiny app with modal-based approval, and examples 16–19 for
+additional approval UI patterns (inline bar, conversational, insertUI,
+native tool cards).
+
+### Runtime Control
+
+``` r
+client <- ClaudeSDKClient$new(ClaudeAgentOptions())
+client$connect()
+
+# Change permission mode at runtime
+client$set_permission_mode("acceptEdits")
+
+# Interrupt a running operation
+client$interrupt()
+
+# Switch model mid-session
+client$set_model("claude-sonnet-4-6")
+
+# Get MCP server status
+status <- client$get_mcp_status()
+cat("MCP servers:", length(status$mcpServers), "\n")
+
+# Get context usage
+usage <- client$get_context_usage()
+cat("Context:", usage$percentage, "% used\n")
+
+client$disconnect()
+```
+
+## Types
+
+See
+[`R/types.R`](https://kaipingyang.github.io/ClaudeAgentSDK/R/types.R)
+for complete type definitions:
+
+- `ClaudeAgentOptions` — Configuration options
+- `AssistantMessage`, `UserMessage`, `SystemMessage`, `ResultMessage` —
+  Message types
+- `TextBlock`, `ToolUseBlock`, `ToolResultBlock`, `ThinkingBlock` —
+  Content blocks
+- `StreamEvent`, `RateLimitEvent` — Streaming events
+- `TaskStartedMessage`, `TaskProgressMessage`, `TaskNotificationMessage`
+  — Task messages
+- `PermissionResultAllow`, `PermissionResultDeny`,
+  `PermissionRequestMessage`, `PermissionUpdate`, `PermissionRuleValue`
+  — Permission types
+- `PreToolUseHookInput`, `PostToolUseHookInput`, … — Hook input types
+  (10 total)
+- `SyncHookOutput`, `AsyncHookOutput` — Hook output types
+- `SystemPromptPreset`, `SystemPromptFile` — System prompt types
+- `SandboxSettings`, `SandboxNetworkConfig`, `SandboxIgnoreViolations` —
+  Sandbox types
+- `ThinkingConfigAdaptive`, `ThinkingConfigEnabled`,
+  `ThinkingConfigDisabled` — Thinking config
+- `TaskBudget`, `TaskUsage`, `ContextUsageCategory`,
+  `ContextUsageResponse` — Budget/usage types
+- `AgentDefinition`, `HookMatcher` — Agent and hook configuration
+- `SDKSessionInfo`, `SessionMessage` — Session types
+
+All objects are S3 lists with a `class` attribute; use
+`inherits(msg, "AssistantMessage")` for type checks.
+
+## Error Handling
+
+``` r
+library(ClaudeAgentSDK)
+
+tryCatch(
+  {
+    result <- claude_run("Hello")
+  },
+  claude_error_cli_not_found = function(e) {
+    cat("Please install Claude Code\n")
+  },
+  claude_error_process = function(e) {
+    cat("Process failed with exit code:", e$exit_code, "\n")
+  },
+  claude_error_json_decode = function(e) {
+    cat("Failed to parse response:", e$line, "\n")
+  },
+  claude_error = function(e) {
+    cat("SDK error:", conditionMessage(e), "\n")
+  }
+)
+```
+
+### Error classes
+
+| R class                       | Equivalent Python    | When raised                    |
+|-------------------------------|----------------------|--------------------------------|
+| `claude_error`                | `ClaudeSDKError`     | Base class for all SDK errors  |
+| `claude_error_cli_not_found`  | `CLINotFoundError`   | Claude Code CLI not found      |
+| `claude_error_cli_connection` | `CLIConnectionError` | Connection/startup failure     |
+| `claude_error_process`        | `ProcessError`       | CLI process exited with error  |
+| `claude_error_json_decode`    | `CLIJSONDecodeError` | Malformed JSON from CLI        |
+| `claude_error_message_parse`  | `MessageParseError`  | Unrecognised message structure |
+
+## Session Management
+
+``` r
+library(ClaudeAgentSDK)
+
+# List recent sessions for a project
+sessions <- list_sessions(
+  directory = "/path/to/project",
+  limit     = 10L
+)
+for (s in sessions) {
+  cat(s$session_id, "-", s$summary, "\n")
+}
+
+# List all sessions across all projects
+all_sessions <- list_sessions()
+
+# Get metadata for a specific session
+info <- get_session_info("550e8400-e29b-41d4-a716-446655440000")
+if (!is.null(info)) cat(info$summary, "\n")
+
+# Get conversation messages from a session
+messages <- get_session_messages(
+  "550e8400-e29b-41d4-a716-446655440000",
+  directory = "/path/to/project"
+)
+for (m in messages) {
+  cat(m$type, ":", m$uuid, "\n")
+}
+```
+
+## Advanced: Continuing and Resuming Sessions
+
+``` r
+# Continue the most recent session
+result <- claude_run(
+  "Continue where we left off",
+  options = ClaudeAgentOptions(continue_conversation = TRUE)
+)
+
+# Resume a specific session
+result <- claude_run(
+  "What did we discuss?",
+  options = ClaudeAgentOptions(resume = "550e8400-e29b-41d4-a716-446655440000")
+)
+
+# Fork a session (resume into a new session ID)
+result <- claude_run(
+  "Try a different approach",
+  options = ClaudeAgentOptions(
+    resume       = "550e8400-e29b-41d4-a716-446655440000",
+    fork_session = TRUE
+  )
+)
+```
+
+## Advanced: Thinking and Effort
+
+``` r
+# Extended thinking (adaptive) — using typed constructor or plain list
+options <- ClaudeAgentOptions(
+  thinking = ThinkingConfigAdaptive()
+)
+
+# Extended thinking with budget
+options <- ClaudeAgentOptions(
+  thinking = ThinkingConfigEnabled(budget_tokens = 10000L)
+)
+
+# Disable thinking
+options <- ClaudeAgentOptions(
+  thinking = ThinkingConfigDisabled()
+)
+
+# Effort level
+options <- ClaudeAgentOptions(effort = "high")
+```
+
+## Advanced: Structured Output
+
+``` r
+options <- ClaudeAgentOptions(
+  output_format = list(
+    type   = "json_schema",
+    schema = list(
+      type       = "object",
+      properties = list(
+        answer = list(type = "string"),
+        steps  = list(type = "array", items = list(type = "string"))
+      )
+    )
+  )
+)
+
+result <- claude_run("Explain 2+2 step by step", options = options)
+```
+
+## Advanced: MCP Servers
+
+``` r
+options <- ClaudeAgentOptions(
+  mcp_servers = list(
+    my_server = list(
+      type    = "stdio",
+      command = "python",
+      args    = c("-m", "my_mcp_server")
+    )
+  ),
+  allowed_tools = "mcp__my_server__my_tool"
+)
+```
+
+## Advanced: Custom Tools via MCP
+
+The Python SDK provides `create_sdk_mcp_server()` for defining tools
+in-process. The R SDK uses
+[`mcptools`](https://github.com/tidyverse/mcptools) instead, which runs
+tools in a separate R subprocess via the standard MCP protocol.
+Functionally equivalent — the only difference is shared-memory access.
+
+``` r
+# 1. Define tools in a file (e.g., mcp_tools_def.R)
+list(
+  ellmer::tool(
+    fun         = function(a, b) a + b,
+    name        = "add",
+    description = "Add two numbers",
+    arguments   = list(
+      a = ellmer::type_number("First number"),
+      b = ellmer::type_number("Second number")
+    )
+  )
+)
+
+# 2. Launch as an MCP server and pass to ClaudeAgentOptions
+options <- ClaudeAgentOptions(
+  mcp_servers = r_mcp_server("mcp_tools_def.R"),
+  allowed_tools = "mcp__r_tools__add"
+)
+
+result <- claude_run("What is 3 + 4?", options = options)
+```
+
+See
+[`examples/11_mcp_server.R`](https://kaipingyang.github.io/ClaudeAgentSDK/examples/11_mcp_server.R)
+for a complete example.
+
+## Advanced: Async / Shiny Integration
+
+### Recommended: `coro::async` + `poll_messages()`
+
+The recommended Shiny pattern uses
+[`coro::async`](https://coro.r-lib.org/reference/async.html) with
+`poll_messages()` inside an `ExtendedTask`. Each
+[`await()`](https://coro.r-lib.org/reference/async.html) call yields the
+R event loop, allowing Shiny input events (interrupt button, approval
+buttons) to fire between tokens.
+
+``` r
+library(coro); library(promises); library(shinychat)
+
+client <- ClaudeSDKClient$new(ClaudeAgentOptions(
+  max_turns                = 5L,
+  include_partial_messages = TRUE
+))
+client$connect()
+onStop(function() client$disconnect())
+
+interrupt_flag <- reactiveVal(FALSE)
+
+do_stream <- coro::async(function(client, interrupt_flag, session) {
+  chunk_started <- FALSE
+  interrupted   <- FALSE
+
+  repeat {
+    if (!interrupted && shiny::isolate(interrupt_flag())) {
+      interrupted <- TRUE
+      tryCatch(client$interrupt(), error = function(e) NULL)
+    }
+
+    msgs <- tryCatch(client$poll_messages(), error = function(e) list())
+    if (length(msgs) == 0L) {
+      await(promises::promise(function(resolve, reject) {
+        later::later(function() resolve(TRUE), 0.05)
+      }))
+      next
+    }
+
+    drain_done <- FALSE
+    for (msg in msgs) {
+      await(promises::promise_resolve(TRUE))  # yield between each message
+
+      # drain after interrupt: skip until ResultMessage
+      if (interrupted) {
+        if (inherits(msg, "ResultMessage")) { drain_done <- TRUE; break }
+        next
+      }
+
+      # stream text tokens
+      if (inherits(msg, "StreamEvent") && is.list(msg$event)) {
+        evt <- msg$event
+        if (identical(evt$type, "content_block_delta") &&
+            identical(evt$delta$type, "text_delta")) {
+          if (!chunk_started) {
+            chunk_started <- TRUE
+            chat_append_message("chat",
+              list(role = "assistant", content = ""),
+              chunk = "start", session = session)
+          }
+          chat_append_message("chat",
+            list(role = "assistant", content = evt$delta$text),
+            chunk = TRUE, session = session)
+        }
+      }
+
+      if (inherits(msg, "ResultMessage")) {
+        if (chunk_started) {
+          chat_append_message("chat",
+            list(role = "assistant", content = ""),
+            chunk = "end", session = session)
+        }
+        return("done")
+      }
+    }
+    if (drain_done) break
+  }
+  "done"
+})
+
+stream_task <- ExtendedTask$new(function(user_input) {
+  client$send(user_input)
+  do_stream(client, interrupt_flag, session)
+})
+
+observeEvent(input$chat_user_input, {
+  if (stream_task$status() == "running") return()
+  interrupt_flag(FALSE)
+  stream_task$invoke(input$chat_user_input)
+})
+
+# ESC key interrupt (requires JS: Shiny.setInputValue('esc', Math.random(), {priority:'event'}))
+observeEvent(input$esc, {
+  if (stream_task$status() == "running") interrupt_flag(TRUE)
+})
+```
+
+See
+[`examples/13_shinychat_streaming.R`](https://kaipingyang.github.io/ClaudeAgentSDK/examples/13_shinychat_streaming.R)
+for a minimal streaming chat, and
+[`examples/19_shinychat_tool_cards.R`](https://kaipingyang.github.io/ClaudeAgentSDK/examples/19_shinychat_tool_cards.R)
+for a full-featured example with native tool cards, thinking blocks, and
+inline tool approval.
+
+### Simple non-streaming pattern (`receive_response_async`)
+
+For cases where streaming is not needed, `receive_response_async()`
+returns a
+[`promises::promise`](https://rstudio.github.io/promises/reference/promise.html)
+that resolves to the `ResultMessage`:
+
+``` r
+library(ClaudeAgentSDK)
+library(promises)
+
+client <- ClaudeSDKClient$new(ClaudeAgentOptions(max_turns = 1L))
+client$connect()
+client$send("Explain R in one sentence")
+
+p <- client$receive_response_async(on_message = function(msg) {
+  if (inherits(msg, "AssistantMessage")) {
+    cat(msg$content[[1]]$text)
+  }
+})
+
+# Drive the event loop (non-Shiny context)
+result <- NULL
+then(p, onFulfilled = function(val) result <<- val)
+while (is.null(result)) later::run_now(timeoutSecs = 0.1)
+
+cat("\nCost: $", result$total_cost_usd, "\n")
+client$disconnect()
+```
+
+See
+[`examples/14_shinychat_simple.R`](https://kaipingyang.github.io/ClaudeAgentSDK/examples/14_shinychat_simple.R)
+for the Shiny `ExtendedTask` version.
+
+## Available Tools
+
+See the [Claude Code
+documentation](https://code.claude.com/docs/en/settings#tools-available-to-claude)
+for a complete list of available tools.
+
+## Development
+
+### Running Tests
+
+``` r
+# Unit tests (no CLI required)
+devtools::test("/path/to/ClaudeAgentSDK")
+
+# Or with testthat directly
+testthat::test_dir("tests/testthat")
+```
+
+### Development Setup
+
+``` bash
+# Install git hooks (runs tests before push)
+bash scripts/initial-setup.sh
+```
+
+### Package Structure
+
+    R/
+    ├── errors.R     # Error classes (_errors.py)
+    ├── utils.R      # CLI discovery + buffer helpers
+    ├── types.R      # All message/content S3 types (types.py)
+    ├── options.R    # ClaudeAgentOptions() constructor
+    ├── protocol.R   # JSON parser + message builders (message_parser.py)
+    ├── transport.R  # SubprocessCLITransport R6 class
+    ├── query.R      # claude_query() + claude_run()
+    ├── client.R     # ClaudeSDKClient R6 class (client.py)
+    └── sessions.R   # list_sessions() etc. (sessions.py)
+
+### Package Checks
+
+``` r
+devtools::check("/path/to/ClaudeAgentSDK")
+```
+
+## License and Terms
+
+Use of this SDK is governed by Anthropic’s [Commercial Terms of
+Service](https://www.anthropic.com/legal/commercial-terms), including
+when you use it to power products and services that you make available
+to your own customers and end users, except to the extent a specific
+component or dependency is covered by a different license as indicated
+in that component’s LICENSE file.
+
+# Package index
+
+## Core Client
+
+High-level stateful client for multi-turn conversations.
+
+- [`ClaudeSDKClient`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/ClaudeSDKClient.md)
+  : ClaudeSDKClient R6 Class
+- [`ClaudeAgentOptions()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/ClaudeAgentOptions.md)
+  : Create ClaudeAgentOptions
+
+## One-Shot Query
+
+Simple functions for single-turn queries without managing a client.
+
+- [`claude_query()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/claude_query.md)
+  : Query Claude Code (streaming generator)
+- [`claude_run()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/claude_run.md)
+  : Run Claude Code synchronously and collect all messages
+
+## Session Management
+
+Read and browse saved Claude Code sessions from disk.
+
+- [`list_sessions()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/list_sessions.md)
+  : List Claude Code sessions
+- [`get_session_info()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/get_session_info.md)
+  : Get metadata for a single session
+- [`get_session_messages()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/get_session_messages.md)
+  : Get conversation messages from a session
+
+## Session Mutations
+
+Rename, tag, delete, or fork existing sessions.
+
+- [`rename_session()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/rename_session.md)
+  : Rename a session
+- [`tag_session()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/tag_session.md)
+  : Tag a session
+- [`delete_session()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/delete_session.md)
+  : Delete a session
+- [`fork_session()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/fork_session.md)
+  : Fork a session
+
+## Permission Types
+
+Return values for `can_use_tool` callbacks and message-driven approval.
+
+- [`PermissionResultAllow()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/PermissionResultAllow.md)
+  : Allow permission result
+- [`PermissionResultDeny()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/PermissionResultDeny.md)
+  : Deny permission result
+- [`PermissionRequestMessage()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/PermissionRequestMessage.md)
+  : Create a PermissionRequestMessage
+- [`PermissionRuleValue()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/PermissionRuleValue.md)
+  : Create a PermissionRuleValue
+- [`PermissionUpdate()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/PermissionUpdate.md)
+  : Create a PermissionUpdate
+
+## Message Types
+
+S3 classes representing messages yielded by
+[`claude_query()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/claude_query.md)
+and the client.
+
+- [`UserMessage()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/UserMessage.md)
+  : Create a UserMessage
+- [`AssistantMessage()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/AssistantMessage.md)
+  : Create an AssistantMessage
+- [`SystemMessage()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/SystemMessage.md)
+  : Create a SystemMessage
+- [`ResultMessage()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/ResultMessage.md)
+  : Create a ResultMessage
+- [`StreamEvent()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/StreamEvent.md)
+  : Create a StreamEvent
+- [`RateLimitEvent()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/RateLimitEvent.md)
+  : Create a RateLimitEvent
+- [`RateLimitInfo()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/RateLimitInfo.md)
+  : Create a RateLimitInfo
+- [`TaskStartedMessage()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/TaskStartedMessage.md)
+  : Create a TaskStartedMessage
+- [`TaskProgressMessage()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/TaskProgressMessage.md)
+  : Create a TaskProgressMessage
+- [`TaskNotificationMessage()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/TaskNotificationMessage.md)
+  : Create a TaskNotificationMessage
+
+## Content Block Types
+
+Blocks that appear inside `AssistantMessage$content`.
+
+- [`TextBlock()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/TextBlock.md)
+  : Create a TextBlock
+- [`ThinkingBlock()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/ThinkingBlock.md)
+  : Create a ThinkingBlock
+- [`ToolUseBlock()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/ToolUseBlock.md)
+  : Create a ToolUseBlock
+- [`ToolResultBlock()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/ToolResultBlock.md)
+  : Create a ToolResultBlock
+
+## Hook Types
+
+Input and output types for the hook system.
+
+- [`PreToolUseHookInput()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/PreToolUseHookInput.md)
+  : Create a PreToolUseHookInput
+- [`PostToolUseHookInput()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/PostToolUseHookInput.md)
+  : Create a PostToolUseHookInput
+- [`PostToolUseFailureHookInput()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/PostToolUseFailureHookInput.md)
+  : Create a PostToolUseFailureHookInput
+- [`UserPromptSubmitHookInput()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/UserPromptSubmitHookInput.md)
+  : Create a UserPromptSubmitHookInput
+- [`StopHookInput()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/StopHookInput.md)
+  : Create a StopHookInput
+- [`SubagentStopHookInput()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/SubagentStopHookInput.md)
+  : Create a SubagentStopHookInput
+- [`SubagentStartHookInput()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/SubagentStartHookInput.md)
+  : Create a SubagentStartHookInput
+- [`PreCompactHookInput()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/PreCompactHookInput.md)
+  : Create a PreCompactHookInput
+- [`NotificationHookInput()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/NotificationHookInput.md)
+  : Create a NotificationHookInput
+- [`PermissionRequestHookInput()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/PermissionRequestHookInput.md)
+  : Create a PermissionRequestHookInput
+- [`SyncHookOutput()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/SyncHookOutput.md)
+  : Create a SyncHookOutput
+- [`AsyncHookOutput()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/AsyncHookOutput.md)
+  : Create an AsyncHookOutput
+- [`HookMatcher()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/HookMatcher.md)
+  : Create a HookMatcher
+
+## Agent & MCP Types
+
+Configuration and status types for agents and MCP servers.
+
+- [`AgentDefinition()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/AgentDefinition.md)
+  : Create an AgentDefinition
+- [`McpToolInfo()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/McpToolInfo.md)
+  : Create a McpToolInfo
+- [`McpServerInfo()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/McpServerInfo.md)
+  : Create a McpServerInfo
+- [`McpServerStatus()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/McpServerStatus.md)
+  : Create a McpServerStatus
+- [`McpStatusResponse()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/McpStatusResponse.md)
+  : Create a McpStatusResponse
+
+## Thinking & Effort Types
+
+Configuration for extended thinking / effort level.
+
+- [`ThinkingConfigAdaptive()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/ThinkingConfigAdaptive.md)
+  : Create a ThinkingConfigAdaptive
+- [`ThinkingConfigEnabled()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/ThinkingConfigEnabled.md)
+  : Create a ThinkingConfigEnabled
+- [`ThinkingConfigDisabled()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/ThinkingConfigDisabled.md)
+  : Create a ThinkingConfigDisabled
+
+## System Prompt & Sandbox Types
+
+Typed helpers for system prompt and sandbox configuration.
+
+- [`SystemPromptPreset()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/SystemPromptPreset.md)
+  : Create a SystemPromptPreset
+- [`SystemPromptFile()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/SystemPromptFile.md)
+  : Create a SystemPromptFile
+- [`SandboxSettings()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/SandboxSettings.md)
+  : Create SandboxSettings
+- [`SandboxNetworkConfig()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/SandboxNetworkConfig.md)
+  : Create a SandboxNetworkConfig
+- [`SandboxIgnoreViolations()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/SandboxIgnoreViolations.md)
+  : Create a SandboxIgnoreViolations
+
+## Task & Context Budget Types
+
+Budget and usage tracking for API tasks.
+
+- [`TaskBudget()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/TaskBudget.md)
+  : Create a TaskBudget
+- [`TaskUsage()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/TaskUsage.md)
+  : Create a TaskUsage
+- [`ContextUsageCategory()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/ContextUsageCategory.md)
+  : Create a ContextUsageCategory
+- [`ContextUsageResponse()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/ContextUsageResponse.md)
+  : Create a ContextUsageResponse
+
+## Utilities
+
+Helper functions for CLI discovery and MCP server setup.
+
+- [`find_claude()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/find_claude.md)
+  : Find the Claude Code CLI binary
+
+- [`check_claude_version()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/check_claude_version.md)
+  : Check Claude Code CLI version
+
+- [`list_skills()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/list_skills.md)
+  : List available Claude Code skills
+
+- [`r_mcp_server()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/r_mcp_server.md)
+  :
+
+  Create an R-based MCP server entry for `mcp_servers`
+
+- [`split_lines_with_buffer()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/split_lines_with_buffer.md)
+  : Split buffered output into complete lines
+
+## Error Constructors
+
+Typed error objects raised by the SDK.
+
+- [`claude_cli_not_found()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/claude_cli_not_found.md)
+  : Raise CLINotFoundError
+- [`claude_cli_connection_error()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/claude_cli_connection_error.md)
+  : Raise CLIConnectionError
+- [`claude_process_error()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/claude_process_error.md)
+  : Raise ProcessError
+- [`claude_json_decode_error()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/claude_json_decode_error.md)
+  : Raise CLIJSONDecodeError
+- [`claude_message_parse_error()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/claude_message_parse_error.md)
+  : Raise MessageParseError
+
