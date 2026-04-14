@@ -15,3 +15,4 @@
 ^vignettes/articles$
 ^CHANGELOG\.md$
 ^\.lintr$
+^cran-comments\.md$
