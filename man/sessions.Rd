@@ -6,7 +6,7 @@
 \description{
 Functions to list and read Claude Code sessions stored under
 \verb{~/.claude/projects/}.  Mirrors \verb{_internal/sessions.py} from the Python
-SDK, including the full path-sanitisation hash, head/tail metadata
+SDK, including the full path-sanitization hash, head/tail metadata
 extraction, and conversation-chain reconstruction.
 }
 \keyword{internal}

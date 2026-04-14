@@ -3,7 +3,7 @@
 > **Unofficial community port.** Not affiliated with or endorsed by Anthropic.
 > This is an R implementation of Anthropic's [claude-code-sdk](https://github.com/anthropics/claude-agent-sdk-python).
 
-R SDK for Claude Agent. Mirrors the [Python SDK](https://github.com/anthropics/claude-agent-sdk-python) with idiomatic R internals. See the [Claude Agent SDK documentation](https://docs.anthropic.com/en/docs/claude-code/sdk) for more information.
+R SDK for Claude Agent. Mirrors the [Python SDK](https://github.com/anthropics/claude-agent-sdk-python) with idiomatic R internals. See the [Claude Agent SDK documentation](https://code.claude.com/docs/en/sdk) for more information.
 
 ## Installation
 
@@ -390,7 +390,7 @@ tryCatch(
 | `claude_error_cli_connection` | `CLIConnectionError` | Connection/startup failure |
 | `claude_error_process` | `ProcessError` | CLI process exited with error |
 | `claude_error_json_decode` | `CLIJSONDecodeError` | Malformed JSON from CLI |
-| `claude_error_message_parse` | `MessageParseError` | Unrecognised message structure |
+| `claude_error_message_parse` | `MessageParseError` | Unrecognized message structure |
 
 ## Session Management
 
@@ -507,7 +507,7 @@ options <- ClaudeAgentOptions(
 ## Advanced: Custom Tools via MCP
 
 The Python SDK provides `create_sdk_mcp_server()` for defining tools in-process.
-The R SDK uses [`mcptools`](https://github.com/tidyverse/mcptools) instead,
+The R SDK uses [`mcptools`](https://github.com/posit-dev/mcptools) instead,
 which runs tools in a separate R subprocess via the standard MCP protocol.
 Functionally equivalent — the only difference is shared-memory access.
 

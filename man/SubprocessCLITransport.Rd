@@ -48,7 +48,7 @@ t$disconnect()
 \if{html}{\out{<a id="method-SubprocessCLITransport-new"></a>}}
 \if{latex}{\out{\hypertarget{method-SubprocessCLITransport-new}{}}}
 \subsection{Method \code{new()}}{
-Initialise the transport with a \code{ClaudeAgentOptions} object.
+Initialize the transport with a \code{ClaudeAgentOptions} object.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{SubprocessCLITransport$new(options)}\if{html}{\out{</div>}}
 }

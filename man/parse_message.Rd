@@ -13,7 +13,7 @@ from the CLI's stdout.}
 \value{
 A typed message object (one of the classes defined in \code{types.R}),
 a raw control-request list (passed through to the transport layer), or
-\code{NULL} for unrecognized message types (forward-compatible behaviour).
+\code{NULL} for unrecognized message types (forward-compatible behavior).
 }
 \description{
 Parse a single JSON line from the CLI into a typed message object

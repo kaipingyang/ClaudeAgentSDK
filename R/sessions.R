@@ -1,7 +1,7 @@
 #' @title Session Listing and Reading
 #' @description Functions to list and read Claude Code sessions stored under
 #'   `~/.claude/projects/`.  Mirrors `_internal/sessions.py` from the Python
-#'   SDK, including the full path-sanitisation hash, head/tail metadata
+#'   SDK, including the full path-sanitization hash, head/tail metadata
 #'   extraction, and conversation-chain reconstruction.
 #' @name sessions
 #' @keywords internal
@@ -17,7 +17,7 @@ NULL
 .TRANSCRIPT_ENTRY_TYPES <- c("user", "assistant", "progress", "system", "attachment")
 
 # ---------------------------------------------------------------------------
-# Path sanitisation helpers  (mirrors Python `_sanitize_path` / `_simple_hash`)
+# Path sanitization helpers  (mirrors Python `_sanitize_path` / `_simple_hash`)
 # ---------------------------------------------------------------------------
 
 .simple_hash <- function(s) {

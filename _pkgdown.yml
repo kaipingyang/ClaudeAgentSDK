@@ -155,8 +155,8 @@ articles:
   - title: "Shiny Integration"
     desc: "Patterns for embedding ClaudeAgentSDK in Shiny applications."
     contents:
-      - shiny-streaming
-      - shiny-tool-approval
+      - articles/shiny-streaming
+      - articles/shiny-tool-approval
 
 news:
   releases:

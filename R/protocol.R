@@ -16,7 +16,7 @@ NULL
 #'   from the CLI's stdout.
 #' @return A typed message object (one of the classes defined in `types.R`),
 #'   a raw control-request list (passed through to the transport layer), or
-#'   `NULL` for unrecognized message types (forward-compatible behaviour).
+#'   `NULL` for unrecognized message types (forward-compatible behavior).
 #' @keywords internal
 parse_message <- function(line) {
   obj <- tryCatch(

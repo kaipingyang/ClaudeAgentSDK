@@ -34,7 +34,7 @@ SubprocessCLITransport <- R6::R6Class(
 
   public = list(
 
-    #' @description Initialise the transport with a `ClaudeAgentOptions` object.
+    #' @description Initialize the transport with a `ClaudeAgentOptions` object.
     #' @param options A [ClaudeAgentOptions()] object.
     initialize = function(options) {
       private$options    <- options
