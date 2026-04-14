@@ -4,6 +4,10 @@
 #'   `_internal/transport/subprocess_cli.py` plus the `Query` class from
 #'   `_internal/query.py`.
 #' @name transport
+#' @keywords internal
+#' @importFrom R6 R6Class
+#' @importFrom later later
+#' @importFrom processx process
 NULL
 
 .DEFAULT_MAX_BUFFER_SIZE <- 1024L * 1024L  # 1 MB
@@ -31,7 +35,7 @@ SubprocessCLITransport <- R6::R6Class(
   public = list(
 
     #' @description Initialise the transport with a `ClaudeAgentOptions` object.
-    #' @param options A `ClaudeAgentOptions` from [claude_agent_options()].
+    #' @param options A [ClaudeAgentOptions()] object.
     initialize = function(options) {
       private$options    <- options
       private$buffer     <- ""

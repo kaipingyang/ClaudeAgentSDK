@@ -77,24 +77,24 @@ library(htmltools)
 
 # ---- Helper: HTML 卡片 ---------------------------------------------------
 
-# 修复版：card_id / body_id 分配唯一 ID，供 JS findInDom(id) 定位
-.thinking_html <- function(card_id, body_id, text = "", in_progress = FALSE) {
+# server-side render：用 operation="replace" 更新，无需 JS DOM 操作
+.thinking_html <- function(text = "", in_progress = FALSE) {
   if (in_progress) {
     as.character(tags$details(
-      id    = card_id,
+      open  = NA,    # 思考中默认展开，让流式内容可见
       class = "sdk-thinking-card thinking-active",
       tags$summary(class = "sdk-thinking-summary", "\U0001f4a1 Thinking"),
-      tags$div(id = body_id, class = "sdk-thinking-body")
+      if (nzchar(text))
+        tags$div(class = "sdk-thinking-body", text)
     ))
   } else {
     display <- if (nchar(text) > 3000L)
       paste0(substr(text, 1L, 3000L), "\n\u2026(truncated)")
     else text
     as.character(tags$details(
-      id    = card_id,
       class = "sdk-thinking-card",
       tags$summary(class = "sdk-thinking-summary", "\U0001f4a1 Thought"),
-      tags$div(id = body_id, class = "sdk-thinking-body", display)
+      tags$div(class = "sdk-thinking-body", display)
     ))
   }
 }
@@ -169,7 +169,7 @@ ui <- page_fillable(
       content: ''; display: inline-block;
       width: 11px; height: 11px; flex-shrink: 0;
       border: 2px solid #ced4da; border-top-color: #6c757d;
-      border-radius: 50%; animation: sdk-spin 0.75s linear infinite;
+      border-radius: 50%; animation: sdk-spin 1.4s linear infinite;
     }
     .sdk-approval-card {
       margin: 4px 0; border-radius: 6px; font-size: 0.9em;
@@ -212,26 +212,6 @@ ui <- page_fillable(
       }
       return null;
     }
-
-    /* 流式追加 thinking 内容：按 body_id 精确定位，O(1) textContent 追加 */
-    Shiny.addCustomMessageHandler('appendThinking', function(data) {
-      var body = findInDom(data.bodyId);
-      if (body) body.textContent += data.text;
-    });
-
-    /* 思考结束：按 card_id 定位，移除转圈，改标题，可选截断 */
-    Shiny.addCustomMessageHandler('finalizeThinking', function(data) {
-      var card = findInDom(data.cardId);
-      if (!card) return;
-      card.classList.remove('thinking-active');
-      var summary = card.querySelector('.sdk-thinking-summary');
-      if (summary) summary.textContent = '\ud83d\udca1 Thought';
-      if (data.truncated) {
-        var body = findInDom(data.bodyId);
-        if (body) body.textContent =
-          body.textContent.substring(0, 3000) + '\n\u2026(truncated)';
-      }
-    });
 
     /* 绑定审批按钮：延迟 200ms 等消息队列清空后再 bindAll */
     Shiny.addCustomMessageHandler('bindNewInputs', function(data) {
@@ -293,13 +273,13 @@ server <- function(input, output, session) {
 
   do_stream <- coro::async(function(client, interrupt_flag,
                                     pending_id, session) {
-    chunk_started   <- FALSE
-    interrupted     <- FALSE
-    is_thinking     <- FALSE
-    thinking_buf    <- ""
-    thinking_card_id <- NULL   # 当前 thinking 块的唯一 card ID
-    thinking_body_id <- NULL   # 当前 thinking 块的唯一 body ID
-    cur_block_type  <- ""
+    chunk_started            <- FALSE
+    text_streamed            <- FALSE  # 防止 AssistantMessage 重复追加已流式内容
+    interrupted              <- FALSE
+    is_thinking              <- FALSE
+    thinking_buf             <- ""
+    last_thinking_render_t   <- -Inf   # proc.time() 时间戳，限速用
+    cur_block_type           <- ""
     cur_tool_id     <- NULL
     pending_tname   <- NULL
     tool_bufs         <- new.env(hash = TRUE, parent = emptyenv())
@@ -384,17 +364,12 @@ server <- function(input, output, session) {
             }
 
             if (identical(cur_block_type, "thinking")) {
-              is_thinking      <- TRUE
-              thinking_buf     <- ""
-              # 唯一 ID（毫秒时间戳），JS 用 findInDom 定位，无需 class 选择器
-              ts               <- as.character(as.integer(as.numeric(Sys.time()) * 1000))
-              thinking_card_id <- paste0("thk_", ts)
-              thinking_body_id <- paste0("thk_body_", ts)
+              is_thinking            <- TRUE
+              thinking_buf           <- ""
+              last_thinking_render_t <- proc.time()[["elapsed"]]
               chat_append_message("chat",
                 list(role = "assistant",
-                     content = .thinking_html(
-                       thinking_card_id, thinking_body_id,
-                       in_progress = TRUE)),
+                     content = .thinking_html(in_progress = TRUE)),
                 chunk = FALSE, session = session)
             }
           }
@@ -404,7 +379,8 @@ server <- function(input, output, session) {
 
             if (identical(delta$type, "text_delta") && !is.null(delta$text)) {
               if (!chunk_started) {
-                chunk_started <- TRUE
+                chunk_started  <- TRUE
+                text_streamed  <- TRUE
                 chat_append_message("chat",
                   list(role = "assistant", content = ""),
                   chunk = "start", session = session)
@@ -417,9 +393,17 @@ server <- function(input, output, session) {
             if (identical(delta$type, "thinking_delta") &&
                 !is.null(delta$thinking)) {
               thinking_buf <- paste0(thinking_buf, delta$thinking)
-              # 流式追加：按 body_id 精确定位（findInDom 穿透 shadow DOM）
-              session$sendCustomMessage("appendThinking",
-                list(bodyId = thinking_body_id, text = delta$thinking))
+              # 每 100ms 刷新一次卡片（server-side，绕开 shadow DOM timing）
+              now_t <- proc.time()[["elapsed"]]
+              if (now_t - last_thinking_render_t >= 0.1) {
+                last_thinking_render_t <- now_t
+                chat_append_message("chat",
+                  list(role = "assistant",
+                       content = .thinking_html(
+                         thinking_buf, in_progress = TRUE)),
+                  chunk = TRUE, operation = "replace",
+                  session = session)
+              }
             }
 
             if (identical(delta$type, "input_json_delta") &&
@@ -451,15 +435,16 @@ server <- function(input, output, session) {
             }
 
             if (identical(cur_block_type, "thinking") && is_thinking) {
-              # 思考结束：JS 按 card_id 定位，移除转圈 + 改标题 + 可选截断
-              session$sendCustomMessage("finalizeThinking",
-                list(cardId   = thinking_card_id,
-                     bodyId   = thinking_body_id,
-                     truncated = nchar(thinking_buf) > 3000L))
-              is_thinking      <- FALSE
-              thinking_buf     <- ""
-              thinking_card_id <- NULL
-              thinking_body_id <- NULL
+              # 思考结束：server-side 替换为最终版（"💡 Thought"，含完整文本）
+              chat_append_message("chat",
+                list(role = "assistant",
+                     content = .thinking_html(thinking_buf,
+                                              in_progress = FALSE)),
+                chunk = TRUE, operation = "replace",
+                session = session)
+              is_thinking            <- FALSE
+              thinking_buf           <- ""
+              last_thinking_render_t <- -Inf
             }
 
             if (identical(cur_block_type, "tool_use") &&
@@ -507,6 +492,8 @@ server <- function(input, output, session) {
           if (!is.null(msg$tool_use_id)) {
             tid <- msg$tool_use_id
             approved_tool_ids[[tid]] <- TRUE
+            # 防御：确保 tool_names_env 有此 ID（避免 AssistantMessage 重复追加卡片）
+            if (is.null(tool_names_env[[tid]])) tool_names_env[[tid]] <- tname
             ttitle <- tool_titles_env[[tid]] %||% paste0(tname, "(\u2026)")
             chat_append_message("chat",
               list(role = "assistant",
@@ -582,13 +569,17 @@ server <- function(input, output, session) {
         # ==============================================================
         if (inherits(msg, "AssistantMessage") && !chunk_started) {
           for (blk in msg$content) {
-            if (inherits(blk, "TextBlock") && nzchar(blk$text %||% "")) {
+            # 跳过已通过 text_delta 流式展示的文本，防止重复追加
+            if (inherits(blk, "TextBlock") &&
+                nzchar(blk$text %||% "") && !text_streamed) {
               chat_append_message("chat",
                 list(role = "assistant", content = blk$text),
                 chunk = FALSE, session = session)
             }
+            # 跳过已通过 StreamEvent 或审批流程处理过的工具块
             if (inherits(blk, "ToolUseBlock") &&
-                is.null(tool_names_env[[blk$id]])) {
+                is.null(tool_names_env[[blk$id]]) &&
+                !isTRUE(approved_tool_ids[[blk$id]])) {
               tool_names_env[[blk$id]] <- blk$name
               ajson <- tryCatch(
                 jsonlite::toJSON(blk$input %||% list(), auto_unbox = TRUE),

@@ -4,6 +4,7 @@
 #'   SDK, including the full path-sanitisation hash, head/tail metadata
 #'   extraction, and conversation-chain reconstruction.
 #' @name sessions
+#' @keywords internal
 NULL
 
 # ---------------------------------------------------------------------------

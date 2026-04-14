@@ -2,6 +2,7 @@
 #' @description High-level API for one-shot interactions with Claude Code.
 #'   Mirrors `query.py` from the Python SDK.
 #' @name query
+#' @keywords internal
 NULL
 
 #' Query Claude Code (streaming generator)

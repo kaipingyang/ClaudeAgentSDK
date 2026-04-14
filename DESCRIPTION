@@ -8,17 +8,19 @@ Description: R implementation of the Claude Agent SDK. Spawns the Claude Code CL
     including the full bidirectional control protocol (permission requests, hooks,
     interrupt). Mirrors the Python claude-agent-sdk API.
 License: MIT + file LICENSE
+URL: https://kaipingyang.github.io/ClaudeAgentSDK/, https://github.com/kaipingyang/ClaudeAgentSDK
+BugReports: https://github.com/kaipingyang/ClaudeAgentSDK/issues
+Depends: R (>= 4.1)
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.0
+RoxygenNote: 7.3.3
 Imports:
     processx (>= 3.8.0),
     jsonlite,
     R6,
     later,
     coro,
-    rlang (>= 1.0.0),
-    cli
+    rlang (>= 1.0.0)
 Suggests:
     promises,
     shiny,

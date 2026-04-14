@@ -1,0 +1,16 @@
+^.*\.Rproj$
+^\.Rproj\.user$
+^\.github$
+^\.claude$
+^examples$
+^scripts$
+^CLAUDE\.md$
+^test\.txt$
+^image.*\.png$
+^claude-agent-sdk-python$
+^\.Renviron$
+^_pkgdown\.yml$
+^pkgdown$
+^docs$
+^CHANGELOG\.md$
+^\.lintr$
