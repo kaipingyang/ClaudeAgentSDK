@@ -3,10 +3,11 @@ Title: R SDK for Claude Code Agent
 Version: 0.2.0
 Authors@R: person("Kaiping", "Yang", role = c("aut", "cre"),
                   email = "1260146556@qq.com")
-Description: R implementation of the Claude Agent SDK. Spawns the Claude Code CLI
-    as a subprocess and communicates via newline-delimited JSON stream protocol,
+Description: Unofficial community R port of Anthropic's claude-code-sdk. Not
+    affiliated with or endorsed by Anthropic. Spawns the Claude Code CLI as a
+    subprocess and communicates via newline-delimited JSON stream protocol,
     including the full bidirectional control protocol (permission requests, hooks,
-    interrupt). Mirrors the Python claude-agent-sdk API.
+    interrupt). Mirrors the Python claude-code-sdk API.
 License: MIT + file LICENSE
 URL: https://kaipingyang.github.io/ClaudeAgentSDK/, https://github.com/kaipingyang/ClaudeAgentSDK
 BugReports: https://github.com/kaipingyang/ClaudeAgentSDK/issues

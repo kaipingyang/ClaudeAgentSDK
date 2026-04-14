@@ -1,5 +1,8 @@
 # Claude Agent SDK for R
 
+> **Unofficial community port.** Not affiliated with or endorsed by Anthropic.
+> This is an R implementation of Anthropic's [claude-code-sdk](https://github.com/anthropics/claude-agent-sdk-python).
+
 R SDK for Claude Agent. Mirrors the [Python SDK](https://github.com/anthropics/claude-agent-sdk-python) with idiomatic R internals. See the [Claude Agent SDK documentation](https://docs.anthropic.com/en/docs/claude-code/sdk) for more information.
 
 ## Installation
