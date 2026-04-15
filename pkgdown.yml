@@ -4,7 +4,7 @@ pkgdown_sha: ~
 articles:
   articles/shiny-streaming: shiny-streaming.html
   articles/shiny-tool-approval: shiny-tool-approval.html
-last_built: 2026-04-15T14:15Z
+last_built: 2026-04-15T14:36Z
 urls:
   reference: https://kaipingyang.github.io/ClaudeAgentSDK/reference
   article: https://kaipingyang.github.io/ClaudeAgentSDK/articles
