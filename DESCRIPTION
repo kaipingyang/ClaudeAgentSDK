@@ -4,7 +4,7 @@ Version: 0.2.0
 Authors@R: person("Kaiping", "Yang", role = c("aut", "cre"),
                   email = "1260146556@qq.com")
 Description: Provides an R interface to the 'Claude Code' command-line tool,
-    spawning it as an external process and communicating via newline-delimited
+    spawning it as a 'subprocess' and communicating via newline-delimited
     'JSON' stream protocol with full bidirectional control (permission requests,
     hooks, interrupt). Supports multi-turn conversations, streaming output,
     'Shiny' integration, and session management. Mirrors the Python
