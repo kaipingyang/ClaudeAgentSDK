@@ -157,6 +157,7 @@ articles:
     contents:
       - articles/shiny-streaming
       - articles/shiny-tool-approval
+      - articles/shiny-thinking
 
 news:
   releases:

@@ -310,6 +310,12 @@ directly. Additional experimental UI patterns (inline, conversational,
 insertUI, tool cards) are available in
 [examples 16–19](https://github.com/kaipingyang/ClaudeAgentSDK/tree/main/examples).
 
+For the most complete pattern — streaming thinking cards + tool approval +
+interrupt — see the
+[Shiny Streaming Thinking](https://kaipingyang.github.io/ClaudeAgentSDK/articles/shiny-thinking.html)
+article or
+[`examples/20_shinychat_streaming_thinking.R`](https://github.com/kaipingyang/ClaudeAgentSDK/blob/main/examples/20_shinychat_streaming_thinking.R).
+
 ### Runtime Control
 
 ```r
