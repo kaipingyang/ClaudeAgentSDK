@@ -81,7 +81,7 @@ entry <- r_mcp_server("my_tools.R")
 entry$type    # "stdio"
 #> [1] "stdio"
 entry$command # path to Rscript
-#> [1] "/opt/R/4.5.3/lib/R/bin/Rscript"
+#> [1] "/opt/R/4.6.0/lib/R/bin/Rscript"
 
 # Use in ClaudeAgentOptions
 if (FALSE) { # \dontrun{
