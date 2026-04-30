@@ -29,6 +29,7 @@ tokens.
 ## Complete App
 
 ``` r
+
 library(shiny)
 library(bslib)
 library(shinychat)
@@ -170,14 +171,14 @@ shinyApp(ui, server)
 
 ## How It Works
 
-| Step                     | What happens                                                                                 |
-|--------------------------|----------------------------------------------------------------------------------------------|
-| User sends message       | `client$send()` queues the prompt; `ExtendedTask` starts `do_stream()`                       |
-| Tokens arrive            | `poll_messages()` returns `StreamEvent` objects; each text delta appended via `chunk = TRUE` |
-| No tokens yet            | `await(later::later(..., 0.05))` yields for 50 ms — Shiny processes inputs                   |
-| User presses ESC         | `interrupt_flag(TRUE)` is set; caught at the top of the next loop iteration                  |
-| Interrupt detected       | `client$interrupt()` signals the CLI; drain mode waits for `ResultMessage`                   |
-| `ResultMessage` received | chunk closed with `chunk = "end"`; coroutine returns `"done"`                                |
+| Step | What happens |
+|----|----|
+| User sends message | `client$send()` queues the prompt; `ExtendedTask` starts `do_stream()` |
+| Tokens arrive | `poll_messages()` returns `StreamEvent` objects; each text delta appended via `chunk = TRUE` |
+| No tokens yet | `await(later::later(..., 0.05))` yields for 50 ms — Shiny processes inputs |
+| User presses ESC | `interrupt_flag(TRUE)` is set; caught at the top of the next loop iteration |
+| Interrupt detected | `client$interrupt()` signals the CLI; drain mode waits for `ResultMessage` |
+| `ResultMessage` received | chunk closed with `chunk = "end"`; coroutine returns `"done"` |
 
 ## Key Design Points
 
@@ -199,5 +200,6 @@ the interrupt near-instant latency even under heavy streaming.
 ## Running the Example
 
 ``` r
+
 shiny::runApp("examples/13_shinychat_streaming.R")
 ```

@@ -113,43 +113,43 @@
 <p>643+ tests. Integration tests require a real Claude Code CLI and skip automatically if not found.</p>
 <div class="section level3">
 <h3 id="test-files">Test files<a class="anchor" aria-label="anchor" href="#test-files"></a></h3>
-<table class="table"><colgroup><col width="22%"><col width="37%"><col width="40%"></colgroup><thead><tr class="header"><th>File</th>
+<table class="table"><colgroup><col width="22%"><col width="37%"><col width="40%"></colgroup><thead><tr><th>File</th>
 <th>Coverage</th>
 <th>Needs CLI</th>
-</tr></thead><tbody><tr class="odd"><td><code>test-types.R</code></td>
+</tr></thead><tbody><tr><td><code>test-types.R</code></td>
 <td>S3 constructors, AgentDefinition (all 13 fields), hook input/output types, permission types, system prompt types, sandbox types</td>
 <td>No</td>
-</tr><tr class="even"><td><code>test-errors.R</code></td>
+</tr><tr><td><code>test-errors.R</code></td>
 <td>Error constructors</td>
 <td>No</td>
-</tr><tr class="odd"><td><code>test-options.R</code></td>
+</tr><tr><td><code>test-options.R</code></td>
 <td>ClaudeAgentOptions defaults and storage</td>
 <td>No</td>
-</tr><tr class="even"><td><code>test-protocol.R</code></td>
+</tr><tr><td><code>test-protocol.R</code></td>
 <td>parse_message (user/assistant/system/result/stream/rate_limit/control), builders, hook conversion, agents camelCase</td>
 <td>No</td>
-</tr><tr class="odd"><td><code>test-transport-build-command.R</code></td>
+</tr><tr><td><code>test-transport-build-command.R</code></td>
 <td>All CLI flag combinations (33+ scenarios)</td>
 <td>No</td>
-</tr><tr class="even"><td><code>test-sessions-unit.R</code></td>
+</tr><tr><td><code>test-sessions-unit.R</code></td>
 <td>validate_uuid, sanitize_path, simple_hash, JSON field extraction, sort_and_slice, list_sessions with mock data, get_session_messages chain reconstruction</td>
 <td>No</td>
-</tr><tr class="odd"><td><code>test-session-mutations.R</code></td>
+</tr><tr><td><code>test-session-mutations.R</code></td>
 <td>rename/tag/delete/fork (file I/O)</td>
 <td>No</td>
-</tr><tr class="even"><td><code>test-client-unit.R</code></td>
+</tr><tr><td><code>test-client-unit.R</code></td>
 <td>Client lifecycle without CLI (disconnect/send/interrupt/receive_response_async before connect)</td>
 <td>No</td>
-</tr><tr class="odd"><td><code>test-rate-limit-event.R</code></td>
+</tr><tr><td><code>test-rate-limit-event.R</code></td>
 <td>Rate limit event parsing: allowed_warning, rejected with overage, minimal fields, forward compat</td>
 <td>No</td>
-</tr><tr class="even"><td><code>test-buffering.R</code></td>
+</tr><tr><td><code>test-buffering.R</code></td>
 <td>split_lines_with_buffer edge cases: split reads, large JSON, mixed complete/partial, non-JSON debug lines</td>
 <td>No</td>
-</tr><tr class="odd"><td><code>test-query.R</code></td>
+</tr><tr><td><code>test-query.R</code></td>
 <td>claude_run, claude_query, ClaudeSDKClient lifecycle</td>
 <td><strong>Yes</strong></td>
-</tr><tr class="even"><td><code>test-integration.R</code></td>
+</tr><tr><td><code>test-integration.R</code></td>
 <td>Full integration: get_server_info, set_permission_mode, set_model, interrupt, agents init, exclude_dynamic_sections, partial messages, StreamEvent, get_context_usage, get_mcp_status, multi-turn, stderr callback, can_use_tool, structured output, sessions list/info/messages, receive_response_async</td>
 <td><strong>Yes</strong></td>
 </tr></tbody></table></div>
@@ -170,34 +170,34 @@
 </div>
 <div class="section level2">
 <h2 id="python-sdk-parity-assessment-as-of-v014-2026-04-10">Python SDK parity assessment (as of v0.1.4, 2026-04-10)<a class="anchor" aria-label="anchor" href="#python-sdk-parity-assessment-as-of-v014-2026-04-10"></a></h2>
-<table class="table"><colgroup><col width="34%"><col width="34%"><col width="30%"></colgroup><thead><tr class="header"><th>Module</th>
+<table class="table"><colgroup><col width="34%"><col width="34%"><col width="30%"></colgroup><thead><tr><th>Module</th>
 <th>Parity</th>
 <th>Notes</th>
-</tr></thead><tbody><tr class="odd"><td>Options fields</td>
+</tr></thead><tbody><tr><td>Options fields</td>
 <td>100%</td>
 <td>35/35 fields identical</td>
-</tr><tr class="even"><td>Session management</td>
+</tr><tr><td>Session management</td>
 <td>100%</td>
 <td>7 functions identical (list/get/messages + rename/tag/delete/fork)</td>
-</tr><tr class="odd"><td>Error types</td>
+</tr><tr><td>Error types</td>
 <td>100%</td>
 <td>6 error types identical</td>
-</tr><tr class="even"><td>Type definitions</td>
+</tr><tr><td>Type definitions</td>
 <td>100%</td>
 <td>100+ S3 constructors covering all Python TypedDicts/dataclasses</td>
-</tr><tr class="odd"><td>Client methods</td>
+</tr><tr><td>Client methods</td>
 <td>100%</td>
 <td>16 methods including query(), send(), receive_response_async(), connect(), disconnect(), get_mcp_status(), etc.</td>
-</tr><tr class="even"><td>Transport/Protocol</td>
+</tr><tr><td>Transport/Protocol</td>
 <td>90%</td>
 <td>Functionally identical; R uses <code>coro</code> sync generators vs Python <code>async/await</code> — architectural difference, not a feature gap</td>
-</tr><tr class="odd"><td>Public API</td>
+</tr><tr><td>Public API</td>
 <td>92%</td>
 <td>Only missing: <code>create_sdk_mcp_server()</code> / <code>@tool</code> — R uses <code>mcptools</code> subprocess instead (same MCP protocol, different execution model)</td>
-</tr><tr class="even"><td>Examples</td>
+</tr><tr><td>Examples</td>
 <td>87%</td>
 <td>Missing: Python async variant examples (trio/ipython), plugin example — N/A for R’s single-threaded model</td>
-</tr><tr class="odd"><td>Tests</td>
+</tr><tr><td>Tests</td>
 <td>661</td>
 <td>All pass; 4 env-dependent skips</td>
 </tr></tbody></table><div class="section level3">

@@ -104,6 +104,7 @@ attribute). Types mirror Python SDK’s `types.py`:
 ## Running tests
 
 ``` r
+
 devtools::test()
 ```
 
@@ -112,20 +113,20 @@ automatically if not found.
 
 ### Test files
 
-| File                             | Coverage                                                                                                                                                                                                                                                                                                 | Needs CLI |
-|----------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------|
-| `test-types.R`                   | S3 constructors, AgentDefinition (all 13 fields), hook input/output types, permission types, system prompt types, sandbox types                                                                                                                                                                          | No        |
-| `test-errors.R`                  | Error constructors                                                                                                                                                                                                                                                                                       | No        |
-| `test-options.R`                 | ClaudeAgentOptions defaults and storage                                                                                                                                                                                                                                                                  | No        |
-| `test-protocol.R`                | parse_message (user/assistant/system/result/stream/rate_limit/control), builders, hook conversion, agents camelCase                                                                                                                                                                                      | No        |
-| `test-transport-build-command.R` | All CLI flag combinations (33+ scenarios)                                                                                                                                                                                                                                                                | No        |
-| `test-sessions-unit.R`           | validate_uuid, sanitize_path, simple_hash, JSON field extraction, sort_and_slice, list_sessions with mock data, get_session_messages chain reconstruction                                                                                                                                                | No        |
-| `test-session-mutations.R`       | rename/tag/delete/fork (file I/O)                                                                                                                                                                                                                                                                        | No        |
-| `test-client-unit.R`             | Client lifecycle without CLI (disconnect/send/interrupt/receive_response_async before connect)                                                                                                                                                                                                           | No        |
-| `test-rate-limit-event.R`        | Rate limit event parsing: allowed_warning, rejected with overage, minimal fields, forward compat                                                                                                                                                                                                         | No        |
-| `test-buffering.R`               | split_lines_with_buffer edge cases: split reads, large JSON, mixed complete/partial, non-JSON debug lines                                                                                                                                                                                                | No        |
-| `test-query.R`                   | claude_run, claude_query, ClaudeSDKClient lifecycle                                                                                                                                                                                                                                                      | **Yes**   |
-| `test-integration.R`             | Full integration: get_server_info, set_permission_mode, set_model, interrupt, agents init, exclude_dynamic_sections, partial messages, StreamEvent, get_context_usage, get_mcp_status, multi-turn, stderr callback, can_use_tool, structured output, sessions list/info/messages, receive_response_async | **Yes**   |
+| File | Coverage | Needs CLI |
+|----|----|----|
+| `test-types.R` | S3 constructors, AgentDefinition (all 13 fields), hook input/output types, permission types, system prompt types, sandbox types | No |
+| `test-errors.R` | Error constructors | No |
+| `test-options.R` | ClaudeAgentOptions defaults and storage | No |
+| `test-protocol.R` | parse_message (user/assistant/system/result/stream/rate_limit/control), builders, hook conversion, agents camelCase | No |
+| `test-transport-build-command.R` | All CLI flag combinations (33+ scenarios) | No |
+| `test-sessions-unit.R` | validate_uuid, sanitize_path, simple_hash, JSON field extraction, sort_and_slice, list_sessions with mock data, get_session_messages chain reconstruction | No |
+| `test-session-mutations.R` | rename/tag/delete/fork (file I/O) | No |
+| `test-client-unit.R` | Client lifecycle without CLI (disconnect/send/interrupt/receive_response_async before connect) | No |
+| `test-rate-limit-event.R` | Rate limit event parsing: allowed_warning, rejected with overage, minimal fields, forward compat | No |
+| `test-buffering.R` | split_lines_with_buffer edge cases: split reads, large JSON, mixed complete/partial, non-JSON debug lines | No |
+| `test-query.R` | claude_run, claude_query, ClaudeSDKClient lifecycle | **Yes** |
+| `test-integration.R` | Full integration: get_server_info, set_permission_mode, set_model, interrupt, agents init, exclude_dynamic_sections, partial messages, StreamEvent, get_context_usage, get_mcp_status, multi-turn, stderr callback, can_use_tool, structured output, sessions list/info/messages, receive_response_async | **Yes** |
 
 ## GitHub
 
@@ -148,17 +149,17 @@ Install: `bash scripts/initial-setup.sh`
 
 ## Python SDK parity assessment (as of v0.1.4, 2026-04-10)
 
-| Module             | Parity | Notes                                                                                                                                   |
-|--------------------|--------|-----------------------------------------------------------------------------------------------------------------------------------------|
-| Options fields     | 100%   | 35/35 fields identical                                                                                                                  |
-| Session management | 100%   | 7 functions identical (list/get/messages + rename/tag/delete/fork)                                                                      |
-| Error types        | 100%   | 6 error types identical                                                                                                                 |
-| Type definitions   | 100%   | 100+ S3 constructors covering all Python TypedDicts/dataclasses                                                                         |
-| Client methods     | 100%   | 16 methods including query(), send(), receive_response_async(), connect(), disconnect(), get_mcp_status(), etc.                         |
-| Transport/Protocol | 90%    | Functionally identical; R uses `coro` sync generators vs Python `async/await` — architectural difference, not a feature gap             |
-| Public API         | 92%    | Only missing: `create_sdk_mcp_server()` / `@tool` — R uses `mcptools` subprocess instead (same MCP protocol, different execution model) |
-| Examples           | 87%    | Missing: Python async variant examples (trio/ipython), plugin example — N/A for R’s single-threaded model                               |
-| Tests              | 661    | All pass; 4 env-dependent skips                                                                                                         |
+| Module | Parity | Notes |
+|----|----|----|
+| Options fields | 100% | 35/35 fields identical |
+| Session management | 100% | 7 functions identical (list/get/messages + rename/tag/delete/fork) |
+| Error types | 100% | 6 error types identical |
+| Type definitions | 100% | 100+ S3 constructors covering all Python TypedDicts/dataclasses |
+| Client methods | 100% | 16 methods including query(), send(), receive_response_async(), connect(), disconnect(), get_mcp_status(), etc. |
+| Transport/Protocol | 90% | Functionally identical; R uses `coro` sync generators vs Python `async/await` — architectural difference, not a feature gap |
+| Public API | 92% | Only missing: `create_sdk_mcp_server()` / `@tool` — R uses `mcptools` subprocess instead (same MCP protocol, different execution model) |
+| Examples | 87% | Missing: Python async variant examples (trio/ipython), plugin example — N/A for R’s single-threaded model |
+| Tests | 661 | All pass; 4 env-dependent skips |
 
 ### Why Transport/Protocol is 90% (not 100%)
 
@@ -198,6 +199,7 @@ Plugin support in R is not yet documented.
 模式每次让出 R 事件循环， 使 `observeEvent` 能在 token 之间触发。
 
 ``` r
+
 library(coro); library(promises)
 
 interrupt_flag <- reactiveVal(FALSE)
@@ -258,6 +260,7 @@ observeEvent(input$esc, { if (stream_task$status() == "running") interrupt_flag(
 在上述模式基础上，在 coro::async 循环中处理 `PermissionRequestMessage`：
 
 ``` r
+
 # ClaudeAgentOptions 设置 permission_prompt_tool_name = "stdio"
 # 不传 on_tool_request → can_use_tool 自动变成 PermissionRequestMessage
 

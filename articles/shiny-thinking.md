@@ -92,6 +92,7 @@ Shiny.addCustomMessageHandler('bindNewInputs', function(data) {
 ## Options
 
 ``` r
+
 client <- ClaudeSDKClient$new(ClaudeAgentOptions(
   max_turns                   = 5L,
   permission_prompt_tool_name = "stdio",   # required for message-driven approval
@@ -110,6 +111,7 @@ handles them like any other message.
 ## Complete App
 
 ``` r
+
 library(shiny)
 library(bslib)
 library(shinychat)
@@ -574,29 +576,30 @@ shinyApp(ui, server)
 ## Testing the App
 
 ``` r
+
 shiny::runApp("examples/20_shinychat_streaming_thinking.R")
 ```
 
 Test scenarios:
 
-| Prompt                                               | What to observe                                         |
-|------------------------------------------------------|---------------------------------------------------------|
-| `"What is 17 × 23?"`                                 | No thinking (model decides)                             |
+| Prompt | What to observe |
+|----|----|
+| `"What is 17 × 23?"` | No thinking (model decides) |
 | Uncomment `ThinkingConfigEnabled`, ask a reasoning Q | Spinner card while thinking → collapses to “💡 Thought” |
-| `"Run \`echo hello world\`“\`                        | Approval card with Allow / Deny buttons                 |
-| Enable thinking + ask a tool-use question            | Both thinking card and approval card                    |
-| Press **ESC** during thinking                        | “\[Interrupted\]” appended, spinner removed             |
-| Press **ESC** while approval card pending            | Card changes to “⚡ Interrupted”                        |
+| `"Run \`echo hello world\`“\` | Approval card with Allow / Deny buttons |
+| Enable thinking + ask a tool-use question | Both thinking card and approval card |
+| Press **ESC** during thinking | “\[Interrupted\]” appended, spinner removed |
+| Press **ESC** while approval card pending | Card changes to “⚡ Interrupted” |
 
 ## Key API Reference
 
-| Call / Field                                                | Purpose                                                    |
-|-------------------------------------------------------------|------------------------------------------------------------|
-| `ClaudeAgentOptions(include_partial_messages = TRUE)`       | Enable `StreamEvent` token stream                          |
-| `ClaudeAgentOptions(permission_prompt_tool_name = "stdio")` | Route tool approval through message stream                 |
-| `ThinkingConfigEnabled(budget_tokens = N)`                  | Enable extended thinking with token budget                 |
-| `client$poll_messages()`                                    | Non-blocking poll; returns list of pending messages        |
-| `client$approve_tool(request_id)`                           | Send `allow` control response to CLI                       |
-| `client$deny_tool(request_id, reason)`                      | Send `deny` control response to CLI                        |
-| `client$interrupt()`                                        | Send interrupt signal to CLI subprocess                    |
-| `chat_append_message(..., operation = "replace")`           | Replace last message in-place (used for live card updates) |
+| Call / Field | Purpose |
+|----|----|
+| `ClaudeAgentOptions(include_partial_messages = TRUE)` | Enable `StreamEvent` token stream |
+| `ClaudeAgentOptions(permission_prompt_tool_name = "stdio")` | Route tool approval through message stream |
+| `ThinkingConfigEnabled(budget_tokens = N)` | Enable extended thinking with token budget |
+| `client$poll_messages()` | Non-blocking poll; returns list of pending messages |
+| `client$approve_tool(request_id)` | Send `allow` control response to CLI |
+| `client$deny_tool(request_id, reason)` | Send `deny` control response to CLI |
+| `client$interrupt()` | Send interrupt signal to CLI subprocess |
+| `chat_append_message(..., operation = "replace")` | Replace last message in-place (used for live card updates) |

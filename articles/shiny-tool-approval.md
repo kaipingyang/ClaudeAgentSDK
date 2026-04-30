@@ -44,6 +44,7 @@ closure. The message-driven pattern is preferred because:
 ## Complete App
 
 ``` r
+
 library(shiny)
 library(bslib)
 library(shinychat)
@@ -269,17 +270,18 @@ or the **Interrupt** button at any time to cancel the current operation.
 
 ## Key API Reference
 
-| Call                                   | When to use                          |
-|----------------------------------------|--------------------------------------|
-| `client$approve_tool(request_id)`      | User clicked Allow                   |
-| `client$deny_tool(request_id, reason)` | User clicked Deny                    |
-| `client$interrupt()`                   | User interrupted the whole operation |
-| `PermissionRequestMessage$request_id`  | ID to pass to approve/deny           |
-| `PermissionRequestMessage$tool_name`   | Display to the user                  |
-| `PermissionRequestMessage$tool_input`  | Show as JSON in the modal            |
+| Call | When to use |
+|----|----|
+| `client$approve_tool(request_id)` | User clicked Allow |
+| `client$deny_tool(request_id, reason)` | User clicked Deny |
+| `client$interrupt()` | User interrupted the whole operation |
+| `PermissionRequestMessage$request_id` | ID to pass to approve/deny |
+| `PermissionRequestMessage$tool_name` | Display to the user |
+| `PermissionRequestMessage$tool_input` | Show as JSON in the modal |
 
 ## Running the Example
 
 ``` r
+
 shiny::runApp("examples/15_shinychat_tool_approval_msgdriven.R")
 ```
