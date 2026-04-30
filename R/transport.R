@@ -455,8 +455,8 @@ SubprocessCLITransport <- R6::R6Class(
       }
       if (!is.null(opts$permission_mode)) args <- c(args, "--permission-mode", opts$permission_mode)
       if (isTRUE(opts$continue_conversation)) args <- c(args, "--continue")
-      if (!is.null(opts$resume))          args <- c(args, "--resume",      opts$resume)
-      if (!is.null(opts$session_id))      args <- c(args, "--session-id",  opts$session_id)
+      if (!is.null(opts$resume)     && nzchar(opts$resume))     args <- c(args, "--resume",      opts$resume)
+      if (!is.null(opts$session_id) && nzchar(opts$session_id)) args <- c(args, "--session-id",  opts$session_id)
 
       # settings / sandbox
       settings_val <- private$build_settings_value()
