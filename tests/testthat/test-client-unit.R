@@ -66,6 +66,21 @@ test_that("deny_tool before connect raises error", {
   expect_error(client$deny_tool("req_1"), "connect")
 })
 
+test_that("session_id active binding returns empty string before any run", {
+  client <- ClaudeSDKClient$new(ClaudeAgentOptions())
+  expect_equal(client$session_id, "")
+})
+
+test_that("session_id active binding is read-only", {
+  client <- ClaudeSDKClient$new(ClaudeAgentOptions())
+  expect_error(client$session_id <- "abc123", "read-only")
+})
+
+test_that("resume() errors when no session_id captured yet", {
+  client <- ClaudeSDKClient$new(ClaudeAgentOptions())
+  expect_error(client$resume(), "No session_id captured yet")
+})
+
 test_that("PermissionRequestMessage constructor works", {
   msg <- PermissionRequestMessage(
     request_id = "req_1", tool_name = "Read",

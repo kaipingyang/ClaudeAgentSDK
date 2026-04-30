@@ -58,7 +58,7 @@ ClaudeSDKClient <- R6::R6Class(
       self$options          <- options
       private$custom_transport <- transport
       private$transport     <- NULL
-      private$session_id    <- ""
+      private$.session_id   <- ""
       private$req_counter   <- 0L
       invisible(self)
     },
@@ -162,13 +162,21 @@ ClaudeSDKClient <- R6::R6Class(
 
     #' @description Return a `coro` generator that yields messages until
     #'   and including the next `ResultMessage`, then stops.
+    #'   The `session_id` from the `ResultMessage` is automatically captured;
+    #'   read it back with `client$session_id` after the loop completes.
     receive_response = function() {
       private$assert_connected()
-      gen_inner <- private$transport$receive_messages()
+      gen_inner   <- private$transport$receive_messages()
+      private_ref <- private  # explicit capture for generator closure
       coro::generator(function() {
         for (msg in gen_inner) {
           coro::yield(msg)
-          if (inherits(msg, "ResultMessage")) return(invisible(NULL))
+          if (inherits(msg, "ResultMessage")) {
+            sid <- msg$session_id
+            if (!is.null(sid) && nzchar(sid %||% ""))
+              private_ref$.session_id <- sid
+            return(invisible(NULL))
+          }
         }
       })()
     },
@@ -180,6 +188,9 @@ ClaudeSDKClient <- R6::R6Class(
     #'   Designed for Shiny `ExtendedTask` integration: the promise keeps the
     #'   Shiny session unblocked while `on_message` streams intermediate
     #'   results (e.g., into a `reactiveVal`) for real-time UI updates.
+    #'
+    #'   The `session_id` from the `ResultMessage` is automatically captured;
+    #'   read it back with `client$session_id` after the promise resolves.
     #'
     #' @param on_message Function(msg) or NULL.
     #'   Called for every message (AssistantMessage, SystemMessage,
@@ -200,7 +211,8 @@ ClaudeSDKClient <- R6::R6Class(
       }
       private$assert_connected()
 
-      transport <- private$transport
+      transport   <- private$transport
+      private_ref <- private  # capture for promise closure
 
       p <- promises::promise(function(resolve, reject) {
         poll_step <- function() {
@@ -226,6 +238,9 @@ ClaudeSDKClient <- R6::R6Class(
               })
             }
             if (inherits(msg, "ResultMessage")) {
+              sid <- msg$session_id
+              if (!is.null(sid) && nzchar(sid %||% ""))
+                private_ref$.session_id <- sid
               resolve(msg)
               return()
             }
@@ -384,13 +399,48 @@ ClaudeSDKClient <- R6::R6Class(
         enabled    = enabled
       ))
       invisible(self)
+    },
+
+    # ------------------------------------------------------------------
+    # Session resume
+    # ------------------------------------------------------------------
+
+    #' @description Prepare client to resume the last captured session.
+    #'   Sets `options$resume` to the `session_id` captured from the most
+    #'   recent `ResultMessage`.  The next `$connect()` call will pass
+    #'   `--resume <session_id>` to the CLI.
+    #' @return `self` invisibly (for chaining).
+    resume = function() {
+      sid <- private$.session_id
+      if (!nzchar(sid)) {
+        stop(
+          "No session_id captured yet. Run at least one turn first, ",
+          "then call $resume() before $connect().",
+          call. = FALSE
+        )
+      }
+      opts_list         <- unclass(self$options)
+      opts_list[["resume"]] <- sid
+      self$options      <- do.call(ClaudeAgentOptions, opts_list)
+      invisible(self)
+    }
+  ),
+
+  active = list(
+    #' @field session_id The `session_id` captured from the most recent
+    #'   `ResultMessage`.  Empty string `""` if no turn has completed yet.
+    #'   Use with `ClaudeAgentOptions(resume = client$session_id)` or call
+    #'   `client$resume()` to set up the client for the next turn.
+    session_id = function(value) {
+      if (missing(value)) private$.session_id
+      else stop("session_id is read-only", call. = FALSE)
     }
   ),
 
   private = list(
     custom_transport = NULL,
     transport        = NULL,
-    session_id       = "",
+    .session_id      = "",
     req_counter      = 0L,
     init_result      = NULL,
 

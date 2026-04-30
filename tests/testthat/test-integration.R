@@ -539,3 +539,72 @@ test_that("agent with full fields connects without error", {
   expect_no_error(client$connect())
   client$disconnect()
 })
+
+# ---------------------------------------------------------------------------
+# session_id auto-capture and resume
+# ---------------------------------------------------------------------------
+
+test_that("session_id captured after receive_response completes", {
+  skip_if_no_claude()
+  client <- make_client()
+  client$connect()
+  on.exit(client$disconnect())
+
+  expect_equal(client$session_id, "")
+
+  client$send("Reply with exactly: OK")
+  coro::loop(for (msg in client$receive_response()) {})
+
+  sid <- client$session_id
+  expect_true(nzchar(sid))
+  expect_match(sid, "^[a-zA-Z0-9_-]+$")
+})
+
+test_that("resume() sets options$resume to captured session_id", {
+  skip_if_no_claude()
+  client <- make_client()
+  client$connect()
+  on.exit(client$disconnect())
+
+  client$send("Reply with exactly: OK")
+  coro::loop(for (msg in client$receive_response()) {})
+  sid <- client$session_id
+  expect_true(nzchar(sid))
+
+  client$resume()
+  expect_equal(client$options$resume, sid)
+})
+
+test_that("two-turn resume preserves context", {
+  skip_if_no_claude()
+
+  # Turn 1: plant a value in context
+  client1 <- make_client()
+  client1$connect()
+  client1$send("Remember this number: 7391. Reply only: STORED")
+  coro::loop(for (msg in client1$receive_response()) {})
+  sid <- client1$session_id
+  client1$disconnect()
+
+  expect_true(nzchar(sid))
+
+  # Turn 2: resume and check the value is remembered
+  client2 <- ClaudeSDKClient$new(ClaudeAgentOptions(
+    max_turns       = 1L,
+    permission_mode = "bypassPermissions",
+    resume          = sid
+  ))
+  client2$connect()
+  on.exit(client2$disconnect())
+
+  client2$send("What number did I ask you to remember? Reply with just the number.")
+  texts <- character(0)
+  coro::loop(for (msg in client2$receive_response()) {
+    if (inherits(msg, "AssistantMessage")) {
+      for (blk in msg$content)
+        if (inherits(blk, "TextBlock")) texts <- c(texts, blk$text)
+    }
+  })
+
+  expect_true(any(grepl("7391", texts)))
+})
