@@ -1,4 +1,4 @@
-# examples/22_resume.R
+# examples/23_resume.R
 # =========================================================================
 # Session resume: persist context across multiple client connections
 # =========================================================================
