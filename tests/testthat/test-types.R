@@ -373,16 +373,17 @@ test_that("ThinkingConfigDisabled has correct class", {
 # ---------------------------------------------------------------------------
 
 test_that("TaskBudget has correct class", {
-  b <- TaskBudget(max_tokens = 50000L)
+  b <- TaskBudget(total = 50000L)
   expect_s3_class(b, "TaskBudget")
-  expect_equal(b$max_tokens, 50000L)
+  expect_equal(b$total, 50000L)
 })
 
 test_that("TaskUsage has correct class", {
-  u <- TaskUsage(total_tokens = 1000L, tool_uses = 5L)
+  u <- TaskUsage(total_tokens = 1000L, tool_uses = 5L, duration_ms = 800L)
   expect_s3_class(u, "TaskUsage")
   expect_equal(u$total_tokens, 1000L)
   expect_equal(u$tool_uses, 5L)
+  expect_equal(u$duration_ms, 800L)
 })
 
 # ---------------------------------------------------------------------------

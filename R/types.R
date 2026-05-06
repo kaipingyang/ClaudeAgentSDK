@@ -745,26 +745,28 @@ ThinkingConfigDisabled <- function() {
 #' API-side task budget in tokens. When set, the model is made aware of its
 #' remaining token budget so it can pace tool use and wrap up before the limit.
 #'
-#' @param max_tokens Integer. Maximum token budget for the task.
+#' @param total Integer. Maximum token budget for the task.
 #' @return Object of class `TaskBudget`.
 #' @examples
-#' budget <- TaskBudget(max_tokens = 10000L)
-#' budget$max_tokens
+#' budget <- TaskBudget(total = 10000L)
+#' budget$total
 #' @export
-TaskBudget <- function(max_tokens) {
-  .new_obj(list(max_tokens = max_tokens), "TaskBudget")
+TaskBudget <- function(total) {
+  .new_obj(list(total = total), "TaskBudget")
 }
 
 #' Create a TaskUsage
 #' @param total_tokens Integer.
 #' @param tool_uses Integer.
+#' @param duration_ms Integer. Wall-clock milliseconds for the task.
 #' @return Object of class `TaskUsage`.
 #' @examples
-#' usage <- TaskUsage(total_tokens = 500L, tool_uses = 3L)
+#' usage <- TaskUsage(total_tokens = 500L, tool_uses = 3L, duration_ms = 1200L)
 #' usage$total_tokens
 #' @export
-TaskUsage <- function(total_tokens, tool_uses) {
-  .new_obj(list(total_tokens = total_tokens, tool_uses = tool_uses),
+TaskUsage <- function(total_tokens, tool_uses, duration_ms = NULL) {
+  .new_obj(list(total_tokens = total_tokens, tool_uses = tool_uses,
+                duration_ms  = duration_ms),
            "TaskUsage")
 }
 
