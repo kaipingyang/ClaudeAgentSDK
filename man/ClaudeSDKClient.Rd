@@ -50,6 +50,16 @@ client$disconnect()
 }
 \if{html}{\out{</div>}}
 }
+\section{Active bindings}{
+\if{html}{\out{<div class="r6-active-bindings">}}
+\describe{
+\item{\code{session_id}}{The \code{session_id} captured from the most recent
+\code{ResultMessage}.  Empty string \code{""} if no turn has completed yet.
+Use with \code{ClaudeAgentOptions(resume = client$session_id)} or call
+\code{client$resume()} to set up the client for the next turn.}
+}
+\if{html}{\out{</div>}}
+}
 \section{Methods}{
 \subsection{Public methods}{
 \itemize{
@@ -74,6 +84,7 @@ client$disconnect()
 \item \href{#method-ClaudeSDKClient-get_server_info}{\code{ClaudeSDKClient$get_server_info()}}
 \item \href{#method-ClaudeSDKClient-reconnect_mcp_server}{\code{ClaudeSDKClient$reconnect_mcp_server()}}
 \item \href{#method-ClaudeSDKClient-toggle_mcp_server}{\code{ClaudeSDKClient$toggle_mcp_server()}}
+\item \href{#method-ClaudeSDKClient-resume}{\code{ClaudeSDKClient$resume()}}
 \item \href{#method-ClaudeSDKClient-clone}{\code{ClaudeSDKClient$clone()}}
 }
 }
@@ -198,6 +209,8 @@ request/response cycle.
 \subsection{Method \code{receive_response()}}{
 Return a \code{coro} generator that yields messages until
 and including the next \code{ResultMessage}, then stops.
+The \code{session_id} from the \code{ResultMessage} is automatically captured;
+read it back with \code{client$session_id} after the loop completes.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{ClaudeSDKClient$receive_response()}\if{html}{\out{</div>}}
 }
@@ -214,6 +227,9 @@ as it arrives.  Requires the \strong{promises} package (listed in Suggests).
 Designed for Shiny \code{ExtendedTask} integration: the promise keeps the
 Shiny session unblocked while \code{on_message} streams intermediate
 results (e.g., into a \code{reactiveVal}) for real-time UI updates.
+
+The \code{session_id} from the \code{ResultMessage} is automatically captured;
+read it back with \code{client$session_id} after the promise resolves.
 \subsection{Usage}{
 \if{html}{\out{<div class="r">}}\preformatted{ClaudeSDKClient$receive_response_async(on_message = NULL, poll_interval = 0.01)}\if{html}{\out{</div>}}
 }
@@ -449,6 +465,22 @@ Enable or disable an MCP server.
 \item{\code{enabled}}{Logical. \code{TRUE} to enable, \code{FALSE} to disable.}
 }
 \if{html}{\out{</div>}}
+}
+}
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-ClaudeSDKClient-resume"></a>}}
+\if{latex}{\out{\hypertarget{method-ClaudeSDKClient-resume}{}}}
+\subsection{Method \code{resume()}}{
+Prepare client to resume the last captured session.
+Sets \code{options$resume} to the \code{session_id} captured from the most
+recent \code{ResultMessage}.  The next \verb{$connect()} call will pass
+\verb{--resume <session_id>} to the CLI.
+\subsection{Usage}{
+\if{html}{\out{<div class="r">}}\preformatted{ClaudeSDKClient$resume()}\if{html}{\out{</div>}}
+}
+
+\subsection{Returns}{
+\code{self} invisibly (for chaining).
 }
 }
 \if{html}{\out{<hr>}}

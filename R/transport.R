@@ -733,7 +733,7 @@ SubprocessCLITransport <- R6::R6Class(
 
     handle_permission_request = function(request) {
       if (!is.null(private$options$can_use_tool)) {
-        ctx <- list(
+        ctx <- ToolPermissionContext(
           suggestions = request[["permission_suggestions"]] %||% list(),
           tool_use_id = request[["tool_use_id"]],
           agent_id    = request[["agent_id"]],

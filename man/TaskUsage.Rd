@@ -4,12 +4,14 @@
 \alias{TaskUsage}
 \title{Create a TaskUsage}
 \usage{
-TaskUsage(total_tokens, tool_uses)
+TaskUsage(total_tokens, tool_uses, duration_ms = NULL)
 }
 \arguments{
 \item{total_tokens}{Integer.}
 
 \item{tool_uses}{Integer.}
+
+\item{duration_ms}{Integer. Wall-clock milliseconds for the task.}
 }
 \value{
 Object of class \code{TaskUsage}.
@@ -18,6 +20,6 @@ Object of class \code{TaskUsage}.
 Create a TaskUsage
 }
 \examples{
-usage <- TaskUsage(total_tokens = 500L, tool_uses = 3L)
+usage <- TaskUsage(total_tokens = 500L, tool_uses = 3L, duration_ms = 1200L)
 usage$total_tokens
 }

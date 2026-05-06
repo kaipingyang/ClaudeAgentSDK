@@ -445,3 +445,120 @@ test_that("HookMatcher stores matcher, hooks, and timeout", {
   expect_length(m$hooks, 1L)
   expect_equal(m$timeout, 5000L)
 })
+
+# ---------------------------------------------------------------------------
+# ForkSessionResult
+# ---------------------------------------------------------------------------
+
+test_that("ForkSessionResult has correct class and session_id field", {
+  res <- ForkSessionResult(session_id = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")
+  expect_s3_class(res, "ForkSessionResult")
+  expect_equal(res$session_id, "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")
+})
+
+# ---------------------------------------------------------------------------
+# ToolPermissionContext
+# ---------------------------------------------------------------------------
+
+test_that("ToolPermissionContext defaults signal to NULL", {
+  ctx <- ToolPermissionContext()
+  expect_s3_class(ctx, "ToolPermissionContext")
+  expect_null(ctx$signal)
+  expect_equal(ctx$suggestions, list())
+  expect_null(ctx$tool_use_id)
+  expect_null(ctx$agent_id)
+})
+
+test_that("ToolPermissionContext stores all fields", {
+  pu  <- PermissionUpdate("allow")
+  ctx <- ToolPermissionContext(
+    suggestions = list(pu),
+    tool_use_id = "tid_1",
+    agent_id    = "agent_x"
+  )
+  expect_length(ctx$suggestions, 1L)
+  expect_equal(ctx$tool_use_id, "tid_1")
+  expect_equal(ctx$agent_id, "agent_x")
+})
+
+# ---------------------------------------------------------------------------
+# Hook-specific output types
+# ---------------------------------------------------------------------------
+
+test_that("PreToolUseHookSpecificOutput has correct hookEventName", {
+  out <- PreToolUseHookSpecificOutput(permission_decision = "allow")
+  expect_s3_class(out, "PreToolUseHookSpecificOutput")
+  expect_equal(out$hookEventName, "PreToolUse")
+  expect_equal(out$permissionDecision, "allow")
+})
+
+test_that("PostToolUseHookSpecificOutput has correct hookEventName", {
+  out <- PostToolUseHookSpecificOutput(additional_context = "ok")
+  expect_s3_class(out, "PostToolUseHookSpecificOutput")
+  expect_equal(out$hookEventName, "PostToolUse")
+})
+
+test_that("PostToolUseFailureHookSpecificOutput has correct hookEventName", {
+  out <- PostToolUseFailureHookSpecificOutput()
+  expect_s3_class(out, "PostToolUseFailureHookSpecificOutput")
+  expect_equal(out$hookEventName, "PostToolUseFailure")
+})
+
+test_that("UserPromptSubmitHookSpecificOutput has correct hookEventName", {
+  out <- UserPromptSubmitHookSpecificOutput()
+  expect_s3_class(out, "UserPromptSubmitHookSpecificOutput")
+  expect_equal(out$hookEventName, "UserPromptSubmit")
+})
+
+test_that("SessionStartHookSpecificOutput has correct hookEventName", {
+  out <- SessionStartHookSpecificOutput()
+  expect_s3_class(out, "SessionStartHookSpecificOutput")
+  expect_equal(out$hookEventName, "SessionStart")
+})
+
+test_that("NotificationHookSpecificOutput has correct hookEventName", {
+  out <- NotificationHookSpecificOutput()
+  expect_s3_class(out, "NotificationHookSpecificOutput")
+  expect_equal(out$hookEventName, "Notification")
+})
+
+test_that("SubagentStartHookSpecificOutput has correct hookEventName", {
+  out <- SubagentStartHookSpecificOutput()
+  expect_s3_class(out, "SubagentStartHookSpecificOutput")
+  expect_equal(out$hookEventName, "SubagentStart")
+})
+
+test_that("PermissionRequestHookSpecificOutput stores decision", {
+  dec <- list(behavior = "allow")
+  out <- PermissionRequestHookSpecificOutput(decision = dec)
+  expect_s3_class(out, "PermissionRequestHookSpecificOutput")
+  expect_equal(out$hookEventName, "PermissionRequest")
+  expect_equal(out$decision, dec)
+})
+
+# ---------------------------------------------------------------------------
+# ContextUsageResponse full fields
+# ---------------------------------------------------------------------------
+
+test_that("ContextUsageResponse stores all fields", {
+  cat  <- ContextUsageCategory("user", 512L, "#ff0000")
+  resp <- ContextUsageResponse(
+    categories            = list(cat),
+    total_tokens          = 2048L,
+    max_tokens            = 8192L,
+    raw_max_tokens        = 8192L,
+    percentage            = 25.0,
+    model                 = "claude-sonnet-4-6",
+    is_auto_compact_enabled = FALSE,
+    memory_files          = list(),
+    mcp_tools             = list(),
+    agents                = list(),
+    grid_rows             = list()
+  )
+  expect_s3_class(resp, "ContextUsageResponse")
+  expect_equal(resp$totalTokens, 2048L)
+  expect_equal(resp$maxTokens, 8192L)
+  expect_equal(resp$percentage, 25.0)
+  expect_equal(resp$model, "claude-sonnet-4-6")
+  expect_false(resp$isAutoCompactEnabled)
+})

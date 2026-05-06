@@ -4,7 +4,27 @@
 \alias{ContextUsageResponse}
 \title{Create a ContextUsageResponse}
 \usage{
-ContextUsageResponse(categories, total_tokens)
+ContextUsageResponse(
+  categories,
+  total_tokens,
+  max_tokens = NULL,
+  raw_max_tokens = NULL,
+  percentage = NULL,
+  model = NULL,
+  is_auto_compact_enabled = NULL,
+  memory_files = NULL,
+  mcp_tools = NULL,
+  agents = NULL,
+  grid_rows = NULL,
+  auto_compact_threshold = NULL,
+  deferred_builtin_tools = NULL,
+  system_tools = NULL,
+  system_prompt_sections = NULL,
+  slash_commands = NULL,
+  skills = NULL,
+  message_breakdown = NULL,
+  api_usage = NULL
+)
 }
 \arguments{
 \item{categories}{List of \code{ContextUsageCategory}.}

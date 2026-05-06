@@ -136,7 +136,7 @@ delete_session <- function(session_id, directory = NULL) {
 #'   message UUID (inclusive). `NULL` copies the full transcript.
 #' @param title Character or NULL. Custom title for the fork. If `NULL`,
 #'   derives title from the original + " (fork)".
-#' @return Named list with `session_id` — the UUID of the new forked session.
+#' @return A `ForkSessionResult` object with a `session_id` field.
 #' @examples
 #' \donttest{
 #' sessions <- list_sessions(limit = 1L)
@@ -285,7 +285,7 @@ fork_session <- function(session_id,
     error = function(e) stop(paste0("Failed to write fork file: ", conditionMessage(e)), call. = FALSE)
   )
 
-  list(session_id = forked_session_id)
+  ForkSessionResult(session_id = forked_session_id)
 }
 
 # ---------------------------------------------------------------------------

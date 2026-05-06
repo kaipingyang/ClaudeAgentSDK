@@ -23,7 +23,7 @@ message UUID (inclusive). \code{NULL} copies the full transcript.}
 derives title from the original + " (fork)".}
 }
 \value{
-Named list with \code{session_id} — the UUID of the new forked session.
+A \code{ForkSessionResult} object with a \code{session_id} field.
 }
 \description{
 Copies transcript messages from the source session into a new JSONL file

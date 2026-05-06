@@ -4,10 +4,10 @@
 \alias{TaskBudget}
 \title{Create a TaskBudget}
 \usage{
-TaskBudget(max_tokens)
+TaskBudget(total)
 }
 \arguments{
-\item{max_tokens}{Integer. Maximum token budget for the task.}
+\item{total}{Integer. Maximum token budget for the task.}
 }
 \value{
 Object of class \code{TaskBudget}.
@@ -17,6 +17,6 @@ API-side task budget in tokens. When set, the model is made aware of its
 remaining token budget so it can pace tool use and wrap up before the limit.
 }
 \examples{
-budget <- TaskBudget(max_tokens = 10000L)
-budget$max_tokens
+budget <- TaskBudget(total = 10000L)
+budget$total
 }

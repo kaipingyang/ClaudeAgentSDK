@@ -168,6 +168,7 @@ test_that("fork_session creates a new JSONL with remapped UUIDs", {
   ))
 
   result <- fork_session(sid, directory = tmp)
+  expect_s3_class(result, "ForkSessionResult")
   expect_true(nzchar(result$session_id))
   expect_false(identical(result$session_id, sid))
 

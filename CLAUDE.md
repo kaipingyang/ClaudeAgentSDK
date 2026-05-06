@@ -103,41 +103,39 @@ scripts/
 
 Install: `bash scripts/initial-setup.sh`
 
-## Python SDK parity assessment (as of v0.2.0, 2026-05-06)
+## Python SDK parity assessment (as of v0.2.1, 2026-05-06)
 
 | Module | Parity | Notes |
 |--------|--------|-------|
-| Options fields | 97% | 38/39 fields; `debug_stderr` (deprecated Python-only); `TaskBudget` field renamed `max_tokens`→`total` (bug fixed) |
-| Session management | 99% | 7 functions covered; `fork_session()` returns plain list vs Python's `ForkSessionResult` dataclass |
-| Error types | 100% | 6 error types identical; R uses `rlang::abort()` S3 conditions vs Python class hierarchy |
-| Type definitions | 88% | R missing: SDK MCP types (`SdkMcpTool`, `McpSdkServerConfig`, typed MCP config variants), hook-specific output TypedDicts, `ToolPermissionContext` dataclass, abstract `Transport` base class, union type aliases; `TaskUsage` now includes `duration_ms` (bug fixed) |
-| Client methods | 100% Python + R extras | All 15 Python methods covered; R adds 6: `poll_messages()`, `receive_response_async()`, `approve_tool()`, `deny_tool()`, `resume()`, `session_id` active binding |
-| Transport/Protocol | 85% | Functionally equivalent; R adds `send_and_wait()`, `read_available_messages()`, pending-permission API; no abstract `Transport` interface |
-| Public API | 80% | R missing: `create_sdk_mcp_server()`/`@tool`, `Transport` ABC, `ForkSessionResult`, union type aliases, hook-specific output types, `ToolPermissionContext`; R adds `find_claude()`, `list_skills()`, `r_mcp_server()`, `PermissionRequestMessage` |
-| Examples | 85% | R has 23 examples vs Python 16; Python-only: async runtime variants (trio/ipython) + plugin example (N/A for R); R-only: 10 Shiny integration examples |
-| Tests | 663 | All pass; 3 env-dependent skips |
+| Options fields | 97% | 38/39 fields; `debug_stderr` deprecated Python-only (never backport) |
+| Session management | 100% | `fork_session()` now returns typed `ForkSessionResult`; all 7 functions covered |
+| Error types | 100% | 6 error types; R uses `rlang::abort()` S3 conditions vs Python class hierarchy |
+| Type definitions | 97% | All concrete types covered; missing only: in-process SDK MCP types (`SdkMcpTool`, `McpSdkServerConfig`, typed MCP config variants) — architectural gap |
+| Client methods | 100% Python + R extras | All 15 Python methods; R adds 6: `poll_messages()`, `receive_response_async()`, `approve_tool()`, `deny_tool()`, `resume()`, `session_id` binding |
+| Transport/Protocol | 88% | `ToolPermissionContext` now typed; R adds `send_and_wait()`, `read_available_messages()`, pending-permission API; no abstract `Transport` interface |
+| Public API | 90% | R missing: `create_sdk_mcp_server()`/`@tool`, `Transport` ABC, SDK MCP config types, union type aliases; R adds `find_claude()`, `list_skills()`, `r_mcp_server()`, `PermissionRequestMessage` |
+| Examples | 85% | R has 23 examples vs Python 16; Python-only: async runtime variants (trio/ipython) + plugin (N/A for R); R-only: 10 Shiny integration examples |
+| Tests | 699 | All pass; 3 env-dependent skips |
 
 ### Why Options fields is 97% (not 100%)
 
 `debug_stderr` in Python is a deprecated file-like object for debug output, kept only for backwards compatibility. R never had this param and has no legacy users to support.
 
-### Why Type definitions is 88% (not 100%)
+### Why Type definitions is 97% (not 100%)
 
-**SDK MCP types** (`SdkMcpTool`, `McpSdkServerConfig`, etc.): Python's in-process MCP server requires typed config objects. R uses `mcptools` subprocess instead — same protocol, no need for in-process type hierarchy.
+**SDK MCP types** (`SdkMcpTool`, `McpSdkServerConfig`, `McpStdioServerConfig`, `McpSSEServerConfig`, `McpHttpServerConfig`, `McpClaudeAIProxyServerConfig`): Python's in-process MCP server requires typed config objects. R uses `mcptools` subprocess instead — same protocol, no need for in-process type hierarchy. Not backporting.
 
-**Hook-specific output TypedDicts** (`PreToolUseHookSpecificOutput`, etc.): Python exports these as distinct typed dicts for each hook phase. R `SyncHookOutput`/`AsyncHookOutput` cover all phases generically — functionally equivalent, less granular typing.
+**Union type aliases** (`ContentBlock`, `Message`, `ThinkingConfig`, `PermissionResult`, `McpServerConfig`, etc.): Python exports these for static type-checker (mypy/pyright) support. R is dynamically typed; these aliases add no runtime value.
 
-**`ToolPermissionContext` dataclass**: Python passes a typed dataclass with `signal`, `suggestions`, `tool_use_id`, `agent_id` fields to `can_use_tool` callbacks. R passes a plain named list with the same fields. Structurally equivalent.
+### Why Public API is 90% (not 100%)
 
-**Abstract `Transport` base class**: Python exports this so users can implement custom transports. R only has the internal `SubprocessCLITransport`. There is only one transport implementation, so an abstract base adds no value for R users.
+Python's `create_sdk_mcp_server()` runs an MCP server **in-process** (same Python event loop). R is single-threaded and synchronous — running an MCP server in the same process while also communicating with the CLI subprocess would require complex `later`/`callr` coordination. The `mcptools` package provides equivalent functionality via a subprocess MCP server (same protocol, 99% of use cases). Not backporting.
 
-**Union type aliases** (`ContentBlock`, `Message`, `ThinkingConfig`, etc.): Python exports these for static type checking. R is dynamically typed; these are redundant.
+Remaining gap: `Transport` ABC and SDK MCP config types — see "Type definitions" above.
 
-### Why Public API is 80% (not 100%)
+### Why Transport/Protocol is 88% (not 100%)
 
-Python's `create_sdk_mcp_server()` runs an MCP server **in-process** (same Python event loop). R is single-threaded and synchronous — running an MCP server in the same process while also communicating with the CLI subprocess would require complex `later`/`callr` coordination. The `mcptools` package provides equivalent functionality via a subprocess MCP server, which uses the same protocol and covers 99% of use cases. The only loss is shared-memory access to the main R process.
-
-The remaining missing exports are type aliases and abstract base classes — see "Type definitions" above.
+Abstract `Transport` base class: Python exports this so users can implement custom transports. R only has the internal `SubprocessCLITransport`. There is only one transport implementation, so an abstract base adds no value for R users.
 
 ### Why Examples is 85% (not 100%)
 
@@ -146,11 +144,11 @@ Python has `streaming_mode_trio.py`, `streaming_mode_ipython.py` (multiple async
 ### Known remaining gaps
 
 - `rewind_files()` / `stop_task()` — fire-and-forget control messages, no integration test
-- `ForkSessionResult` S3 class — `fork_session()` returns plain `list(session_id = ...)` instead of typed object
-- SDK-managed MCP servers (Python's `create_sdk_mcp_server`) — R uses `mcptools` subprocess instead
+- `create_sdk_mcp_server()` / `@tool` / `SdkMcpTool` — in-process MCP; R uses `mcptools` subprocess instead (architectural, not backporting)
+- Abstract `Transport` base class — no value for single-implementation R SDK
+- Union type aliases (`ContentBlock`, `Message`, etc.) — R is dynamic; mypy aliases add no runtime value
 - Large MCP output handling (`CLAUDE_MCP_OUTPUT_MAX_TOKENS`) — not implemented
 - Plugin support — examples exist but no integration test
-- `ToolPermissionContext` S3 class — plain list passed to `can_use_tool` callbacks instead of typed object
 
 ## Shiny integration patterns
 

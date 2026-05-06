@@ -802,10 +802,45 @@ ContextUsageCategory <- function(name, tokens, color, is_deferred = NULL) {
 #' resp <- ContextUsageResponse(cats, total_tokens = 1024L)
 #' resp$totalTokens
 #' @export
-ContextUsageResponse <- function(categories, total_tokens) {
+ContextUsageResponse <- function(categories,
+                                  total_tokens,
+                                  max_tokens               = NULL,
+                                  raw_max_tokens           = NULL,
+                                  percentage               = NULL,
+                                  model                    = NULL,
+                                  is_auto_compact_enabled  = NULL,
+                                  memory_files             = NULL,
+                                  mcp_tools                = NULL,
+                                  agents                   = NULL,
+                                  grid_rows                = NULL,
+                                  auto_compact_threshold   = NULL,
+                                  deferred_builtin_tools   = NULL,
+                                  system_tools             = NULL,
+                                  system_prompt_sections   = NULL,
+                                  slash_commands           = NULL,
+                                  skills                   = NULL,
+                                  message_breakdown        = NULL,
+                                  api_usage                = NULL) {
   .new_obj(list(
-    categories  = categories,
-    totalTokens = total_tokens
+    categories             = categories,
+    totalTokens            = total_tokens,
+    maxTokens              = max_tokens,
+    rawMaxTokens           = raw_max_tokens,
+    percentage             = percentage,
+    model                  = model,
+    isAutoCompactEnabled   = is_auto_compact_enabled,
+    memoryFiles            = memory_files,
+    mcpTools               = mcp_tools,
+    agents                 = agents,
+    gridRows               = grid_rows,
+    autoCompactThreshold   = auto_compact_threshold,
+    deferredBuiltinTools   = deferred_builtin_tools,
+    systemTools            = system_tools,
+    systemPromptSections   = system_prompt_sections,
+    slashCommands          = slash_commands,
+    skills                 = skills,
+    messageBreakdown       = message_breakdown,
+    apiUsage               = api_usage
   ), "ContextUsageResponse")
 }
 
@@ -1360,6 +1395,154 @@ SandboxSettings <- function(enabled                      = NULL,
     ignoreViolations           = ignore_violations,
     enableWeakerNestedSandbox  = enable_weaker_nested_sandbox
   ), "SandboxSettings")
+}
+
+# ---------------------------------------------------------------------------
+# ForkSessionResult (mirrors Python _internal/session_mutations.py)
+# ---------------------------------------------------------------------------
+
+#' Result of a fork_session() operation
+#'
+#' @param session_id Character. UUID of the new forked session.
+#' @return Object of class `ForkSessionResult`.
+#' @examples
+#' res <- ForkSessionResult(session_id = "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee")
+#' res$session_id
+#' @export
+ForkSessionResult <- function(session_id) {
+  .new_obj(list(session_id = session_id), "ForkSessionResult")
+}
+
+# ---------------------------------------------------------------------------
+# ToolPermissionContext (mirrors Python types.py @dataclass)
+# ---------------------------------------------------------------------------
+
+#' Context passed to can_use_tool callbacks
+#'
+#' Carries per-call context for tool-permission decisions.
+#'
+#' @param suggestions List of `PermissionUpdate` objects from the CLI.
+#' @param tool_use_id Character or NULL. Unique ID for this tool call.
+#' @param agent_id Character or NULL. Sub-agent ID if running in an agent.
+#' @param signal NULL (reserved for future abort-signal support).
+#' @return Object of class `ToolPermissionContext`.
+#' @export
+ToolPermissionContext <- function(suggestions  = list(),
+                                   tool_use_id  = NULL,
+                                   agent_id     = NULL,
+                                   signal       = NULL) {
+  .new_obj(list(
+    signal      = signal,
+    suggestions = suggestions,
+    tool_use_id = tool_use_id,
+    agent_id    = agent_id
+  ), "ToolPermissionContext")
+}
+
+# ---------------------------------------------------------------------------
+# Hook-specific output types (mirrors Python types.py TypedDicts)
+# Exported: PostToolUseFailureHookSpecificOutput, NotificationHookSpecificOutput,
+#           SubagentStartHookSpecificOutput, PermissionRequestHookSpecificOutput
+# ---------------------------------------------------------------------------
+
+#' Hook-specific output for PreToolUse hook
+#' @param permission_decision Character or NULL. One of `"allow"`, `"deny"`, `"ask"`.
+#' @param permission_decision_reason Character or NULL.
+#' @param updated_input List or NULL. Modified tool input.
+#' @param additional_context Character or NULL.
+#' @return Object of class `PreToolUseHookSpecificOutput`.
+#' @export
+PreToolUseHookSpecificOutput <- function(permission_decision        = NULL,
+                                          permission_decision_reason = NULL,
+                                          updated_input              = NULL,
+                                          additional_context         = NULL) {
+  .new_obj(list(
+    hookEventName            = "PreToolUse",
+    permissionDecision       = permission_decision,
+    permissionDecisionReason = permission_decision_reason,
+    updatedInput             = updated_input,
+    additionalContext        = additional_context
+  ), "PreToolUseHookSpecificOutput")
+}
+
+#' Hook-specific output for PostToolUse hook
+#' @param additional_context Character or NULL.
+#' @param updated_mcp_tool_output Any or NULL.
+#' @return Object of class `PostToolUseHookSpecificOutput`.
+#' @export
+PostToolUseHookSpecificOutput <- function(additional_context      = NULL,
+                                           updated_mcp_tool_output = NULL) {
+  .new_obj(list(
+    hookEventName         = "PostToolUse",
+    additionalContext     = additional_context,
+    updatedMCPToolOutput  = updated_mcp_tool_output
+  ), "PostToolUseHookSpecificOutput")
+}
+
+#' Hook-specific output for PostToolUseFailure hook
+#' @param additional_context Character or NULL.
+#' @return Object of class `PostToolUseFailureHookSpecificOutput`.
+#' @export
+PostToolUseFailureHookSpecificOutput <- function(additional_context = NULL) {
+  .new_obj(list(
+    hookEventName     = "PostToolUseFailure",
+    additionalContext = additional_context
+  ), "PostToolUseFailureHookSpecificOutput")
+}
+
+#' Hook-specific output for UserPromptSubmit hook
+#' @param additional_context Character or NULL.
+#' @return Object of class `UserPromptSubmitHookSpecificOutput`.
+#' @export
+UserPromptSubmitHookSpecificOutput <- function(additional_context = NULL) {
+  .new_obj(list(
+    hookEventName     = "UserPromptSubmit",
+    additionalContext = additional_context
+  ), "UserPromptSubmitHookSpecificOutput")
+}
+
+#' Hook-specific output for SessionStart hook
+#' @param additional_context Character or NULL.
+#' @return Object of class `SessionStartHookSpecificOutput`.
+#' @export
+SessionStartHookSpecificOutput <- function(additional_context = NULL) {
+  .new_obj(list(
+    hookEventName     = "SessionStart",
+    additionalContext = additional_context
+  ), "SessionStartHookSpecificOutput")
+}
+
+#' Hook-specific output for Notification hook
+#' @param additional_context Character or NULL.
+#' @return Object of class `NotificationHookSpecificOutput`.
+#' @export
+NotificationHookSpecificOutput <- function(additional_context = NULL) {
+  .new_obj(list(
+    hookEventName     = "Notification",
+    additionalContext = additional_context
+  ), "NotificationHookSpecificOutput")
+}
+
+#' Hook-specific output for SubagentStart hook
+#' @param additional_context Character or NULL.
+#' @return Object of class `SubagentStartHookSpecificOutput`.
+#' @export
+SubagentStartHookSpecificOutput <- function(additional_context = NULL) {
+  .new_obj(list(
+    hookEventName     = "SubagentStart",
+    additionalContext = additional_context
+  ), "SubagentStartHookSpecificOutput")
+}
+
+#' Hook-specific output for PermissionRequest hook
+#' @param decision List. Required. Permission decision payload.
+#' @return Object of class `PermissionRequestHookSpecificOutput`.
+#' @export
+PermissionRequestHookSpecificOutput <- function(decision) {
+  .new_obj(list(
+    hookEventName = "PermissionRequest",
+    decision      = decision
+  ), "PermissionRequestHookSpecificOutput")
 }
 
 # ---------------------------------------------------------------------------
