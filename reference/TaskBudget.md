@@ -24,6 +24,7 @@ Object of class `TaskBudget`.
 
 ``` r
 budget <- TaskBudget(max_tokens = 10000L)
+#> Error in TaskBudget(max_tokens = 10000L): unused argument (max_tokens = 10000)
 budget$max_tokens
-#> [1] 10000
+#> Error: object 'budget' not found
 ```

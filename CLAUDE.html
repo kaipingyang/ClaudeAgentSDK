@@ -169,49 +169,71 @@
 <p>Install: <code>bash scripts/initial-setup.sh</code></p>
 </div>
 <div class="section level2">
-<h2 id="python-sdk-parity-assessment-as-of-v014-2026-04-10">Python SDK parity assessment (as of v0.1.4, 2026-04-10)<a class="anchor" aria-label="anchor" href="#python-sdk-parity-assessment-as-of-v014-2026-04-10"></a></h2>
+<h2 id="python-sdk-parity-assessment-as-of-v020-2026-05-06">Python SDK parity assessment (as of v0.2.0, 2026-05-06)<a class="anchor" aria-label="anchor" href="#python-sdk-parity-assessment-as-of-v020-2026-05-06"></a></h2>
 <table class="table"><colgroup><col width="34%"><col width="34%"><col width="30%"></colgroup><thead><tr><th>Module</th>
 <th>Parity</th>
 <th>Notes</th>
 </tr></thead><tbody><tr><td>Options fields</td>
-<td>100%</td>
-<td>35/35 fields identical</td>
+<td>97%</td>
+<td>38/39 fields; <code>debug_stderr</code> (deprecated Python-only); <code>TaskBudget</code> field renamed <code>max_tokens</code>→<code>total</code> (bug fixed)</td>
 </tr><tr><td>Session management</td>
-<td>100%</td>
-<td>7 functions identical (list/get/messages + rename/tag/delete/fork)</td>
+<td>99%</td>
+<td>7 functions covered; <code><a href="reference/fork_session.html">fork_session()</a></code> returns plain list vs Python’s <code>ForkSessionResult</code> dataclass</td>
 </tr><tr><td>Error types</td>
 <td>100%</td>
-<td>6 error types identical</td>
+<td>6 error types identical; R uses <code><a href="https://rlang.r-lib.org/reference/abort.html" class="external-link">rlang::abort()</a></code> S3 conditions vs Python class hierarchy</td>
 </tr><tr><td>Type definitions</td>
-<td>100%</td>
-<td>100+ S3 constructors covering all Python TypedDicts/dataclasses</td>
+<td>88%</td>
+<td>R missing: SDK MCP types (<code>SdkMcpTool</code>, <code>McpSdkServerConfig</code>, typed MCP config variants), hook-specific output TypedDicts, <code>ToolPermissionContext</code> dataclass, abstract <code>Transport</code> base class, union type aliases; <code>TaskUsage</code> now includes <code>duration_ms</code> (bug fixed)</td>
 </tr><tr><td>Client methods</td>
-<td>100%</td>
-<td>16 methods including query(), send(), receive_response_async(), connect(), disconnect(), get_mcp_status(), etc.</td>
+<td>100% Python + R extras</td>
+<td>All 15 Python methods covered; R adds 6: <code>poll_messages()</code>, <code>receive_response_async()</code>, <code>approve_tool()</code>, <code>deny_tool()</code>, <code>resume()</code>, <code>session_id</code> active binding</td>
 </tr><tr><td>Transport/Protocol</td>
-<td>90%</td>
-<td>Functionally identical; R uses <code>coro</code> sync generators vs Python <code>async/await</code> — architectural difference, not a feature gap</td>
+<td>85%</td>
+<td>Functionally equivalent; R adds <code>send_and_wait()</code>, <code>read_available_messages()</code>, pending-permission API; no abstract <code>Transport</code> interface</td>
 </tr><tr><td>Public API</td>
-<td>92%</td>
-<td>Only missing: <code>create_sdk_mcp_server()</code> / <code>@tool</code> — R uses <code>mcptools</code> subprocess instead (same MCP protocol, different execution model)</td>
+<td>80%</td>
+<td>R missing: <code>create_sdk_mcp_server()</code>/<code>@tool</code>, <code>Transport</code> ABC, <code>ForkSessionResult</code>, union type aliases, hook-specific output types, <code>ToolPermissionContext</code>; R adds <code><a href="reference/find_claude.html">find_claude()</a></code>, <code><a href="reference/list_skills.html">list_skills()</a></code>, <code><a href="reference/r_mcp_server.html">r_mcp_server()</a></code>, <code>PermissionRequestMessage</code>
+</td>
 </tr><tr><td>Examples</td>
-<td>87%</td>
-<td>Missing: Python async variant examples (trio/ipython), plugin example — N/A for R’s single-threaded model</td>
+<td>85%</td>
+<td>R has 23 examples vs Python 16; Python-only: async runtime variants (trio/ipython) + plugin example (N/A for R); R-only: 10 Shiny integration examples</td>
 </tr><tr><td>Tests</td>
-<td>661</td>
-<td>All pass; 4 env-dependent skips</td>
+<td>663</td>
+<td>All pass; 3 env-dependent skips</td>
 </tr></tbody></table><div class="section level3">
-<h3 id="why-transportprotocol-is-90-not-100">Why Transport/Protocol is 90% (not 100%)<a class="anchor" aria-label="anchor" href="#why-transportprotocol-is-90-not-100"></a></h3>
-<p>Python exports a <code>Transport</code> abstract base class so users can implement custom transports. R only has the internal <code>SubprocessCLITransport</code> and does not expose an abstract interface. There is only one transport implementation (subprocess), so an abstract base adds no value for R users.</p>
+<h3 id="why-options-fields-is-97-not-100">Why Options fields is 97% (not 100%)<a class="anchor" aria-label="anchor" href="#why-options-fields-is-97-not-100"></a></h3>
+<p><code>debug_stderr</code> in Python is a deprecated file-like object for debug output, kept only for backwards compatibility. R never had this param and has no legacy users to support.</p>
 </div>
 <div class="section level3">
-<h3 id="why-public-api-is-92-not-100">Why Public API is 92% (not 100%)<a class="anchor" aria-label="anchor" href="#why-public-api-is-92-not-100"></a></h3>
+<h3 id="why-type-definitions-is-88-not-100">Why Type definitions is 88% (not 100%)<a class="anchor" aria-label="anchor" href="#why-type-definitions-is-88-not-100"></a></h3>
+<p><strong>SDK MCP types</strong> (<code>SdkMcpTool</code>, <code>McpSdkServerConfig</code>, etc.): Python’s in-process MCP server requires typed config objects. R uses <code>mcptools</code> subprocess instead — same protocol, no need for in-process type hierarchy.</p>
+<p><strong>Hook-specific output TypedDicts</strong> (<code>PreToolUseHookSpecificOutput</code>, etc.): Python exports these as distinct typed dicts for each hook phase. R <code>SyncHookOutput</code>/<code>AsyncHookOutput</code> cover all phases generically — functionally equivalent, less granular typing.</p>
+<p><strong><code>ToolPermissionContext</code> dataclass</strong>: Python passes a typed dataclass with <code>signal</code>, <code>suggestions</code>, <code>tool_use_id</code>, <code>agent_id</code> fields to <code>can_use_tool</code> callbacks. R passes a plain named list with the same fields. Structurally equivalent.</p>
+<p><strong>Abstract <code>Transport</code> base class</strong>: Python exports this so users can implement custom transports. R only has the internal <code>SubprocessCLITransport</code>. There is only one transport implementation, so an abstract base adds no value for R users.</p>
+<p><strong>Union type aliases</strong> (<code>ContentBlock</code>, <code>Message</code>, <code>ThinkingConfig</code>, etc.): Python exports these for static type checking. R is dynamically typed; these are redundant.</p>
+</div>
+<div class="section level3">
+<h3 id="why-public-api-is-80-not-100">Why Public API is 80% (not 100%)<a class="anchor" aria-label="anchor" href="#why-public-api-is-80-not-100"></a></h3>
 <p>Python’s <code>create_sdk_mcp_server()</code> runs an MCP server <strong>in-process</strong> (same Python event loop). R is single-threaded and synchronous — running an MCP server in the same process while also communicating with the CLI subprocess would require complex <code>later</code>/<code>callr</code> coordination. The <code>mcptools</code> package provides equivalent functionality via a subprocess MCP server, which uses the same protocol and covers 99% of use cases. The only loss is shared-memory access to the main R process.</p>
+<p>The remaining missing exports are type aliases and abstract base classes — see “Type definitions” above.</p>
 </div>
 <div class="section level3">
-<h3 id="why-examples-is-87-not-100">Why Examples is 87% (not 100%)<a class="anchor" aria-label="anchor" href="#why-examples-is-87-not-100"></a></h3>
+<h3 id="why-examples-is-85-not-100">Why Examples is 85% (not 100%)<a class="anchor" aria-label="anchor" href="#why-examples-is-85-not-100"></a></h3>
 <p>Python has <code>streaming_mode_trio.py</code>, <code>streaming_mode_ipython.py</code> (multiple async runtime examples) and <code>plugin_example.py</code>. R has only one concurrency model (<code>coro</code>), so async variant examples are N/A. Plugin support in R is not yet documented.</p>
 </div>
+<div class="section level3">
+<h3 id="known-remaining-gaps">Known remaining gaps<a class="anchor" aria-label="anchor" href="#known-remaining-gaps"></a></h3>
+<ul><li>
+<code>rewind_files()</code> / <code>stop_task()</code> — fire-and-forget control messages, no integration test</li>
+<li>
+<code>ForkSessionResult</code> S3 class — <code><a href="reference/fork_session.html">fork_session()</a></code> returns plain <code>list(session_id = ...)</code> instead of typed object</li>
+<li>SDK-managed MCP servers (Python’s <code>create_sdk_mcp_server</code>) — R uses <code>mcptools</code> subprocess instead</li>
+<li>Large MCP output handling (<code>CLAUDE_MCP_OUTPUT_MAX_TOKENS</code>) — not implemented</li>
+<li>Plugin support — examples exist but no integration test</li>
+<li>
+<code>ToolPermissionContext</code> S3 class — plain list passed to <code>can_use_tool</code> callbacks instead of typed object</li>
+</ul></div>
 </div>
 <div class="section level2">
 <h2 id="shiny-integration-patterns">Shiny integration patterns<a class="anchor" aria-label="anchor" href="#shiny-integration-patterns"></a></h2>
@@ -304,14 +326,6 @@
 <p>完整示例见 <code>examples/14_shinychat_simple.R</code>（非流式）。</p>
 </div>
 </div>
-<div class="section level2">
-<h2 id="known-remaining-gaps">Known remaining gaps<a class="anchor" aria-label="anchor" href="#known-remaining-gaps"></a></h2>
-<ul><li>
-<code>rewind_files()</code> / <code>stop_task()</code> — fire-and-forget control messages, no integration test</li>
-<li>SDK-managed MCP servers (Python’s <code>create_sdk_mcp_server</code>) — R uses <code>mcptools</code> subprocess instead</li>
-<li>Large MCP output handling (<code>CLAUDE_MCP_OUTPUT_MAX_TOKENS</code>) — not implemented</li>
-<li>Plugin support — examples exist but no integration test</li>
-</ul></div>
 </div>
 
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

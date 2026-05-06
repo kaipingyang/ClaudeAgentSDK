@@ -66,8 +66,9 @@ remaining token budget so it can pace tool use and wrap up before the limit.</p>
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">budget</span> <span class="op">&lt;-</span> <span class="fu">TaskBudget</span><span class="op">(</span>max_tokens <span class="op">=</span> <span class="fl">10000L</span><span class="op">)</span></span></span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error in TaskBudget(max_tokens = 10000L):</span> unused argument (max_tokens = 10000)</span>
 <span class="r-in"><span><span class="va">budget</span><span class="op">$</span><span class="va">max_tokens</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 10000</span>
+<span class="r-err co"><span class="r-pr">#&gt;</span> <span class="error">Error:</span> object 'budget' not found</span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
