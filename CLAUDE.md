@@ -64,7 +64,30 @@ All types are lightweight S3 classes (named lists with `class` attribute). Types
 devtools::test()
 ```
 
-643+ tests. Integration tests require a real Claude Code CLI and skip automatically if not found.
+699+ tests. Integration tests require a real Claude Code CLI and skip automatically if not found.
+
+## Running examples
+
+**Always reinstall before running examples.** `library(ClaudeAgentSDK)` loads the installed package, not the dev source. After any code change, the installed `.rdb` can become stale or corrupt, causing:
+
+```
+lazy-load database '...ClaudeAgentSDK.rdb' is corrupt
+internal error 1 in R_decompress1 with libdeflate
+```
+
+Fix:
+
+```bash
+Rscript -e "remove.packages('ClaudeAgentSDK'); devtools::install('.', quick=TRUE)"
+```
+
+Then run examples with:
+
+```bash
+Rscript examples/03_tools_and_permissions.R
+```
+
+Alternatively, add `devtools::load_all(quiet = TRUE)` at the top of the example script to load dev source directly (avoids reinstall for quick iteration).
 
 ### Test files
 
