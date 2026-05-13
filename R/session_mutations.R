@@ -278,12 +278,20 @@ fork_session <- function(session_id,
     auto_unbox = TRUE
   ))
 
-  # Write new session file
+  # Write new session file (write-to-tmp + rename for exclusive-create safety)
   fork_path <- file.path(project_dir, paste0(forked_session_id, ".jsonl"))
-  tryCatch(
-    writeLines(out_lines, fork_path),
-    error = function(e) stop(paste0("Failed to write fork file: ", conditionMessage(e)), call. = FALSE)
-  )
+  tmp_path  <- paste0(fork_path, ".tmp")
+  tryCatch({
+    writeLines(out_lines, tmp_path)
+    Sys.chmod(tmp_path, "0600")
+    if (!file.rename(tmp_path, fork_path)) {
+      file.remove(tmp_path)
+      stop("rename failed")
+    }
+  }, error = function(e) {
+    if (file.exists(tmp_path)) file.remove(tmp_path)
+    stop(paste0("Failed to write fork file: ", conditionMessage(e)), call. = FALSE)
+  })
 
   ForkSessionResult(session_id = forked_session_id)
 }
@@ -393,14 +401,23 @@ fork_session <- function(session_id,
 }
 
 # Remove dangerous Unicode characters from a tag value.
-# Mirrors Python's _sanitize_unicode() (explicit ranges, no unicodedata dependency).
+# Mirrors Python's _sanitize_unicode(): NFKC normalisation + Cf/Co/Cn category strip.
+# Uses stringi for ICU-backed Unicode support (covers all Unicode versions, not just
+# a fixed codepoint list).
 .sanitize_unicode_tag <- function(value) {
-  pattern <- paste0(
-    "[\u200b-\u200f",   # Zero-width spaces, LTR/RTL marks
-    "\u202a-\u202e",    # Directional formatting characters
-    "\u2066-\u2069",    # Directional isolates
-    "\ufeff",           # Byte-order mark
-    "\ue000-\uf8ff]"    # BMP private-use area
-  )
-  gsub(pattern, "", value, perl = TRUE)
+  if (requireNamespace("stringi", quietly = TRUE)) {
+    value <- stringi::stri_trans_nfkc(value)
+    value <- stringi::stri_replace_all_regex(value, "\\p{Cf}|\\p{Co}|\\p{Cn}", "")
+  } else {
+    # Fallback: strip known-dangerous ranges when stringi unavailable
+    pattern <- paste0(
+      "[\u200b-\u200f",   # Zero-width spaces, LTR/RTL marks
+      "\u202a-\u202e",    # Directional formatting characters
+      "\u2066-\u2069",    # Directional isolates
+      "\ufeff",           # Byte-order mark
+      "\ue000-\uf8ff]"    # BMP private-use area
+    )
+    value <- gsub(pattern, "", value, perl = TRUE)
+  }
+  value
 }

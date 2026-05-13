@@ -311,14 +311,11 @@ ClaudeSDKClient <- R6::R6Class(
     #' @description Change the permission mode at runtime.
     #' @param mode Character. One of `"default"`, `"acceptEdits"`,
     #'   `"bypassPermissions"`, `"plan"`, `"dontAsk"`, `"auto"`.
-    #' @param destination Character. Where to apply the mode change
-    #'   (default `"session"`).
-    set_permission_mode = function(mode, destination = "session") {
+    set_permission_mode = function(mode) {
       private$assert_connected()
       private$send_control_request(list(
-        subtype     = "set_permission_mode",
-        mode        = mode,
-        destination = destination
+        subtype = "set_permission_mode",
+        mode    = mode
       ))
       invisible(self)
     },

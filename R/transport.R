@@ -388,7 +388,16 @@ SubprocessCLITransport <- R6::R6Class(
           }
 
           # Process exited
-          if (!private$proc$is_alive()) break
+          if (!private$proc$is_alive()) {
+            exit_code <- private$proc$get_exit_status()
+            if (!is.null(exit_code) && exit_code != 0L) {
+              stop(claude_process_error(
+                "Claude CLI process exited unexpectedly",
+                exit_code = exit_code
+              ))
+            }
+            break
+          }
         }
         invisible(NULL)
       })()
@@ -726,7 +735,7 @@ SubprocessCLITransport <- R6::R6Class(
         type = "initialize_response",
         sdkVersion = as.character(utils::packageVersion("ClaudeAgentSDK")),
         supportedControlMessages = c(
-          "permission_request", "interrupt", "hook_callback", "mcp_message"
+          "permission_request", "interrupt", "hook_callback"
         )
       )
     },
@@ -750,7 +759,9 @@ SubprocessCLITransport <- R6::R6Class(
             updatedInput = result$updated_input %||% request[["input"]]
           )
           if (!is.null(result$updated_permissions)) {
-            resp[["updatedPermissions"]] <- result$updated_permissions
+            resp[["updatedPermissions"]] <- lapply(
+              result$updated_permissions, .permission_update_to_dict
+            )
           }
           return(resp)
         } else {

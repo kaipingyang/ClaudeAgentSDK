@@ -246,3 +246,36 @@ test_that("fork_session rejects invalid up_to_message_id", {
   sid <- ClaudeAgentSDK:::.generate_uuid_v4()
   expect_error(fork_session(sid, up_to_message_id = "bad"), "Invalid up_to_message_id")
 })
+
+# ---------------------------------------------------------------------------
+# .sanitize_unicode_tag (MISSING-4 fix: stringi NFKC + category strip)
+# ---------------------------------------------------------------------------
+
+test_that(".sanitize_unicode_tag strips Cf category (soft hyphen)", {
+  # U+00AD SOFT HYPHEN is Cf — was not stripped by old range-only implementation
+  dirty <- paste0("hel­lo")
+  clean <- ClaudeAgentSDK:::.sanitize_unicode_tag(dirty)
+  expect_false(grepl("­", clean, fixed = TRUE))
+})
+
+test_that(".sanitize_unicode_tag strips zero-width space (still works after refactor)", {
+  dirty <- paste0("hello", "​", "world")
+  clean <- ClaudeAgentSDK:::.sanitize_unicode_tag(dirty)
+  expect_equal(clean, "helloworld")
+})
+
+test_that(".sanitize_unicode_tag strips BOM (still works after refactor)", {
+  dirty <- paste0("﻿", "tag")
+  clean <- ClaudeAgentSDK:::.sanitize_unicode_tag(dirty)
+  expect_equal(clean, "tag")
+})
+
+test_that(".sanitize_unicode_tag applies NFKC normalisation", {
+  # U+FB01 LATIN SMALL LIGATURE FI -> "fi" after NFKC
+  if (requireNamespace("stringi", quietly = TRUE)) {
+    result <- ClaudeAgentSDK:::.sanitize_unicode_tag("ﬁle")
+    expect_equal(result, "file")
+  } else {
+    skip("stringi not available")
+  }
+})

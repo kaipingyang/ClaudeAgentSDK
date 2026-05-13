@@ -21,12 +21,17 @@ NULL
 # ---------------------------------------------------------------------------
 
 .simple_hash <- function(s) {
-  # Use double arithmetic to avoid R's 32-bit integer overflow in bitwAnd.
-  # Doubles represent all integers up to 2^53 exactly; 2^32 is safe.
+  # Mirrors Python/JS signed 32-bit hash semantics:
+  #   h = (h * 31 + ch) & 0xFFFFFFFF
+  #   if h >= 0x80000000: h -= 0x100000000  (sign-extend)
+  #   result = abs(h)
+  # Use double arithmetic: %% 4294967296 == & 0xFFFFFFFF for non-negative doubles.
   h <- 0
   for (ch in utf8ToInt(s)) {
-    h <- ((h * 32) - h + ch) %% 4294967296  # unsigned 32-bit via modulo
+    h <- (h * 31 + ch) %% 4294967296
   }
+  if (h >= 2147483648) h <- h - 4294967296   # sign-extend to signed 32-bit
+  h <- abs(h)
   if (h == 0) return("0")
   digits <- c(0:9, letters[1:26])
   out <- character(0)

@@ -625,7 +625,7 @@ AgentDefinition <- function(description,
 #' )
 #' hm$matcher
 #' @export
-HookMatcher <- function(matcher, hooks, timeout = NULL) {
+HookMatcher <- function(matcher = NULL, hooks = list(), timeout = NULL) {
   .new_obj(
     list(matcher = matcher, hooks = hooks, timeout = timeout),
     "HookMatcher"
@@ -1291,6 +1291,25 @@ PermissionUpdate <- function(type, rules = NULL, behavior = NULL,
     directories = directories,
     destination = destination
   ), "PermissionUpdate")
+}
+
+# Serialize PermissionUpdate to camelCase wire format (mirrors Python's to_dict()).
+.permission_update_to_dict <- function(pu) {
+  result <- list(type = pu$type)
+  if (!is.null(pu$destination)) result[["destination"]] <- pu$destination
+  if (pu$type %in% c("addRules", "replaceRules", "removeRules")) {
+    if (!is.null(pu$rules)) {
+      result[["rules"]] <- lapply(pu$rules, function(r) {
+        list(toolName = r$tool_name, ruleContent = r$rule_content)
+      })
+    }
+    if (!is.null(pu$behavior)) result[["behavior"]] <- pu$behavior
+  } else if (identical(pu$type, "setMode")) {
+    if (!is.null(pu$mode)) result[["mode"]] <- pu$mode
+  } else if (pu$type %in% c("addDirectories", "removeDirectories")) {
+    if (!is.null(pu$directories)) result[["directories"]] <- pu$directories
+  }
+  result
 }
 
 # ---------------------------------------------------------------------------

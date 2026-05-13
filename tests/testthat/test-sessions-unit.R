@@ -70,6 +70,20 @@ test_that(".simple_hash returns a character string", {
   expect_equal(nchar(result), 1)
 })
 
+test_that(".simple_hash matches Python signed-32-bit semantics for short string", {
+  # Python: simple_hash('/tmp/test') == 'udbo7b'
+  expect_equal(ClaudeAgentSDK:::.simple_hash("/tmp/test"), "udbo7b")
+})
+
+test_that(".simple_hash matches Python for long string (overflow path)", {
+  # Python: simple_hash('a' * 300) == 'rn408w'
+  expect_equal(ClaudeAgentSDK:::.simple_hash(strrep("a", 300L)), "rn408w")
+})
+
+test_that(".simple_hash matches Python for typical project path", {
+  expect_equal(ClaudeAgentSDK:::.simple_hash("hello"), "1n1e4y")
+})
+
 # ---------------------------------------------------------------------------
 # 4. .extract_json_string_field()
 # ---------------------------------------------------------------------------

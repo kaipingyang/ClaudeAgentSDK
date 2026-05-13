@@ -562,3 +562,62 @@ test_that("ContextUsageResponse stores all fields", {
   expect_equal(resp$model, "claude-sonnet-4-6")
   expect_false(resp$isAutoCompactEnabled)
 })
+
+# ---------------------------------------------------------------------------
+# HookMatcher optional params (BUG-5 fix)
+# ---------------------------------------------------------------------------
+
+test_that("HookMatcher allows omitting matcher (defaults to NULL)", {
+  fn <- function(input, id, ctx) list()
+  m  <- HookMatcher(hooks = list(fn))
+  expect_s3_class(m, "HookMatcher")
+  expect_null(m$matcher)
+  expect_length(m$hooks, 1L)
+})
+
+test_that("HookMatcher allows omitting hooks (defaults to empty list)", {
+  m <- HookMatcher(matcher = "Bash")
+  expect_s3_class(m, "HookMatcher")
+  expect_equal(m$hooks, list())
+})
+
+test_that("HookMatcher allows fully empty call", {
+  m <- HookMatcher()
+  expect_s3_class(m, "HookMatcher")
+  expect_null(m$matcher)
+  expect_equal(m$hooks, list())
+})
+
+# ---------------------------------------------------------------------------
+# .permission_update_to_dict (BUG-1 fix)
+# ---------------------------------------------------------------------------
+
+test_that(".permission_update_to_dict serializes addRules to camelCase", {
+  pu <- PermissionUpdate(
+    type     = "addRules",
+    rules    = list(PermissionRuleValue("Bash", "allow")),
+    behavior = "allow"
+  )
+  d <- ClaudeAgentSDK:::.permission_update_to_dict(pu)
+  expect_equal(d[["type"]], "addRules")
+  expect_equal(d[["behavior"]], "allow")
+  expect_equal(d[["rules"]][[1L]][["toolName"]], "Bash")
+  expect_equal(d[["rules"]][[1L]][["ruleContent"]], "allow")
+  expect_null(d[["tool_name"]])
+})
+
+test_that(".permission_update_to_dict serializes setMode", {
+  pu <- PermissionUpdate(type = "setMode", mode = "acceptEdits",
+                          destination = "session")
+  d <- ClaudeAgentSDK:::.permission_update_to_dict(pu)
+  expect_equal(d[["type"]], "setMode")
+  expect_equal(d[["mode"]], "acceptEdits")
+  expect_equal(d[["destination"]], "session")
+  expect_null(d[["rules"]])
+})
+
+test_that(".permission_update_to_dict serializes addDirectories", {
+  pu <- PermissionUpdate(type = "addDirectories", directories = c("/tmp", "/var"))
+  d <- ClaudeAgentSDK:::.permission_update_to_dict(pu)
+  expect_equal(d[["directories"]], c("/tmp", "/var"))
+})
