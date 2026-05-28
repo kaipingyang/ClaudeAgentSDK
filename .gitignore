@@ -23,6 +23,11 @@ build/
 # test
 examples/test_path_to_claude_code.R
 
+# local notes / scratch
+cran-reply.md
+test.txt
+paper/
+
 # Local secrets — never commit
 .Renviron
 
