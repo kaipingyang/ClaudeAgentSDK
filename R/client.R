@@ -266,7 +266,27 @@ ClaudeSDKClient <- R6::R6Class(
     #'   `PermissionRequestMessage`.
     #' @param updated_input List or NULL. Modified tool input (default:
     #'   use original input).
-    approve_tool = function(request_id, updated_input = NULL) {
+    #' @param updated_permissions List of `PermissionUpdate` or NULL.
+    #'   Permission rule changes to persist into project/user settings.
+    #'   Each entry is serialized to camelCase wire format before sending.
+    #'   The CLI writes these rules to settings after processing the response,
+    #'   making them permanent for future tool calls.
+    #' @examples
+    #' \dontrun{
+    #' # Allow once (no rule written)
+    #' client$approve_tool(rid)
+    #'
+    #' # Allow and persist rule to project settings
+    #' client$approve_tool(rid, updated_permissions = list(
+    #'   PermissionUpdate("addRules",
+    #'     rules    = list(PermissionRuleValue("Bash", "allow")),
+    #'     behavior = "allow",
+    #'     destination = "projectSettings"
+    #'   )
+    #' ))
+    #' }
+    approve_tool = function(request_id, updated_input = NULL,
+                             updated_permissions = NULL) {
       private$assert_connected()
       pending <- private$transport$get_pending_permission(request_id)
       if (is.null(pending)) {
@@ -276,6 +296,11 @@ ClaudeSDKClient <- R6::R6Class(
         behavior     = "allow",
         updatedInput = updated_input %||% pending[["input"]]
       )
+      if (!is.null(updated_permissions)) {
+        response[["updatedPermissions"]] <- lapply(
+          updated_permissions, .permission_update_to_dict
+        )
+      }
       private$transport$resolve_pending_permission(request_id, response)
       invisible(self)
     },
@@ -284,16 +309,18 @@ ClaudeSDKClient <- R6::R6Class(
     #' @param request_id Character. The `request_id` from the
     #'   `PermissionRequestMessage`.
     #' @param message Character. Reason for denial (default `"Denied by user"`).
-    deny_tool = function(request_id, message = "Denied by user") {
+    #' @param interrupt Logical. If `TRUE`, ask the CLI to interrupt the
+    #'   running task entirely after denying (default `FALSE`).
+    deny_tool = function(request_id, message = "Denied by user",
+                          interrupt = FALSE) {
       private$assert_connected()
       pending <- private$transport$get_pending_permission(request_id)
       if (is.null(pending)) {
         stop("No pending permission request with id: ", request_id, call. = FALSE)
       }
-      private$transport$resolve_pending_permission(
-        request_id,
-        list(behavior = "deny", message = message)
-      )
+      resp <- list(behavior = "deny", message = message)
+      if (isTRUE(interrupt)) resp[["interrupt"]] <- TRUE
+      private$transport$resolve_pending_permission(request_id, resp)
       invisible(self)
     },
 

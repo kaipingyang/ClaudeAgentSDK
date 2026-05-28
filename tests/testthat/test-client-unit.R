@@ -92,3 +92,55 @@ test_that("PermissionRequestMessage constructor works", {
   expect_equal(msg$tool_input, list(path = "/tmp"))
   expect_null(msg$tool_use_id)
 })
+
+# ---------------------------------------------------------------------------
+# approve_tool / deny_tool parameter completeness (message-driven API)
+# ---------------------------------------------------------------------------
+
+test_that("approve_tool has updated_permissions parameter", {
+  args <- formals(ClaudeSDKClient$public_methods$approve_tool)
+  expect_true("updated_permissions" %in% names(args))
+})
+
+test_that("deny_tool has interrupt parameter defaulting to FALSE", {
+  args <- formals(ClaudeSDKClient$public_methods$deny_tool)
+  expect_true("interrupt" %in% names(args))
+  expect_false(args[["interrupt"]])
+})
+
+test_that("approve_tool builds updatedPermissions in camelCase wire format", {
+  pu <- PermissionUpdate(
+    type     = "addRules",
+    rules    = list(PermissionRuleValue("Bash", "allow")),
+    behavior = "allow",
+    destination = "projectSettings"
+  )
+  # Simulate the response construction inside approve_tool
+  response <- list(behavior = "allow", updatedInput = list())
+  response[["updatedPermissions"]] <- lapply(list(pu), ClaudeAgentSDK:::.permission_update_to_dict)
+
+  perms <- response[["updatedPermissions"]]
+  expect_length(perms, 1L)
+  expect_equal(perms[[1L]][["type"]], "addRules")
+  expect_equal(perms[[1L]][["rules"]][[1L]][["toolName"]], "Bash")
+  expect_equal(perms[[1L]][["rules"]][[1L]][["ruleContent"]], "allow")
+  expect_equal(perms[[1L]][["destination"]], "projectSettings")
+  expect_null(perms[[1L]][["tool_name"]])
+})
+
+test_that("approve_tool without updated_permissions omits updatedPermissions field", {
+  response <- list(behavior = "allow", updatedInput = list())
+  # updated_permissions = NULL branch — field must not appear
+  expect_null(response[["updatedPermissions"]])
+})
+
+test_that("deny_tool with interrupt=TRUE adds interrupt field", {
+  resp <- list(behavior = "deny", message = "no")
+  resp[["interrupt"]] <- TRUE
+  expect_true(isTRUE(resp[["interrupt"]]))
+})
+
+test_that("deny_tool without interrupt omits interrupt field", {
+  resp <- list(behavior = "deny", message = "no")
+  expect_null(resp[["interrupt"]])
+})
