@@ -34,3 +34,4 @@ paper/
 # Python SDK reference copy (not part of this R package)
 claude-agent-sdk-python/
 docs/
+.codegraph/

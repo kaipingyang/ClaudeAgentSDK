@@ -1,5 +1,39 @@
 # Changelog
 
+# ClaudeAgentSDK 0.2.1 (2026-07-05)
+
+Parity upgrade against the official Python `claude-agent-sdk` v0.2.110. All
+changes are additive (no breaking changes).
+
+### New Features
+
+- **Server-side tool blocks**: parse `server_tool_use` and `advisor_tool_result`
+  content blocks into new `ServerToolUseBlock()` / `ServerToolResultBlock()`
+  types (used by `web_search`, `web_fetch`, `advisor`, etc.). Added the
+  `SERVER_TOOL_NAMES` constant.
+- **`TaskUpdatedMessage`**: parse `system`/`task_updated` events, exposing
+  `task_id`, `patch`, and `status` (from `patch$status`). Terminal task
+  completion sometimes arrives only via `task_updated` (no `task_notification`).
+  Added `TASK_UPDATED_STATUSES` / `TERMINAL_TASK_STATUSES` constants.
+- **`HookEventMessage`**: parse `hook_started` / `hook_response` system messages
+  (emitted when the new `include_hook_events` option is `TRUE`).
+- **`DeferredToolUse`** type plus `ResultMessage$deferred_tool_use` and
+  `ResultMessage$api_error_status` fields.
+- **New `ClaudeAgentOptions`**: `strict_mcp_config` (`--strict-mcp-config`),
+  `skills` (injects `Skill` / `Skill(name)` into allowed tools and defaults
+  setting sources), and `include_hook_events` (`--include-hook-events`).
+- **Thinking display**: `ThinkingConfigAdaptive()` / `ThinkingConfigEnabled()`
+  gain a `display` argument (`"summarized"` / `"omitted"`), emitted as
+  `--thinking-display` (relevant for Opus 4.7+, which defaults to signature-only).
+- **Sandbox network config**: `SandboxNetworkConfig()` gains `allowed_domains`,
+  `denied_domains`, `allow_managed_domains_only`, and `allow_mach_lookup`.
+- **Permission UI context**: `ToolPermissionContext()` and
+  `PermissionRequestMessage()` gain `blocked_path`, `decision_reason`, `title`,
+  `display_name`, and `description` (populated from the incoming request).
+- **`PostToolUseHookSpecificOutput()`** gains `updated_tool_output` (rewrite a
+  regular tool's output, alongside the existing `updated_mcp_tool_output`).
+- Added `RATE_LIMIT_STATUSES` / `RATE_LIMIT_TYPES` constants.
+
 # ClaudeAgentSDK 0.2.0 (2026-04-12)
 
 ### Breaking Changes

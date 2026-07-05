@@ -8,7 +8,12 @@ ToolPermissionContext(
   suggestions = list(),
   tool_use_id = NULL,
   agent_id = NULL,
-  signal = NULL
+  signal = NULL,
+  blocked_path = NULL,
+  decision_reason = NULL,
+  title = NULL,
+  display_name = NULL,
+  description = NULL
 )
 }
 \arguments{
@@ -19,6 +24,21 @@ ToolPermissionContext(
 \item{agent_id}{Character or NULL. Sub-agent ID if running in an agent.}
 
 \item{signal}{NULL (reserved for future abort-signal support).}
+
+\item{blocked_path}{Character or NULL. File path that triggered the
+permission request, if applicable.}
+
+\item{decision_reason}{Character or NULL. Explains why this permission
+request was triggered (e.g. a PreToolUse hook's \code{permissionDecisionReason}).}
+
+\item{title}{Character or NULL. Full permission prompt sentence (e.g.
+"Claude wants to read foo.txt"). Prefer this as primary prompt text.}
+
+\item{display_name}{Character or NULL. Short noun phrase for the tool action
+(e.g. "Read file"), suitable for button labels.}
+
+\item{description}{Character or NULL. Human-readable subtitle for the
+permission UI.}
 }
 \value{
 Object of class \code{ToolPermissionContext}.

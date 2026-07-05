@@ -6,13 +6,16 @@
 \usage{
 PostToolUseHookSpecificOutput(
   additional_context = NULL,
+  updated_tool_output = NULL,
   updated_mcp_tool_output = NULL
 )
 }
 \arguments{
 \item{additional_context}{Character or NULL.}
 
-\item{updated_mcp_tool_output}{Any or NULL.}
+\item{updated_tool_output}{Any or NULL. Rewritten output for a regular tool.}
+
+\item{updated_mcp_tool_output}{Any or NULL. Rewritten output for an MCP tool.}
 }
 \value{
 Object of class \code{PostToolUseHookSpecificOutput}.

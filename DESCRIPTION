@@ -1,6 +1,6 @@
 Package: ClaudeAgentSDK
 Title: R SDK for Claude Code Agent
-Version: 0.2.0
+Version: 0.2.1
 Authors@R: person("Kaiping", "Yang", role = c("aut", "cre"),
                   email = "1260146556@qq.com")
 Description: Provides an R interface to the 'Claude Code' command-line tool,
@@ -31,6 +31,7 @@ Suggests:
     testthat (>= 3.0.0),
     withr,
     knitr,
-    rmarkdown
+    rmarkdown,
+    stringi
 SystemRequirements: Claude Code CLI (>= 2.0.0)
 Config/testthat/edition: 3

@@ -4,7 +4,7 @@
 \alias{HookMatcher}
 \title{Create a HookMatcher}
 \usage{
-HookMatcher(matcher, hooks, timeout = NULL)
+HookMatcher(matcher = NULL, hooks = list(), timeout = NULL)
 }
 \arguments{
 \item{matcher}{Character or NULL. Tool name or pattern to match

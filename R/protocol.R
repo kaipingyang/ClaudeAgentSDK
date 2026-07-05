@@ -36,6 +36,23 @@ parse_message <- function(line) {
     claude_message_parse_error("Message missing 'type' field", obj)
   }
 
+  # Hook events (emitted when include_hook_events is enabled) arrive as
+  # system messages with subtype "hook_started" or "hook_response". Route them
+  # to HookEventMessage before the generic system handling below.
+  if (identical(msg_type, "system") &&
+      (identical(obj[["subtype"]], "hook_started") ||
+       identical(obj[["subtype"]], "hook_response"))) {
+    hook_event_name <- obj[["hook_event"]] %||% obj[["hook_name"]] %||%
+      obj[["hook_event_name"]] %||% ""
+    return(HookEventMessage(
+      subtype         = obj[["subtype"]],
+      hook_event_name = hook_event_name,
+      data            = obj,
+      session_id      = obj[["session_id"]],
+      uuid            = obj[["uuid"]]
+    ))
+  }
+
   switch(msg_type,
     "user"             = .parse_user_message(obj),
     "assistant"        = .parse_assistant_message(obj),
@@ -69,6 +86,15 @@ parse_message <- function(line) {
         blk[["tool_use_id"]],
         blk[["content"]],
         blk[["is_error"]]
+      ),
+      "server_tool_use"     = ServerToolUseBlock(
+        blk[["id"]],
+        blk[["name"]],
+        blk[["input"]]
+      ),
+      "advisor_tool_result" = ServerToolResultBlock(
+        blk[["tool_use_id"]],
+        blk[["content"]]
       ),
       blk  # unknown block type → pass through raw
     )
@@ -156,12 +182,35 @@ parse_message <- function(line) {
       tool_use_id = obj[["tool_use_id"]],
       usage       = obj[["usage"]]
     ),
+    "task_updated" = {
+      # Terminal completion sometimes arrives only as a task_updated patch
+      # (no separate task_notification). Parse defensively: the patch may omit
+      # uuid/session_id/status, and parsing must never raise on a lifecycle
+      # event.
+      patch <- obj[["patch"]]
+      if (!is.list(patch)) patch <- list()
+      TaskUpdatedMessage(
+        subtype    = subtype,
+        data       = obj,
+        task_id    = obj[["task_id"]] %||% "",
+        patch      = patch,
+        status     = patch[["status"]],
+        session_id = obj[["session_id"]],
+        uuid       = obj[["uuid"]]
+      )
+    },
     # default
     SystemMessage(subtype = subtype, data = obj)
   )
 }
 
 .parse_result_message <- function(obj) {
+  deferred <- obj[["deferred_tool_use"]]
+  deferred_tool_use <- if (is.list(deferred) && !is.null(deferred[["id"]])) {
+    DeferredToolUse(deferred[["id"]], deferred[["name"]], deferred[["input"]])
+  } else {
+    NULL
+  }
   ResultMessage(
     subtype            = obj[["subtype"]],
     duration_ms        = obj[["duration_ms"]],
@@ -176,7 +225,9 @@ parse_message <- function(line) {
     structured_output  = obj[["structured_output"]],
     model_usage        = obj[["modelUsage"]],
     permission_denials = obj[["permission_denials"]],
+    deferred_tool_use  = deferred_tool_use,
     errors             = obj[["errors"]],
+    api_error_status   = obj[["api_error_status"]],
     uuid               = obj[["uuid"]]
   )
 }

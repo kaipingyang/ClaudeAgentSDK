@@ -42,7 +42,10 @@ ClaudeAgentOptions(
   effort = NULL,
   output_format = NULL,
   enable_file_checkpointing = FALSE,
-  task_budget = NULL
+  task_budget = NULL,
+  strict_mcp_config = FALSE,
+  skills = NULL,
+  include_hook_events = FALSE
 )
 }
 \arguments{
@@ -151,6 +154,19 @@ support.}
 
 \item{task_budget}{Named list or NULL. API-side task budget, e.g.
 \code{list(total = 10000L)}.}
+
+\item{strict_mcp_config}{Logical. When \code{TRUE}, only use MCP servers passed via
+\code{mcp_servers}, ignoring other MCP config the CLI would otherwise load
+(project \code{.mcp.json}, user/global settings, plugin-provided servers). Maps
+to the CLI's \code{--strict-mcp-config} flag.}
+
+\item{skills}{Character vector or \code{"all"} or NULL. Skill allowlist to send via
+the initialize request; configures everything needed (including allowing the
+\code{Skill} tool).}
+
+\item{include_hook_events}{Logical. When \code{TRUE}, the CLI emits hook lifecycle
+events (\code{hook_started}/\code{hook_response}) into the message stream as
+\code{HookEventMessage} objects. Maps to \code{--include-hook-events}.}
 }
 \value{
 Object of class \code{ClaudeAgentOptions}.

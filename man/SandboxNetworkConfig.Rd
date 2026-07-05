@@ -5,19 +5,35 @@
 \title{Create a SandboxNetworkConfig}
 \usage{
 SandboxNetworkConfig(
+  allowed_domains = NULL,
+  denied_domains = NULL,
+  allow_managed_domains_only = NULL,
   allow_unix_sockets = NULL,
   allow_all_unix_sockets = NULL,
   allow_local_binding = NULL,
+  allow_mach_lookup = NULL,
   http_proxy_port = NULL,
   socks_proxy_port = NULL
 )
 }
 \arguments{
+\item{allowed_domains}{Character vector or NULL. Domains sandboxed processes
+can access.}
+
+\item{denied_domains}{Character vector or NULL. Domains always blocked, even
+if matched by \code{allowed_domains}.}
+
+\item{allow_managed_domains_only}{Logical or NULL. When \code{TRUE} in managed
+settings, only managed-settings \code{allowed_domains} are respected.}
+
 \item{allow_unix_sockets}{Character vector or NULL.}
 
 \item{allow_all_unix_sockets}{Logical or NULL.}
 
 \item{allow_local_binding}{Logical or NULL.}
+
+\item{allow_mach_lookup}{Character vector or NULL. macOS only: XPC/Mach
+service names to allow (supports trailing wildcard).}
 
 \item{http_proxy_port}{Integer or NULL.}
 

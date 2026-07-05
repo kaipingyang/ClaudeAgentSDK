@@ -10,7 +10,12 @@ PermissionRequestMessage(
   tool_input,
   tool_use_id = NULL,
   agent_id = NULL,
-  suggestions = NULL
+  suggestions = NULL,
+  blocked_path = NULL,
+  decision_reason = NULL,
+  title = NULL,
+  display_name = NULL,
+  description = NULL
 )
 }
 \arguments{
@@ -25,6 +30,16 @@ PermissionRequestMessage(
 \item{agent_id}{Character or NULL.}
 
 \item{suggestions}{List or NULL. Permission suggestions from the CLI.}
+
+\item{blocked_path}{Character or NULL. File path that triggered the request.}
+
+\item{decision_reason}{Character or NULL. Why the request was triggered.}
+
+\item{title}{Character or NULL. Full permission prompt sentence.}
+
+\item{display_name}{Character or NULL. Short noun phrase for the action.}
+
+\item{description}{Character or NULL. Subtitle for the permission UI.}
 }
 \value{
 Object of class \code{PermissionRequestMessage}.

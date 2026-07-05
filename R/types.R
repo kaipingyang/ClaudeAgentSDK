@@ -70,6 +70,61 @@ ToolResultBlock <- function(tool_use_id, content = NULL, is_error = NULL) {
   )
 }
 
+#' Valid server-side tool names (`ServerToolName`)
+#'
+#' The set of tools the API executes server-side on the model's behalf. Branch
+#' on `ServerToolUseBlock$name` to know which server tool was invoked.
+#' @export
+SERVER_TOOL_NAMES <- c(
+  "advisor",
+  "web_search",
+  "web_fetch",
+  "code_execution",
+  "bash_code_execution",
+  "text_editor_code_execution",
+  "tool_search_tool_regex",
+  "tool_search_tool_bm25"
+)
+
+#' Create a ServerToolUseBlock
+#'
+#' Server-side tool use block (e.g. advisor, web_search, web_fetch). These are
+#' tools the API executes server-side on the model's behalf, so they appear in
+#' the message stream alongside regular `tool_use` blocks but the caller never
+#' needs to return a result. `name` is a discriminator — branch on it to know
+#' which server tool was invoked.
+#' @param id Character. Tool use ID.
+#' @param name Character. Server tool name (one of `SERVER_TOOL_NAMES`).
+#' @param input List. Tool input parameters.
+#' @return Object of class `ServerToolUseBlock`.
+#' @examples
+#' blk <- ServerToolUseBlock("srv1", "web_search", list(query = "R language"))
+#' blk$name
+#' @export
+ServerToolUseBlock <- function(id, name, input) {
+  .new_obj(list(id = id, name = name, input = input), "ServerToolUseBlock")
+}
+
+#' Create a ServerToolResultBlock
+#'
+#' Result block returned for a server-side tool call. Mirrors `ToolResultBlock`'s
+#' shape. `content` is the raw list from the API, opaque to this layer — callers
+#' that care about a specific server tool's result schema can inspect
+#' `content$type`.
+#' @param tool_use_id Character. ID of the corresponding server tool use.
+#' @param content List. Raw result content from the API.
+#' @return Object of class `ServerToolResultBlock`.
+#' @examples
+#' blk <- ServerToolResultBlock("srv1", list(type = "web_search_result"))
+#' blk$tool_use_id
+#' @export
+ServerToolResultBlock <- function(tool_use_id, content) {
+  .new_obj(
+    list(tool_use_id = tool_use_id, content = content),
+    "ServerToolResultBlock"
+  )
+}
+
 # ---------------------------------------------------------------------------
 # Message types
 # ---------------------------------------------------------------------------
@@ -271,6 +326,109 @@ TaskNotificationMessage <- function(subtype, data, task_id, status,
   )
 }
 
+#' Possible status values reported inside a `task_updated` patch
+#'
+#' A task moves through these states; `completed` and `failed`/`killed` are
+#' terminal. Note `task_updated` reports the raw `killed` status.
+#' @export
+TASK_UPDATED_STATUSES <- c(
+  "pending", "running", "paused", "completed", "failed", "killed"
+)
+
+#' Terminal task statuses (a task in one of these will not transition further)
+#' @export
+TERMINAL_TASK_STATUSES <- c("completed", "failed", "killed")
+
+#' Create a TaskUpdatedMessage
+#'
+#' System message emitted as `system`/`task_updated` while a task moves through
+#' its lifecycle. Terminal completion sometimes arrives *only* as a
+#' `task_updated` patch (with no accompanying `TaskNotificationMessage`), so this
+#' is surfaced as a typed lifecycle message. Parsed defensively: the patch may
+#' omit `uuid`/`session_id`/`status`.
+#' @param subtype Character. Always `"task_updated"`.
+#' @param data List. The raw message payload.
+#' @param task_id Character. Task ID (may be empty string if absent).
+#' @param patch List. The full patch dict from the CLI.
+#' @param status Character or NULL. Task status, taken from `patch$status`.
+#' @param session_id Character or NULL.
+#' @param uuid Character or NULL.
+#' @return Object of class `TaskUpdatedMessage` (subclass of `SystemMessage`).
+#' @examples
+#' msg <- TaskUpdatedMessage(
+#'   subtype = "task_updated", data = list(),
+#'   task_id = "t1", patch = list(status = "completed"),
+#'   status = "completed", session_id = "s1", uuid = "u1"
+#' )
+#' msg$status
+#' @export
+TaskUpdatedMessage <- function(subtype, data, task_id, patch,
+                               status = NULL, session_id = NULL, uuid = NULL) {
+  .new_obj(
+    list(
+      subtype    = subtype,
+      data       = data,
+      task_id    = task_id,
+      patch      = patch,
+      status     = status,
+      session_id = session_id,
+      uuid       = uuid
+    ),
+    c("TaskUpdatedMessage", "SystemMessage")
+  )
+}
+
+#' Create a HookEventMessage
+#'
+#' Hook event emitted by the CLI when `include_hook_events` is enabled. The CLI
+#' emits hook lifecycle events (PreToolUse, PostToolUse, Stop, etc.) into the
+#' message stream as `{"type":"system","subtype":"hook_started"|"hook_response",
+#' "hook_event":"PreToolUse", ...}`.
+#' @param subtype Character. `"hook_started"` or `"hook_response"`.
+#' @param hook_event_name Character. The hook event name (e.g. `"PreToolUse"`).
+#' @param data List. The raw message payload.
+#' @param session_id Character or NULL.
+#' @param uuid Character or NULL.
+#' @return Object of class `HookEventMessage` (subclass of `SystemMessage`).
+#' @examples
+#' msg <- HookEventMessage(
+#'   subtype = "hook_started", hook_event_name = "PreToolUse",
+#'   data = list(), session_id = "s1", uuid = "u1"
+#' )
+#' msg$hook_event_name
+#' @export
+HookEventMessage <- function(subtype, hook_event_name, data,
+                             session_id = NULL, uuid = NULL) {
+  .new_obj(
+    list(
+      subtype         = subtype,
+      hook_event_name = hook_event_name,
+      data            = data,
+      session_id      = session_id,
+      uuid            = uuid
+    ),
+    c("HookEventMessage", "SystemMessage")
+  )
+}
+
+#' Create a DeferredToolUse
+#'
+#' Tool use that was deferred by a PreToolUse hook returning `"defer"`. When a
+#' PreToolUse hook returns `permissionDecision: "defer"`, the run stops and the
+#' result message carries the deferred tool call here so the caller can inspect
+#' it and decide whether to resume.
+#' @param id Character. Tool use ID.
+#' @param name Character. Tool name.
+#' @param input List. Tool input parameters.
+#' @return Object of class `DeferredToolUse`.
+#' @examples
+#' d <- DeferredToolUse("tool1", "Bash", list(command = "ls"))
+#' d$name
+#' @export
+DeferredToolUse <- function(id, name, input) {
+  .new_obj(list(id = id, name = name, input = input), "DeferredToolUse")
+}
+
 #' Create a ResultMessage
 #' @param subtype Character.
 #' @param duration_ms Integer.
@@ -285,7 +443,12 @@ TaskNotificationMessage <- function(subtype, data, task_id, status,
 #' @param structured_output Any or NULL.
 #' @param model_usage List or NULL.
 #' @param permission_denials List or NULL.
+#' @param deferred_tool_use `DeferredToolUse` or NULL. Present when a PreToolUse
+#'   hook deferred a tool call.
 #' @param errors List or NULL.
+#' @param api_error_status Integer or NULL. HTTP status code (e.g. 429, 500, 529)
+#'   of the failing API call when `is_error` is `TRUE` and `subtype` is
+#'   `"success"`; `NULL` otherwise.
 #' @param uuid Character or NULL.
 #' @return Object of class `ResultMessage`.
 #' @examples
@@ -308,7 +471,9 @@ ResultMessage <- function(subtype, duration_ms, duration_api_ms,
                           structured_output   = NULL,
                           model_usage         = NULL,
                           permission_denials  = NULL,
+                          deferred_tool_use   = NULL,
                           errors              = NULL,
+                          api_error_status    = NULL,
                           uuid                = NULL) {
   .new_obj(
     list(
@@ -325,7 +490,9 @@ ResultMessage <- function(subtype, duration_ms, duration_api_ms,
       structured_output  = structured_output,
       model_usage        = model_usage,
       permission_denials = permission_denials,
+      deferred_tool_use  = deferred_tool_use,
       errors             = errors,
+      api_error_status   = api_error_status,
       uuid               = uuid
     ),
     "ResultMessage"
@@ -353,6 +520,20 @@ StreamEvent <- function(uuid, session_id, event, parent_tool_use_id = NULL) {
     "StreamEvent"
   )
 }
+
+#' Valid rate-limit status values (`RateLimitStatus`)
+#'
+#' `"allowed_warning"` means approaching the limit; `"rejected"` means hit.
+#' @export
+RATE_LIMIT_STATUSES <- c("allowed", "allowed_warning", "rejected")
+
+#' Valid rate-limit type values (`RateLimitType`)
+#'
+#' Which rate-limit window applies.
+#' @export
+RATE_LIMIT_TYPES <- c(
+  "five_hour", "seven_day", "seven_day_opus", "seven_day_sonnet", "overage"
+)
 
 #' Create a RateLimitInfo
 #' @param status Character. `"allowed"`, `"allowed_warning"`, or `"rejected"`.
@@ -471,6 +652,11 @@ PermissionResultDeny <- function(message = "", interrupt = FALSE) {
 #' @param tool_use_id Character or NULL.
 #' @param agent_id Character or NULL.
 #' @param suggestions List or NULL. Permission suggestions from the CLI.
+#' @param blocked_path Character or NULL. File path that triggered the request.
+#' @param decision_reason Character or NULL. Why the request was triggered.
+#' @param title Character or NULL. Full permission prompt sentence.
+#' @param display_name Character or NULL. Short noun phrase for the action.
+#' @param description Character or NULL. Subtitle for the permission UI.
 #' @return Object of class `PermissionRequestMessage`.
 #' @examples
 #' msg <- PermissionRequestMessage(
@@ -483,17 +669,27 @@ PermissionResultDeny <- function(message = "", interrupt = FALSE) {
 PermissionRequestMessage <- function(request_id,
                                      tool_name,
                                      tool_input,
-                                     tool_use_id = NULL,
-                                     agent_id    = NULL,
-                                     suggestions = NULL) {
+                                     tool_use_id     = NULL,
+                                     agent_id        = NULL,
+                                     suggestions     = NULL,
+                                     blocked_path    = NULL,
+                                     decision_reason = NULL,
+                                     title           = NULL,
+                                     display_name    = NULL,
+                                     description     = NULL) {
   .new_obj(
     list(
-      request_id  = request_id,
-      tool_name   = tool_name,
-      tool_input  = tool_input,
-      tool_use_id = tool_use_id,
-      agent_id    = agent_id,
-      suggestions = suggestions
+      request_id      = request_id,
+      tool_name       = tool_name,
+      tool_input      = tool_input,
+      tool_use_id     = tool_use_id,
+      agent_id        = agent_id,
+      suggestions     = suggestions,
+      blocked_path    = blocked_path,
+      decision_reason = decision_reason,
+      title           = title,
+      display_name    = display_name,
+      description     = description
     ),
     "PermissionRequestMessage"
   )
@@ -705,25 +901,36 @@ McpStatusResponse <- function(mcp_servers) {
 # ---------------------------------------------------------------------------
 
 #' Create a ThinkingConfigAdaptive
+#' @param display Character or NULL. `"summarized"` or `"omitted"`. Controls
+#'   whether thinking text is returned summarized or omitted (signature-only).
+#'   Opus 4.7+ defaults to `"omitted"`; pass `"summarized"` to receive text.
 #' @return Object of class `ThinkingConfigAdaptive`.
 #' @examples
 #' cfg <- ThinkingConfigAdaptive()
 #' cfg$type  # "adaptive"
 #' @export
-ThinkingConfigAdaptive <- function() {
-  .new_obj(list(type = "adaptive"), "ThinkingConfigAdaptive")
+ThinkingConfigAdaptive <- function(display = NULL) {
+  .new_obj(
+    Filter(Negate(is.null), list(type = "adaptive", display = display)),
+    "ThinkingConfigAdaptive"
+  )
 }
 
 #' Create a ThinkingConfigEnabled
 #' @param budget_tokens Integer. Token budget for thinking.
+#' @param display Character or NULL. `"summarized"` or `"omitted"`. See
+#'   [ThinkingConfigAdaptive()].
 #' @return Object of class `ThinkingConfigEnabled`.
 #' @examples
 #' cfg <- ThinkingConfigEnabled(budget_tokens = 5000L)
 #' cfg$budget_tokens
 #' @export
-ThinkingConfigEnabled <- function(budget_tokens) {
-  .new_obj(list(type = "enabled", budget_tokens = budget_tokens),
-           "ThinkingConfigEnabled")
+ThinkingConfigEnabled <- function(budget_tokens, display = NULL) {
+  .new_obj(
+    Filter(Negate(is.null),
+           list(type = "enabled", budget_tokens = budget_tokens, display = display)),
+    "ThinkingConfigEnabled"
+  )
 }
 
 #' Create a ThinkingConfigDisabled
@@ -795,7 +1002,28 @@ ContextUsageCategory <- function(name, tokens, color, is_deferred = NULL) {
 
 #' Create a ContextUsageResponse
 #' @param categories List of `ContextUsageCategory`.
-#' @param total_tokens Integer.
+#' @param total_tokens Integer. Total tokens currently in the context window.
+#' @param max_tokens Integer or NULL. Effective maximum tokens (may be reduced by
+#'   the autocompact buffer).
+#' @param raw_max_tokens Integer or NULL. Raw model context window size.
+#' @param percentage Numeric or NULL. Percentage of context window used (0-100).
+#' @param model Character or NULL. Model the usage is calculated for.
+#' @param is_auto_compact_enabled Logical or NULL. Whether autocompact is enabled.
+#' @param memory_files List or NULL. Loaded CLAUDE.md/memory files with token counts.
+#' @param mcp_tools List or NULL. MCP tools with name/serverName/tokens/isLoaded.
+#' @param agents List or NULL. Agent definitions with agentType/source/token counts.
+#' @param grid_rows List or NULL. Visual grid representation used by the CLI.
+#' @param auto_compact_threshold Integer or NULL. Token threshold that triggers
+#'   autocompact.
+#' @param deferred_builtin_tools List or NULL. Built-in tools deferred from the
+#'   initial tool list.
+#' @param system_tools List or NULL. System (built-in) tools with token counts.
+#' @param system_prompt_sections List or NULL. System-prompt sections with token
+#'   counts.
+#' @param slash_commands List or NULL. Slash commands with token counts.
+#' @param skills List or NULL. Skills with token counts.
+#' @param message_breakdown List or NULL. Per-message token breakdown.
+#' @param api_usage List or NULL. Raw API usage figures.
 #' @return Object of class `ContextUsageResponse`.
 #' @examples
 #' cats <- list(ContextUsageCategory("user", 1024L, "#4e79a7"))
@@ -1349,9 +1577,17 @@ SystemPromptFile <- function(path) {
 # ---------------------------------------------------------------------------
 
 #' Create a SandboxNetworkConfig
+#' @param allowed_domains Character vector or NULL. Domains sandboxed processes
+#'   can access.
+#' @param denied_domains Character vector or NULL. Domains always blocked, even
+#'   if matched by `allowed_domains`.
+#' @param allow_managed_domains_only Logical or NULL. When `TRUE` in managed
+#'   settings, only managed-settings `allowed_domains` are respected.
 #' @param allow_unix_sockets Character vector or NULL.
 #' @param allow_all_unix_sockets Logical or NULL.
 #' @param allow_local_binding Logical or NULL.
+#' @param allow_mach_lookup Character vector or NULL. macOS only: XPC/Mach
+#'   service names to allow (supports trailing wildcard).
 #' @param http_proxy_port Integer or NULL.
 #' @param socks_proxy_port Integer or NULL.
 #' @return Object of class `SandboxNetworkConfig`.
@@ -1359,17 +1595,25 @@ SystemPromptFile <- function(path) {
 #' nc <- SandboxNetworkConfig(allow_local_binding = TRUE)
 #' nc$allowLocalBinding
 #' @export
-SandboxNetworkConfig <- function(allow_unix_sockets     = NULL,
-                                  allow_all_unix_sockets = NULL,
-                                  allow_local_binding    = NULL,
-                                  http_proxy_port        = NULL,
-                                  socks_proxy_port       = NULL) {
+SandboxNetworkConfig <- function(allowed_domains            = NULL,
+                                  denied_domains             = NULL,
+                                  allow_managed_domains_only = NULL,
+                                  allow_unix_sockets         = NULL,
+                                  allow_all_unix_sockets     = NULL,
+                                  allow_local_binding        = NULL,
+                                  allow_mach_lookup          = NULL,
+                                  http_proxy_port            = NULL,
+                                  socks_proxy_port           = NULL) {
   .new_obj(list(
-    allowUnixSockets    = allow_unix_sockets,
-    allowAllUnixSockets = allow_all_unix_sockets,
-    allowLocalBinding   = allow_local_binding,
-    httpProxyPort       = http_proxy_port,
-    socksProxyPort      = socks_proxy_port
+    allowedDomains          = allowed_domains,
+    deniedDomains           = denied_domains,
+    allowManagedDomainsOnly = allow_managed_domains_only,
+    allowUnixSockets        = allow_unix_sockets,
+    allowAllUnixSockets     = allow_all_unix_sockets,
+    allowLocalBinding       = allow_local_binding,
+    allowMachLookup         = allow_mach_lookup,
+    httpProxyPort           = http_proxy_port,
+    socksProxyPort          = socks_proxy_port
   ), "SandboxNetworkConfig")
 }
 
@@ -1444,17 +1688,37 @@ ForkSessionResult <- function(session_id) {
 #' @param tool_use_id Character or NULL. Unique ID for this tool call.
 #' @param agent_id Character or NULL. Sub-agent ID if running in an agent.
 #' @param signal NULL (reserved for future abort-signal support).
+#' @param blocked_path Character or NULL. File path that triggered the
+#'   permission request, if applicable.
+#' @param decision_reason Character or NULL. Explains why this permission
+#'   request was triggered (e.g. a PreToolUse hook's `permissionDecisionReason`).
+#' @param title Character or NULL. Full permission prompt sentence (e.g.
+#'   "Claude wants to read foo.txt"). Prefer this as primary prompt text.
+#' @param display_name Character or NULL. Short noun phrase for the tool action
+#'   (e.g. "Read file"), suitable for button labels.
+#' @param description Character or NULL. Human-readable subtitle for the
+#'   permission UI.
 #' @return Object of class `ToolPermissionContext`.
 #' @export
-ToolPermissionContext <- function(suggestions  = list(),
-                                   tool_use_id  = NULL,
-                                   agent_id     = NULL,
-                                   signal       = NULL) {
+ToolPermissionContext <- function(suggestions     = list(),
+                                   tool_use_id     = NULL,
+                                   agent_id        = NULL,
+                                   signal          = NULL,
+                                   blocked_path    = NULL,
+                                   decision_reason = NULL,
+                                   title           = NULL,
+                                   display_name    = NULL,
+                                   description     = NULL) {
   .new_obj(list(
-    signal      = signal,
-    suggestions = suggestions,
-    tool_use_id = tool_use_id,
-    agent_id    = agent_id
+    signal          = signal,
+    suggestions     = suggestions,
+    tool_use_id     = tool_use_id,
+    agent_id        = agent_id,
+    blocked_path    = blocked_path,
+    decision_reason = decision_reason,
+    title           = title,
+    display_name    = display_name,
+    description     = description
   ), "ToolPermissionContext")
 }
 
@@ -1486,14 +1750,17 @@ PreToolUseHookSpecificOutput <- function(permission_decision        = NULL,
 
 #' Hook-specific output for PostToolUse hook
 #' @param additional_context Character or NULL.
-#' @param updated_mcp_tool_output Any or NULL.
+#' @param updated_tool_output Any or NULL. Rewritten output for a regular tool.
+#' @param updated_mcp_tool_output Any or NULL. Rewritten output for an MCP tool.
 #' @return Object of class `PostToolUseHookSpecificOutput`.
 #' @export
 PostToolUseHookSpecificOutput <- function(additional_context      = NULL,
+                                           updated_tool_output     = NULL,
                                            updated_mcp_tool_output = NULL) {
   .new_obj(list(
     hookEventName         = "PostToolUse",
     additionalContext     = additional_context,
+    updatedToolOutput     = updated_tool_output,
     updatedMCPToolOutput  = updated_mcp_tool_output
   ), "PostToolUseHookSpecificOutput")
 }

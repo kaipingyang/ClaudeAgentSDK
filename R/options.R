@@ -73,6 +73,16 @@
 #'   support.
 #' @param task_budget Named list or NULL. API-side task budget, e.g.
 #'   `list(total = 10000L)`.
+#' @param strict_mcp_config Logical. When `TRUE`, only use MCP servers passed via
+#'   `mcp_servers`, ignoring other MCP config the CLI would otherwise load
+#'   (project `.mcp.json`, user/global settings, plugin-provided servers). Maps
+#'   to the CLI's `--strict-mcp-config` flag.
+#' @param skills Character vector or `"all"` or NULL. Skill allowlist to send via
+#'   the initialize request; configures everything needed (including allowing the
+#'   `Skill` tool).
+#' @param include_hook_events Logical. When `TRUE`, the CLI emits hook lifecycle
+#'   events (`hook_started`/`hook_response`) into the message stream as
+#'   `HookEventMessage` objects. Maps to `--include-hook-events`.
 #'
 #' @return Object of class `ClaudeAgentOptions`.
 #' @examples
@@ -132,7 +142,10 @@ ClaudeAgentOptions <- function(
     effort                    = NULL,
     output_format             = NULL,
     enable_file_checkpointing = FALSE,
-    task_budget               = NULL
+    task_budget               = NULL,
+    strict_mcp_config         = FALSE,
+    skills                    = NULL,
+    include_hook_events       = FALSE
 ) {
   structure(
     list(
@@ -173,7 +186,10 @@ ClaudeAgentOptions <- function(
       effort                    = effort,
       output_format             = output_format,
       enable_file_checkpointing = enable_file_checkpointing,
-      task_budget               = task_budget
+      task_budget               = task_budget,
+      strict_mcp_config         = strict_mcp_config,
+      skills                    = skills,
+      include_hook_events       = include_hook_events
     ),
     class = "ClaudeAgentOptions"
   )

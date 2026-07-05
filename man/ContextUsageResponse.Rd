@@ -29,7 +29,45 @@ ContextUsageResponse(
 \arguments{
 \item{categories}{List of \code{ContextUsageCategory}.}
 
-\item{total_tokens}{Integer.}
+\item{total_tokens}{Integer. Total tokens currently in the context window.}
+
+\item{max_tokens}{Integer or NULL. Effective maximum tokens (may be reduced by
+the autocompact buffer).}
+
+\item{raw_max_tokens}{Integer or NULL. Raw model context window size.}
+
+\item{percentage}{Numeric or NULL. Percentage of context window used (0-100).}
+
+\item{model}{Character or NULL. Model the usage is calculated for.}
+
+\item{is_auto_compact_enabled}{Logical or NULL. Whether autocompact is enabled.}
+
+\item{memory_files}{List or NULL. Loaded CLAUDE.md/memory files with token counts.}
+
+\item{mcp_tools}{List or NULL. MCP tools with name/serverName/tokens/isLoaded.}
+
+\item{agents}{List or NULL. Agent definitions with agentType/source/token counts.}
+
+\item{grid_rows}{List or NULL. Visual grid representation used by the CLI.}
+
+\item{auto_compact_threshold}{Integer or NULL. Token threshold that triggers
+autocompact.}
+
+\item{deferred_builtin_tools}{List or NULL. Built-in tools deferred from the
+initial tool list.}
+
+\item{system_tools}{List or NULL. System (built-in) tools with token counts.}
+
+\item{system_prompt_sections}{List or NULL. System-prompt sections with token
+counts.}
+
+\item{slash_commands}{List or NULL. Slash commands with token counts.}
+
+\item{skills}{List or NULL. Skills with token counts.}
+
+\item{message_breakdown}{List or NULL. Per-message token breakdown.}
+
+\item{api_usage}{List or NULL. Raw API usage figures.}
 }
 \value{
 Object of class \code{ContextUsageResponse}.

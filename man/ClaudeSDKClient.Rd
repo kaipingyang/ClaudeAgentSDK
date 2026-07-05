@@ -42,6 +42,24 @@ coro::loop(for (msg in client$receive_response()) {
 
 client$disconnect()
 }
+
+## ------------------------------------------------
+## Method `ClaudeSDKClient$approve_tool`
+## ------------------------------------------------
+
+\dontrun{
+# Allow once (no rule written)
+client$approve_tool(rid)
+
+# Allow and persist rule to project settings
+client$approve_tool(rid, updated_permissions = list(
+  PermissionUpdate("addRules",
+    rules    = list(PermissionRuleValue("Bash", "allow")),
+    behavior = "allow",
+    destination = "projectSettings"
+  )
+))
+}
 }
 \section{Public fields}{
 \if{html}{\out{<div class="r6-fields">}}
@@ -260,7 +278,11 @@ Approve a pending tool request.
 Call this after receiving a \code{PermissionRequestMessage} from the
 message stream to allow the tool to execute.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{ClaudeSDKClient$approve_tool(request_id, updated_input = NULL)}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{ClaudeSDKClient$approve_tool(
+  request_id,
+  updated_input = NULL,
+  updated_permissions = NULL
+)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
@@ -271,9 +293,35 @@ message stream to allow the tool to execute.
 
 \item{\code{updated_input}}{List or NULL. Modified tool input (default:
 use original input).}
+
+\item{\code{updated_permissions}}{List of \code{PermissionUpdate} or NULL.
+Permission rule changes to persist into project/user settings.
+Each entry is serialized to camelCase wire format before sending.
+The CLI writes these rules to settings after processing the response,
+making them permanent for future tool calls.}
 }
 \if{html}{\out{</div>}}
 }
+\subsection{Examples}{
+\if{html}{\out{<div class="r example copy">}}
+\preformatted{\dontrun{
+# Allow once (no rule written)
+client$approve_tool(rid)
+
+# Allow and persist rule to project settings
+client$approve_tool(rid, updated_permissions = list(
+  PermissionUpdate("addRules",
+    rules    = list(PermissionRuleValue("Bash", "allow")),
+    behavior = "allow",
+    destination = "projectSettings"
+  )
+))
+}
+}
+\if{html}{\out{</div>}}
+
+}
+
 }
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-ClaudeSDKClient-deny_tool"></a>}}
@@ -281,7 +329,11 @@ use original input).}
 \subsection{Method \code{deny_tool()}}{
 Deny a pending tool request.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{ClaudeSDKClient$deny_tool(request_id, message = "Denied by user")}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{ClaudeSDKClient$deny_tool(
+  request_id,
+  message = "Denied by user",
+  interrupt = FALSE
+)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
@@ -291,6 +343,9 @@ Deny a pending tool request.
 \code{PermissionRequestMessage}.}
 
 \item{\code{message}}{Character. Reason for denial (default \code{"Denied by user"}).}
+
+\item{\code{interrupt}}{Logical. If \code{TRUE}, ask the CLI to interrupt the
+running task entirely after denying (default \code{FALSE}).}
 }
 \if{html}{\out{</div>}}
 }
@@ -311,7 +366,7 @@ Send an interrupt control request.
 \subsection{Method \code{set_permission_mode()}}{
 Change the permission mode at runtime.
 \subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{ClaudeSDKClient$set_permission_mode(mode, destination = "session")}\if{html}{\out{</div>}}
+\if{html}{\out{<div class="r">}}\preformatted{ClaudeSDKClient$set_permission_mode(mode)}\if{html}{\out{</div>}}
 }
 
 \subsection{Arguments}{
@@ -319,9 +374,6 @@ Change the permission mode at runtime.
 \describe{
 \item{\code{mode}}{Character. One of \code{"default"}, \code{"acceptEdits"},
 \code{"bypassPermissions"}, \code{"plan"}, \code{"dontAsk"}, \code{"auto"}.}
-
-\item{\code{destination}}{Character. Where to apply the mode change
-(default \code{"session"}).}
 }
 \if{html}{\out{</div>}}
 }

@@ -18,7 +18,9 @@ ResultMessage(
   structured_output = NULL,
   model_usage = NULL,
   permission_denials = NULL,
+  deferred_tool_use = NULL,
   errors = NULL,
+  api_error_status = NULL,
   uuid = NULL
 )
 }
@@ -49,7 +51,14 @@ ResultMessage(
 
 \item{permission_denials}{List or NULL.}
 
+\item{deferred_tool_use}{\code{DeferredToolUse} or NULL. Present when a PreToolUse
+hook deferred a tool call.}
+
 \item{errors}{List or NULL.}
+
+\item{api_error_status}{Integer or NULL. HTTP status code (e.g. 429, 500, 529)
+of the failing API call when \code{is_error} is \code{TRUE} and \code{subtype} is
+\code{"success"}; \code{NULL} otherwise.}
 
 \item{uuid}{Character or NULL.}
 }

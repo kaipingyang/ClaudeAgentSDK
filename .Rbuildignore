@@ -8,6 +8,9 @@
 ^test\.txt$
 ^image.*\.png$
 ^claude-agent-sdk-python$
+^\.codegraph$
+^paper$
+^cran-reply\.md$
 ^\.Renviron$
 ^_pkgdown\.yml$
 ^pkgdown$

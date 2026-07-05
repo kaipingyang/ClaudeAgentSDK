@@ -4,7 +4,12 @@
 \alias{ThinkingConfigAdaptive}
 \title{Create a ThinkingConfigAdaptive}
 \usage{
-ThinkingConfigAdaptive()
+ThinkingConfigAdaptive(display = NULL)
+}
+\arguments{
+\item{display}{Character or NULL. \code{"summarized"} or \code{"omitted"}. Controls
+whether thinking text is returned summarized or omitted (signature-only).
+Opus 4.7+ defaults to \code{"omitted"}; pass \code{"summarized"} to receive text.}
 }
 \value{
 Object of class \code{ThinkingConfigAdaptive}.

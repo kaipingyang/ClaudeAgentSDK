@@ -4,10 +4,13 @@
 \alias{ThinkingConfigEnabled}
 \title{Create a ThinkingConfigEnabled}
 \usage{
-ThinkingConfigEnabled(budget_tokens)
+ThinkingConfigEnabled(budget_tokens, display = NULL)
 }
 \arguments{
 \item{budget_tokens}{Integer. Token budget for thinking.}
+
+\item{display}{Character or NULL. \code{"summarized"} or \code{"omitted"}. See
+\code{\link[=ThinkingConfigAdaptive]{ThinkingConfigAdaptive()}}.}
 }
 \value{
 Object of class \code{ThinkingConfigEnabled}.

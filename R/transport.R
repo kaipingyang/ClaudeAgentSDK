@@ -424,6 +424,24 @@ SubprocessCLITransport <- R6::R6Class(
       opts <- private$options
       args <- c("--output-format", "stream-json", "--verbose")
 
+      # Skills defaults (mirrors Python _apply_skills_defaults): compute
+      # effective allowed_tools + setting_sources from the `skills` option.
+      eff_allowed_tools   <- opts$allowed_tools
+      eff_setting_sources <- opts$setting_sources
+      if (!is.null(opts$skills)) {
+        if (identical(opts$skills, "all")) {
+          if (!("Skill" %in% eff_allowed_tools)) {
+            eff_allowed_tools <- c(eff_allowed_tools, "Skill")
+          }
+        } else {
+          for (.sk in opts$skills) {
+            pat <- paste0("Skill(", .sk, ")")
+            if (!(pat %in% eff_allowed_tools)) eff_allowed_tools <- c(eff_allowed_tools, pat)
+          }
+        }
+        if (is.null(eff_setting_sources)) eff_setting_sources <- c("user", "project")
+      }
+
       # system_prompt
       if (is.null(opts$system_prompt)) {
         args <- c(args, "--system-prompt", "")
@@ -451,7 +469,7 @@ SubprocessCLITransport <- R6::R6Class(
         }
       }
 
-      if (length(opts$allowed_tools))    args <- c(args, "--allowedTools",   paste(opts$allowed_tools,    collapse = ","))
+      if (length(eff_allowed_tools))    args <- c(args, "--allowedTools",   paste(eff_allowed_tools,    collapse = ","))
       if (!is.null(opts$max_turns))      args <- c(args, "--max-turns",      as.character(opts$max_turns))
       if (!is.null(opts$max_budget_usd)) args <- c(args, "--max-budget-usd", as.character(opts$max_budget_usd))
       if (length(opts$disallowed_tools)) args <- c(args, "--disallowedTools", paste(opts$disallowed_tools, collapse = ","))
@@ -498,8 +516,10 @@ SubprocessCLITransport <- R6::R6Class(
 
       if (isTRUE(opts$include_partial_messages)) args <- c(args, "--include-partial-messages")
       if (isTRUE(opts$fork_session))             args <- c(args, "--fork-session")
-      if (!is.null(opts$setting_sources))        args <- c(args, "--setting-sources",
-                                                            paste(opts$setting_sources, collapse = ","))
+      if (!is.null(eff_setting_sources))        args <- c(args, "--setting-sources",
+                                                            paste(eff_setting_sources, collapse = ","))
+      if (isTRUE(opts$strict_mcp_config))       args <- c(args, "--strict-mcp-config")
+      if (isTRUE(opts$include_hook_events))     args <- c(args, "--include-hook-events")
 
       # plugins
       for (plug in opts$plugins) {
@@ -528,6 +548,9 @@ SubprocessCLITransport <- R6::R6Class(
           args <- c(args, "--max-thinking-tokens", as.character(t[["budget_tokens"]]))
         } else if (identical(t[["type"]], "disabled")) {
           args <- c(args, "--thinking", "disabled")
+        }
+        if (!identical(t[["type"]], "disabled") && !is.null(t[["display"]])) {
+          args <- c(args, "--thinking-display", t[["display"]])
         }
       } else if (!is.null(opts$max_thinking_tokens)) {
         args <- c(args, "--max-thinking-tokens", as.character(opts$max_thinking_tokens))
@@ -701,12 +724,17 @@ SubprocessCLITransport <- R6::R6Class(
           is.null(private$options$can_use_tool)) {
         assign(request_id, request, envir = private$pending_permissions)
         return(PermissionRequestMessage(
-          request_id  = request_id,
-          tool_name   = request[["tool_name"]],
-          tool_input  = request[["input"]],
-          tool_use_id = request[["tool_use_id"]],
-          agent_id    = request[["agent_id"]],
-          suggestions = request[["permission_suggestions"]]
+          request_id      = request_id,
+          tool_name       = request[["tool_name"]],
+          tool_input      = request[["input"]],
+          tool_use_id     = request[["tool_use_id"]],
+          agent_id        = request[["agent_id"]],
+          suggestions     = request[["permission_suggestions"]],
+          blocked_path    = request[["blocked_path"]],
+          decision_reason = request[["decision_reason"]],
+          title           = request[["title"]],
+          display_name    = request[["display_name"]],
+          description     = request[["description"]]
         ))
       }
 
@@ -743,10 +771,15 @@ SubprocessCLITransport <- R6::R6Class(
     handle_permission_request = function(request) {
       if (!is.null(private$options$can_use_tool)) {
         ctx <- ToolPermissionContext(
-          suggestions = request[["permission_suggestions"]] %||% list(),
-          tool_use_id = request[["tool_use_id"]],
-          agent_id    = request[["agent_id"]],
-          signal      = NULL
+          suggestions     = request[["permission_suggestions"]] %||% list(),
+          tool_use_id     = request[["tool_use_id"]],
+          agent_id        = request[["agent_id"]],
+          signal          = NULL,
+          blocked_path    = request[["blocked_path"]],
+          decision_reason = request[["decision_reason"]],
+          title           = request[["title"]],
+          display_name    = request[["display_name"]],
+          description     = request[["description"]]
         )
         result <- private$options$can_use_tool(
           request[["tool_name"]],
