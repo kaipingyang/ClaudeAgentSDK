@@ -334,8 +334,10 @@ NULL
 }
 
 .get_worktree_paths <- function(cwd) {
+  if (is.null(cwd) || length(cwd) != 1L || !nzchar(cwd)) return(character(0))
+  cwd <- .canonicalize_path(cwd)
   result <- tryCatch(
-    system2("git", c("worktree", "list", "--porcelain"),
+    system2("git", c("-C", shQuote(cwd), "worktree", "list", "--porcelain"),
             stdout = TRUE, stderr = FALSE, timeout = 5L),
     error = function(e) NULL, warning = function(w) NULL
   )

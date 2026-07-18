@@ -927,3 +927,26 @@ test_that(".read_session_lite reads small files correctly", {
   expect_equal(result$head, result$tail)
   expect_true(result$size > 0)
 })
+
+test_that(".get_worktree_paths scopes git discovery to the cwd argument", {
+  skip_if(!nzchar(Sys.which("git")), "git is not available")
+
+  root <- tempfile("sdk-worktree-scope-")
+  repo_a <- file.path(root, "repo-a")
+  repo_b <- file.path(root, "repo-b")
+  dir.create(repo_a, recursive = TRUE)
+  dir.create(repo_b, recursive = TRUE)
+  on.exit(unlink(root, recursive = TRUE), add = TRUE)
+
+  expect_equal(system2("git", c("init", "--quiet", shQuote(repo_a))), 0L)
+  expect_equal(system2("git", c("init", "--quiet", shQuote(repo_b))), 0L)
+
+  old_wd <- setwd(repo_a)
+  on.exit(setwd(old_wd), add = TRUE)
+
+  paths <- ClaudeAgentSDK:::.get_worktree_paths(repo_b)
+  normalized <- normalizePath(paths, mustWork = FALSE)
+
+  expect_contains(normalized, normalizePath(repo_b, mustWork = TRUE))
+  expect_false(normalizePath(repo_a, mustWork = TRUE) %in% normalized)
+})
