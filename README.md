@@ -342,6 +342,49 @@ cat("Context:", usage$percentage, "% used\n")
 client$disconnect()
 ```
 
+## MCP tools
+
+Give Claude custom tools via the Model Context Protocol. Two flavours:
+
+- **External MCP server** (a separate process the CLI connects to over stdio /
+  http) — the SDK just forwards the config; use `r_mcp_server()` to build a
+  `mcptools`-based R stdio server entry.
+- **In-process SDK MCP server** — tools run *inside this R session* (no
+  subprocess). The CLI routes each call back over the control protocol and your
+  handler runs in-process with direct access to session state. Depends only on
+  `jsonlite` (no `ellmer` / `curl`), so it is safe in `curl`-pinned `renv`
+  projects.
+
+```r
+library(ClaudeAgentSDK)
+
+add <- sdk_mcp_tool(
+  name         = "add",
+  description  = "Add two numbers and return their sum.",
+  input_schema = list(a = "number", b = "number"),
+  handler      = function(args) {
+    list(content = list(list(
+      type = "text", text = paste0("Sum: ", args$a + args$b)
+    )))
+  }
+)
+
+server <- create_sdk_mcp_server("calc", tools = list(add))
+
+result <- claude_run(
+  "Use the add tool to compute 17 + 25.",
+  options = ClaudeAgentOptions(
+    mcp_servers   = list(calc = server),
+    allowed_tools = "mcp__calc__add"      # naming: mcp__<server>__<tool>
+  )
+)
+```
+
+`sdk_mcp_tool()` / `create_sdk_mcp_server()` mirror the Python SDK's `tool()` /
+`create_sdk_mcp_server()`; the tool constructor is named `sdk_mcp_tool()` to
+avoid masking `ellmer::tool()`. Handlers return
+`list(content = list(list(type = "text", text = ...)), isError = FALSE)`.
+
 ## Types
 
 See [`R/types.R`](R/types.R) for complete type definitions:

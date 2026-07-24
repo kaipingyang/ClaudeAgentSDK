@@ -1,5 +1,25 @@
 # Changelog
 
+# ClaudeAgentSDK 0.2.2 (2026-07-24)
+
+Additive feature release (no breaking changes).
+
+### New Features
+
+- **In-process SDK MCP servers.** Define MCP tools that run *inside* the R
+  session — no subprocess — and register them via
+  `ClaudeAgentOptions(mcp_servers = list(<name> = create_sdk_mcp_server(...)))`.
+  New exports `sdk_mcp_tool()` and `create_sdk_mcp_server()` mirror the Python
+  SDK's `tool()` / `create_sdk_mcp_server()` (the tool constructor is named
+  `sdk_mcp_tool()` to avoid masking `ellmer::tool()`). The CLI routes each tool
+  call back over the stream-json control protocol (`control_request` with
+  `subtype = "mcp_message"` carrying JSON-RPC `initialize` / `tools/list` /
+  `tools/call`), and the handler runs in-process with direct access to session
+  state. **Depends only on `jsonlite` — no new dependencies** (notably no
+  `ellmer` / `httr2` / `curl`), so it is safe in `curl`-pinned `renv` projects.
+  This complements the existing external-server helper `r_mcp_server()`.
+  Verified end-to-end against the live Claude Code CLI.
+
 # ClaudeAgentSDK 0.2.1 (2026-07-05)
 
 Parity upgrade against the official Python `claude-agent-sdk` v0.2.110. All

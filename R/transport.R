@@ -745,6 +745,7 @@ SubprocessCLITransport <- R6::R6Class(
           "can_use_tool"      = private$handle_permission_request(request),
           "interrupt"         = list(type = "interrupt_response"),
           "hook_callback"     = private$handle_hook(request),
+          "mcp_message"       = private$handle_sdk_mcp_request(request),
           NULL  # unknown subtype — no response (forward-compatible)
         )
       }, error = function(e) {
@@ -763,9 +764,29 @@ SubprocessCLITransport <- R6::R6Class(
         type = "initialize_response",
         sdkVersion = as.character(utils::packageVersion("ClaudeAgentSDK")),
         supportedControlMessages = c(
-          "permission_request", "interrupt", "hook_callback"
+          "permission_request", "interrupt", "hook_callback", "mcp_message"
         )
       )
+    },
+
+    # Route a `mcp_message` control-request to the named in-process SDK MCP
+    # server and wrap its JSON-RPC response for the control protocol (mirrors
+    # Python query.py `_handle_sdk_mcp_request`).
+    handle_sdk_mcp_request = function(request) {
+      server_name <- request[["server_name"]]
+      message     <- request[["message"]]
+      cfg <- private$options$mcp_servers[[server_name]]
+      if (is.null(cfg) || !identical(cfg[["type"]], "sdk")) {
+        return(list(mcp_response = list(
+          jsonrpc = "2.0",
+          id      = if (is.list(message)) message[["id"]] else NULL,
+          error   = list(
+            code    = -32601,
+            message = paste0("SDK MCP server '", server_name %||% "", "' not found")
+          )
+        )))
+      }
+      list(mcp_response = .sdk_mcp_dispatch(cfg, message))
     },
 
     handle_permission_request = function(request) {
