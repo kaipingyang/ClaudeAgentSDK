@@ -195,3 +195,44 @@ test_that("initialize handshake advertises mcp_message support", {
   resp <- t$.__enclos_env__$private$handle_initialize_request_inline(list())
   expect_true("mcp_message" %in% resp$supportedControlMessages)
 })
+
+# ---------------------------------------------------------------------------
+# stdio transport (.mcp_stdio_reply / mcp_serve_stdio)
+# ---------------------------------------------------------------------------
+test_that(".mcp_stdio_reply answers requests and stays silent for notifications", {
+  srv <- make_calc()
+  # request with id -> JSON response
+  r_init <- ClaudeAgentSDK:::.mcp_stdio_reply(srv, '{"jsonrpc":"2.0","id":1,"method":"initialize"}')
+  expect_type(r_init, "character")
+  expect_true(grepl("2024-11-05", r_init))
+  r_call <- ClaudeAgentSDK:::.mcp_stdio_reply(srv,
+    '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"add","arguments":{"a":2,"b":3}}}')
+  expect_true(grepl("Sum: 5", r_call))
+  # notification (no id) -> no response
+  expect_null(ClaudeAgentSDK:::.mcp_stdio_reply(srv, '{"jsonrpc":"2.0","method":"notifications/initialized"}'))
+  # blank / garbage -> no response
+  expect_null(ClaudeAgentSDK:::.mcp_stdio_reply(srv, "   "))
+  expect_null(ClaudeAgentSDK:::.mcp_stdio_reply(srv, "not json"))
+})
+
+test_that("mcp_serve_stdio reads requests from input and writes JSON replies", {
+  srv <- make_calc()
+  reqs <- paste(
+    '{"jsonrpc":"2.0","id":1,"method":"initialize"}',
+    '{"jsonrpc":"2.0","method":"notifications/initialized"}',
+    '{"jsonrpc":"2.0","id":2,"method":"tools/list"}',
+    '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"add","arguments":{"a":10,"b":5}}}',
+    sep = "\n"
+  )
+  input  <- textConnection(reqs)
+  outfile <- tempfile()
+  output <- file(outfile, "w")
+  mcp_serve_stdio(srv, input = input, output = output)
+  close(output); close(input)
+  lines <- readLines(outfile)
+  # 3 requests with id -> 3 responses; the notification produced none
+  expect_length(lines, 3L)
+  expect_true(any(grepl("2024-11-05", lines)))
+  expect_true(any(grepl("\"add\"", lines)))
+  expect_true(any(grepl("Sum: 15", lines)))
+})

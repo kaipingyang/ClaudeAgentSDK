@@ -240,3 +240,51 @@ create_sdk_mcp_server <- function(name, version = "1.0.0", tools = NULL) {
 
   err(-32601, paste0("Method '", method %||% "", "' not found"))
 }
+
+# Handle one newline-delimited JSON-RPC line for a stdio MCP server.
+# Returns the response JSON string to write back, or NULL when nothing should be
+# written (a notification with no `id`, or an unparseable/blank line).
+# @keywords internal
+.mcp_stdio_reply <- function(server_config, line) {
+  line <- trimws(line)
+  if (!nzchar(line)) return(NULL)
+  msg <- tryCatch(jsonlite::fromJSON(line, simplifyVector = FALSE),
+                  error = function(e) NULL)
+  if (!is.list(msg)) return(NULL)
+  resp <- .sdk_mcp_dispatch(server_config, msg)
+  # JSON-RPC notifications (no `id`) must NOT get a response.
+  if (is.null(msg[["id"]])) return(NULL)
+  as.character(jsonlite::toJSON(resp, auto_unbox = TRUE, null = "null"))
+}
+
+#' Serve SDK MCP tools over stdio (newline-delimited JSON-RPC)
+#'
+#' Runs a blocking read/serve loop that speaks the MCP stdio transport
+#' (newline-delimited JSON-RPC 2.0) for a server created with
+#' [create_sdk_mcp_server()]. Intended to be the body of a small `Rscript`
+#' launched by the CLI as an **external stdio** MCP server (register it with
+#' `type = "stdio"` in `mcp_servers`).
+#'
+#' Unlike an in-process (`type = "sdk"`) server, a stdio server is initialized
+#' by the CLI at startup and does **not** exhibit the ~50s first-message stall
+#' that in-process servers hit when the client connection idles before the first
+#' message. It depends only on `jsonlite` — no `ellmer`/`curl`.
+#'
+#' @param server An `McpSdkServerConfig` from [create_sdk_mcp_server()].
+#' @param input,output Connections to read requests from / write responses to.
+#'   Default stdin/stdout. Exposed for testing.
+#' @return Invisibly `NULL` when the input stream reaches EOF.
+#' @export
+mcp_serve_stdio <- function(server, input = NULL, output = stdout()) {
+  if (is.null(input)) { input <- file("stdin", "r"); on.exit(close(input), add = TRUE) }
+  repeat {
+    line <- tryCatch(readLines(input, n = 1L, warn = FALSE), error = function(e) character(0))
+    if (length(line) == 0L) break  # EOF
+    reply <- .mcp_stdio_reply(server, line)
+    if (!is.null(reply)) {
+      cat(reply, "\n", sep = "", file = output)
+      flush(output)
+    }
+  }
+  invisible(NULL)
+}
