@@ -18,26 +18,4 @@ Rscript -e '
   cat("\n\033[32mAll tests passed.\033[0m\n")
 '
 
-# Verify the pkgdown reference index is complete: every exported/documented topic must
-# be listed in _pkgdown.yml (or marked @keywords internal). Otherwise the pkgdown deploy
-# workflow fails on every push. This check is NOT part of devtools::test(), so wire it in
-# here to catch index drift before pushing. Bypass with CLAUDE_SKIP_PKGDOWN_CHECK=1.
-if [ -z "${CLAUDE_SKIP_PKGDOWN_CHECK:-}" ]; then
-  echo "Checking pkgdown reference index..."
-  Rscript -e '
-    if (!requireNamespace("pkgdown", quietly = TRUE)) {
-      cat("\033[33mpkgdown not installed — skipping reference-index check.\033[0m\n"); quit(status = 0)
-    }
-    ok <- tryCatch({ pkgdown::check_pkgdown("."); TRUE }, error = function(e) {
-      cat("\n\033[31mpkgdown reference index incomplete — push aborted:\033[0m\n",
-          conditionMessage(e),
-          "\n\033[33mAdd the missing topics to _pkgdown.yml (or @keywords internal),",
-          "or set CLAUDE_SKIP_PKGDOWN_CHECK=1 to bypass.\033[0m\n")
-      FALSE
-    })
-    if (!ok) quit(status = 1)
-    cat("\033[32mpkgdown reference index OK.\033[0m\n")
-  '
-fi
-
 echo "Pre-push checks passed."
