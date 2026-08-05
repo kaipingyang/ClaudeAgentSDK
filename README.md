@@ -734,13 +734,6 @@ devtools::test("/path/to/ClaudeAgentSDK")
 testthat::test_dir("tests/testthat")
 ```
 
-### Development Setup
-
-```bash
-# Install git hooks (runs tests before push)
-bash scripts/initial-setup.sh
-```
-
 ### Package Structure
 
 ```
