@@ -113,14 +113,26 @@
 <p>699+ tests. Integration tests require a real Claude Code CLI and skip automatically if not found.</p>
 </div>
 <div class="section level2">
+<h2 id="documentation-pkgdown-reference-index">Documentation (pkgdown reference index)<a class="anchor" aria-label="anchor" href="#documentation-pkgdown-reference-index"></a></h2>
+<p><code>_pkgdown.yml</code> uses a <strong>curated</strong> <code>reference:</code> index, so pkgdown requires <strong>every</strong> exported/documented topic to appear in it. When you add a new exported function or type (a new <code>man/*.Rd</code>), you MUST either:</p>
+<ul><li>add it to the appropriate <code>reference:</code> section in <code>_pkgdown.yml</code>, <strong>or</strong>
+</li>
+<li>mark it <code>@keywords internal</code> (drops it from the index).</li>
+</ul><p>Otherwise the pkgdown site build fails with <em>“Reference metadata not ok / N topics missing from index”</em>. Because that check only runs in the <strong>pkgdown deploy workflow</strong> (<code>.github/workflows/pkgdown.yaml</code>) — NOT in <code>devtools::test()</code> or the <code>pre-push</code> hook — it silently fails on every push to <code>main</code> (a failed-CI email) without blocking anything else, which is easy to miss.</p>
+<p><strong>pkgdown ships the check</strong> — run it locally before pushing:</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">pkgdown</span><span class="fu">::</span><span class="fu"><a href="https://pkgdown.r-lib.org/reference/check_pkgdown.html" class="external-link">check_pkgdown</a></span><span class="op">(</span><span class="op">)</span>   <span class="co"># "✔ No problems found", or lists the missing topics</span></span></code></pre></div>
+<p>Recommended: wire <code><a href="https://pkgdown.r-lib.org/reference/check_pkgdown.html" class="external-link">pkgdown::check_pkgdown()</a></code> into <code>scripts/pre-push</code> (next to <code>devtools::test()</code>) or a CI check job so index drift is caught <em>before</em> the deploy fails, not after.</p>
+</div>
+<div class="section level2">
 <h2 id="running-examples">Running examples<a class="anchor" aria-label="anchor" href="#running-examples"></a></h2>
 <p><strong>Always reinstall before running examples.</strong> <code><a href="https://kaipingyang.github.io/ClaudeAgentSDK/">library(ClaudeAgentSDK)</a></code> loads the installed package, not the dev source. After any code change, the installed <code>.rdb</code> can become stale or corrupt, causing:</p>
 <pre><code>lazy-load database '...ClaudeAgentSDK.rdb' is corrupt
 internal error 1 in R_decompress1 with libdeflate</code></pre>
 <p>Fix:</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" tabindex="-1"></a><span class="ex">Rscript</span> <span class="at">-e</span> <span class="st">"remove.packages('ClaudeAgentSDK'); devtools::install('.', quick=TRUE)"</span></span></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="ex">Rscript</span> <span class="at">-e</span> <span class="st">"remove.packages('ClaudeAgentSDK'); devtools::install('.', quick=TRUE)"</span></span></code></pre></div>
 <p>Then run examples with:</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="ex">Rscript</span> examples/03_tools_and_permissions.R</span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="ex">Rscript</span> examples/03_tools_and_permissions.R</span></code></pre></div>
 <p>Alternatively, add <code>devtools::load_all(quiet = TRUE)</code> at the top of the example script to load dev source directly (avoids reinstall for quick iteration).</p>
 <div class="section level3">
 <h3 id="test-files">Test files<a class="anchor" aria-label="anchor" href="#test-files"></a></h3>
@@ -169,8 +181,8 @@ internal error 1 in R_decompress1 with libdeflate</code></pre>
 <h2 id="github">GitHub<a class="anchor" aria-label="anchor" href="#github"></a></h2>
 <p>Remote: <code>https://github.com/kaipingyang/ClaudeAgentSDK</code></p>
 <p>Push without <code>gh</code> CLI (token in <code>~/.Renviron</code>):</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" tabindex="-1"></a><span class="bu">source</span> ~/.Renviron</span>
-<span id="cb6-2"><a href="#cb6-2" tabindex="-1"></a><span class="fu">git</span> push https://kaipingyang:<span class="va">${GITHUB_TOKEN}</span>@github.com/kaipingyang/ClaudeAgentSDK.git main</span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" tabindex="-1"></a><span class="bu">source</span> ~/.Renviron</span>
+<span id="cb7-2"><a href="#cb7-2" tabindex="-1"></a><span class="fu">git</span> push https://kaipingyang:<span class="va">${GITHUB_TOKEN}</span>@github.com/kaipingyang/ClaudeAgentSDK.git main</span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="development-scripts">Development scripts<a class="anchor" aria-label="anchor" href="#development-scripts"></a></h2>
@@ -253,7 +265,7 @@ internal error 1 in R_decompress1 with libdeflate</code></pre>
 <div class="section level3">
 <h3 id="流式输出--可靠打断推荐模式">流式输出 + 可靠打断（推荐模式）<a class="anchor" aria-label="anchor" href="#%E6%B5%81%E5%BC%8F%E8%BE%93%E5%87%BA--%E5%8F%AF%E9%9D%A0%E6%89%93%E6%96%AD%E6%8E%A8%E8%8D%90%E6%A8%A1%E5%BC%8F"></a></h3>
 <p>使用 <code><a href="https://coro.r-lib.org/reference/async.html" class="external-link">coro::async</a></code> + <code>poll_messages()</code> + <code>ExtendedTask</code>。 <code><a href="https://later.r-lib.org/reference/later.html" class="external-link">later::later()</a></code> 轮询（<code>receive_response_async</code> 内部用法）在 Shiny 中优先于输入事件， 导致打断按钮只有在 promise 结束后才生效。<code><a href="https://coro.r-lib.org/reference/async.html" class="external-link">await()</a></code> 模式每次让出 R 事件循环， 使 <code>observeEvent</code> 能在 token 之间触发。</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/r-lib/coro" class="external-link">coro</a></span><span class="op">)</span>; <span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://rstudio.github.io/promises/" class="external-link">promises</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">interrupt_flag</span> <span class="op">&lt;-</span> <span class="fu">reactiveVal</span><span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span></span>
@@ -311,7 +323,7 @@ internal error 1 in R_decompress1 with libdeflate</code></pre>
 <div class="section level3">
 <h3 id="工具审批--打断消息驱动模式">工具审批 + 打断（消息驱动模式）<a class="anchor" aria-label="anchor" href="#%E5%B7%A5%E5%85%B7%E5%AE%A1%E6%89%B9--%E6%89%93%E6%96%AD%E6%B6%88%E6%81%AF%E9%A9%B1%E5%8A%A8%E6%A8%A1%E5%BC%8F"></a></h3>
 <p>在上述模式基础上，在 coro::async 循环中处理 <code>PermissionRequestMessage</code>：</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># ClaudeAgentOptions 设置 permission_prompt_tool_name = "stdio"</span></span>
 <span><span class="co"># 不传 on_tool_request → can_use_tool 自动变成 PermissionRequestMessage</span></span>
 <span></span>
