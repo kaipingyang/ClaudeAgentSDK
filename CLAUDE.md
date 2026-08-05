@@ -135,10 +135,12 @@ is easy to miss.
 pkgdown::check_pkgdown()   # "✔ No problems found", or lists the missing topics
 ```
 
-Recommended: wire
-[`pkgdown::check_pkgdown()`](https://pkgdown.r-lib.org/reference/check_pkgdown.html)
-into `scripts/pre-push` (next to `devtools::test()`) or a CI check job
-so index drift is caught *before* the deploy fails, not after.
+Run it manually before pushing whenever you’ve added/removed exports. A
+pre-push hook was deliberately **avoided** here — a hook can interfere
+with automated / AI-driven git flows, and keeping the push path simple
+is preferred. If you ever want an automatic red/green signal, a
+dedicated CI `check_pkgdown` job is an option, but note it would email
+on failure just like the deploy does.
 
 ## Running examples
 

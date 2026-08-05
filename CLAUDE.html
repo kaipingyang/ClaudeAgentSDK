@@ -122,7 +122,7 @@
 <p><strong>pkgdown ships the check</strong> — run it locally before pushing:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">pkgdown</span><span class="fu">::</span><span class="fu"><a href="https://pkgdown.r-lib.org/reference/check_pkgdown.html" class="external-link">check_pkgdown</a></span><span class="op">(</span><span class="op">)</span>   <span class="co"># "✔ No problems found", or lists the missing topics</span></span></code></pre></div>
-<p>Recommended: wire <code><a href="https://pkgdown.r-lib.org/reference/check_pkgdown.html" class="external-link">pkgdown::check_pkgdown()</a></code> into <code>scripts/pre-push</code> (next to <code>devtools::test()</code>) or a CI check job so index drift is caught <em>before</em> the deploy fails, not after.</p>
+<p>Run it manually before pushing whenever you’ve added/removed exports. A pre-push hook was deliberately <strong>avoided</strong> here — a hook can interfere with automated / AI-driven git flows, and keeping the push path simple is preferred. If you ever want an automatic red/green signal, a dedicated CI <code>check_pkgdown</code> job is an option, but note it would email on failure just like the deploy does.</p>
 </div>
 <div class="section level2">
 <h2 id="running-examples">Running examples<a class="anchor" aria-label="anchor" href="#running-examples"></a></h2>
