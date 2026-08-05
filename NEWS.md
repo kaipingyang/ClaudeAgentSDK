@@ -1,5 +1,30 @@
 # Changelog
 
+# ClaudeAgentSDK 0.2.3 (2026-08-05)
+
+Bug-fix and additive release (no breaking changes).
+
+### Bug Fixes
+
+- **Large messages no longer hang the CLI.** `transport$send()` (and the
+  `initialize` handshake) wrote the whole message to the CLI's stdin with a single
+  non-blocking `processx::write_input()` and ignored its return value. Any message
+  larger than the OS pipe buffer (~200 KB) was silently truncated, so the CLI never
+  received the line's terminating newline and the turn hung forever — this hit large
+  text prompts and (especially) image attachments. Writes now loop until the entire
+  payload is flushed, re-feeding the unwritten remainder and briefly yielding for
+  stdin backpressure, matching the official Python SDK's awaited full stdin write.
+
+### New Features
+
+- **`mcp_serve_stdio()`** — serve SDK-defined MCP tools over stdio, avoiding the
+  in-process idle stall.
+
+### Internal
+
+- Documentation regenerated with roxygen2 8.0.0; minor build hygiene
+  (`.Rbuildignore`, `.gitignore`).
+
 # ClaudeAgentSDK 0.2.2 (2026-07-24)
 
 Additive feature release (no breaking changes).

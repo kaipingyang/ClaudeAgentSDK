@@ -4,11 +4,6 @@
 \alias{ClaudeSDKClient}
 \title{ClaudeSDKClient R6 Class}
 \description{
-ClaudeSDKClient R6 Class
-
-ClaudeSDKClient R6 Class
-}
-\details{
 Provides a stateful, bidirectional connection to the Claude Code CLI.
 Supports sending multiple prompts, receiving streamed responses, runtime
 permission-mode changes, interrupts, and MCP server management.
@@ -44,7 +39,7 @@ client$disconnect()
 }
 
 ## ------------------------------------------------
-## Method `ClaudeSDKClient$approve_tool`
+## Method `ClaudeSDKClient$approve_tool()`
 ## ------------------------------------------------
 
 \dontrun{
@@ -62,183 +57,196 @@ client$approve_tool(rid, updated_permissions = list(
 }
 }
 \section{Public fields}{
-\if{html}{\out{<div class="r6-fields">}}
-\describe{
-\item{\code{options}}{The \code{ClaudeAgentOptions} used by this client.}
-}
-\if{html}{\out{</div>}}
+  \if{html}{\out{<div class="r6-fields">}}
+  \describe{
+    \item{\code{options}}{The \code{ClaudeAgentOptions} used by this client.}
+  }
+  \if{html}{\out{</div>}}
 }
 \section{Active bindings}{
-\if{html}{\out{<div class="r6-active-bindings">}}
-\describe{
-\item{\code{session_id}}{The \code{session_id} captured from the most recent
+  \if{html}{\out{<div class="r6-active-bindings">}}
+  \describe{
+    \item{\code{session_id}}{The \code{session_id} captured from the most recent
 \code{ResultMessage}.  Empty string \code{""} if no turn has completed yet.
 Use with \code{ClaudeAgentOptions(resume = client$session_id)} or call
 \code{client$resume()} to set up the client for the next turn.}
-}
-\if{html}{\out{</div>}}
+  }
+  \if{html}{\out{</div>}}
 }
 \section{Methods}{
 \subsection{Public methods}{
-\itemize{
-\item \href{#method-ClaudeSDKClient-new}{\code{ClaudeSDKClient$new()}}
-\item \href{#method-ClaudeSDKClient-connect}{\code{ClaudeSDKClient$connect()}}
-\item \href{#method-ClaudeSDKClient-disconnect}{\code{ClaudeSDKClient$disconnect()}}
-\item \href{#method-ClaudeSDKClient-send}{\code{ClaudeSDKClient$send()}}
-\item \href{#method-ClaudeSDKClient-query}{\code{ClaudeSDKClient$query()}}
-\item \href{#method-ClaudeSDKClient-poll_messages}{\code{ClaudeSDKClient$poll_messages()}}
-\item \href{#method-ClaudeSDKClient-receive_messages}{\code{ClaudeSDKClient$receive_messages()}}
-\item \href{#method-ClaudeSDKClient-receive_response}{\code{ClaudeSDKClient$receive_response()}}
-\item \href{#method-ClaudeSDKClient-receive_response_async}{\code{ClaudeSDKClient$receive_response_async()}}
-\item \href{#method-ClaudeSDKClient-approve_tool}{\code{ClaudeSDKClient$approve_tool()}}
-\item \href{#method-ClaudeSDKClient-deny_tool}{\code{ClaudeSDKClient$deny_tool()}}
-\item \href{#method-ClaudeSDKClient-interrupt}{\code{ClaudeSDKClient$interrupt()}}
-\item \href{#method-ClaudeSDKClient-set_permission_mode}{\code{ClaudeSDKClient$set_permission_mode()}}
-\item \href{#method-ClaudeSDKClient-set_model}{\code{ClaudeSDKClient$set_model()}}
-\item \href{#method-ClaudeSDKClient-rewind_files}{\code{ClaudeSDKClient$rewind_files()}}
-\item \href{#method-ClaudeSDKClient-stop_task}{\code{ClaudeSDKClient$stop_task()}}
-\item \href{#method-ClaudeSDKClient-get_mcp_status}{\code{ClaudeSDKClient$get_mcp_status()}}
-\item \href{#method-ClaudeSDKClient-get_context_usage}{\code{ClaudeSDKClient$get_context_usage()}}
-\item \href{#method-ClaudeSDKClient-get_server_info}{\code{ClaudeSDKClient$get_server_info()}}
-\item \href{#method-ClaudeSDKClient-reconnect_mcp_server}{\code{ClaudeSDKClient$reconnect_mcp_server()}}
-\item \href{#method-ClaudeSDKClient-toggle_mcp_server}{\code{ClaudeSDKClient$toggle_mcp_server()}}
-\item \href{#method-ClaudeSDKClient-resume}{\code{ClaudeSDKClient$resume()}}
-\item \href{#method-ClaudeSDKClient-clone}{\code{ClaudeSDKClient$clone()}}
-}
+  \itemize{
+    \item \href{#method-ClaudeSDKClient-initialize}{\code{ClaudeSDKClient$new()}}
+    \item \href{#method-ClaudeSDKClient-connect}{\code{ClaudeSDKClient$connect()}}
+    \item \href{#method-ClaudeSDKClient-disconnect}{\code{ClaudeSDKClient$disconnect()}}
+    \item \href{#method-ClaudeSDKClient-send}{\code{ClaudeSDKClient$send()}}
+    \item \href{#method-ClaudeSDKClient-query}{\code{ClaudeSDKClient$query()}}
+    \item \href{#method-ClaudeSDKClient-poll_messages}{\code{ClaudeSDKClient$poll_messages()}}
+    \item \href{#method-ClaudeSDKClient-receive_messages}{\code{ClaudeSDKClient$receive_messages()}}
+    \item \href{#method-ClaudeSDKClient-receive_response}{\code{ClaudeSDKClient$receive_response()}}
+    \item \href{#method-ClaudeSDKClient-receive_response_async}{\code{ClaudeSDKClient$receive_response_async()}}
+    \item \href{#method-ClaudeSDKClient-approve_tool}{\code{ClaudeSDKClient$approve_tool()}}
+    \item \href{#method-ClaudeSDKClient-deny_tool}{\code{ClaudeSDKClient$deny_tool()}}
+    \item \href{#method-ClaudeSDKClient-interrupt}{\code{ClaudeSDKClient$interrupt()}}
+    \item \href{#method-ClaudeSDKClient-set_permission_mode}{\code{ClaudeSDKClient$set_permission_mode()}}
+    \item \href{#method-ClaudeSDKClient-set_model}{\code{ClaudeSDKClient$set_model()}}
+    \item \href{#method-ClaudeSDKClient-rewind_files}{\code{ClaudeSDKClient$rewind_files()}}
+    \item \href{#method-ClaudeSDKClient-stop_task}{\code{ClaudeSDKClient$stop_task()}}
+    \item \href{#method-ClaudeSDKClient-get_mcp_status}{\code{ClaudeSDKClient$get_mcp_status()}}
+    \item \href{#method-ClaudeSDKClient-get_context_usage}{\code{ClaudeSDKClient$get_context_usage()}}
+    \item \href{#method-ClaudeSDKClient-get_server_info}{\code{ClaudeSDKClient$get_server_info()}}
+    \item \href{#method-ClaudeSDKClient-reconnect_mcp_server}{\code{ClaudeSDKClient$reconnect_mcp_server()}}
+    \item \href{#method-ClaudeSDKClient-toggle_mcp_server}{\code{ClaudeSDKClient$toggle_mcp_server()}}
+    \item \href{#method-ClaudeSDKClient-resume}{\code{ClaudeSDKClient$resume()}}
+    \item \href{#method-ClaudeSDKClient-clone}{\code{ClaudeSDKClient$clone()}}
+  }
 }
 \if{html}{\out{<hr>}}
-\if{html}{\out{<a id="method-ClaudeSDKClient-new"></a>}}
-\if{latex}{\out{\hypertarget{method-ClaudeSDKClient-new}{}}}
-\subsection{Method \code{new()}}{
-Create a new ClaudeSDKClient.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{ClaudeSDKClient$new(options = ClaudeAgentOptions(), transport = NULL)}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{options}}{A \code{ClaudeAgentOptions} from \code{\link[=ClaudeAgentOptions]{ClaudeAgentOptions()}}.}
-
-\item{\code{transport}}{Optional \code{SubprocessCLITransport}. When supplied the
+\if{html}{\out{<a id="method-ClaudeSDKClient-initialize"></a>}}
+\if{latex}{\out{\hypertarget{method-ClaudeSDKClient-initialize}{}}}
+\subsection{\code{ClaudeSDKClient$new()}}{
+  Create a new ClaudeSDKClient.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{ClaudeSDKClient$new(options = ClaudeAgentOptions(), transport = NULL)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{options}}{A \code{ClaudeAgentOptions} from \code{\link[=ClaudeAgentOptions]{ClaudeAgentOptions()}}.}
+      \item{\code{transport}}{Optional \code{SubprocessCLITransport}. When supplied the
 client uses it directly instead of creating one.}
+    }
+    \if{html}{\out{</div>}}
+  }
 }
-\if{html}{\out{</div>}}
-}
-}
+
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-ClaudeSDKClient-connect"></a>}}
 \if{latex}{\out{\hypertarget{method-ClaudeSDKClient-connect}{}}}
-\subsection{Method \code{connect()}}{
-Connect to Claude Code.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{ClaudeSDKClient$connect(prompt = NULL)}\if{html}{\out{</div>}}
+\subsection{\code{ClaudeSDKClient$connect()}}{
+  Connect to Claude Code.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{ClaudeSDKClient$connect(prompt = NULL)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{prompt}}{Character(1) or NULL. Optional initial prompt to send
+immediately after connecting.}
+    }
+    \if{html}{\out{</div>}}
+  }
 }
 
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{prompt}}{Character(1) or NULL. Optional initial prompt to send
-immediately after connecting.}
-}
-\if{html}{\out{</div>}}
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-ClaudeSDKClient-disconnect"></a>}}
 \if{latex}{\out{\hypertarget{method-ClaudeSDKClient-disconnect}{}}}
-\subsection{Method \code{disconnect()}}{
-Disconnect from Claude Code and clean up.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{ClaudeSDKClient$disconnect()}\if{html}{\out{</div>}}
+\subsection{\code{ClaudeSDKClient$disconnect()}}{
+  Disconnect from Claude Code and clean up.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{ClaudeSDKClient$disconnect()}
+    \if{html}{\out{</div>}}
+  }
 }
 
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-ClaudeSDKClient-send"></a>}}
 \if{latex}{\out{\hypertarget{method-ClaudeSDKClient-send}{}}}
-\subsection{Method \code{send()}}{
-Send a new prompt to Claude.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{ClaudeSDKClient$send(prompt, session_id = "default")}\if{html}{\out{</div>}}
+\subsection{\code{ClaudeSDKClient$send()}}{
+  Send a new prompt to Claude.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{ClaudeSDKClient$send(prompt, session_id = "default")}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{prompt}}{Character(1) or list. Prompt text or list of content blocks.}
+      \item{\code{session_id}}{Character(1). Session identifier (default \code{"default"}).}
+    }
+    \if{html}{\out{</div>}}
+  }
 }
 
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{prompt}}{Character(1) or list. Prompt text or list of content blocks.}
-
-\item{\code{session_id}}{Character(1). Session identifier (default \code{"default"}).}
-}
-\if{html}{\out{</div>}}
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-ClaudeSDKClient-query"></a>}}
 \if{latex}{\out{\hypertarget{method-ClaudeSDKClient-query}{}}}
-\subsection{Method \code{query()}}{
-Send a new request in streaming mode.
+\subsection{\code{ClaudeSDKClient$query()}}{
+  Send a new request in streaming mode.
 Alias for \code{send()} that matches the Python SDK's \code{client.query()} API.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{ClaudeSDKClient$query(prompt, session_id = "default")}\if{html}{\out{</div>}}
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{ClaudeSDKClient$query(prompt, session_id = "default")}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{prompt}}{Character(1) or list. Prompt text or list of content blocks.}
+      \item{\code{session_id}}{Character(1). Session identifier (default \code{"default"}).}
+    }
+    \if{html}{\out{</div>}}
+  }
 }
 
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{prompt}}{Character(1) or list. Prompt text or list of content blocks.}
-
-\item{\code{session_id}}{Character(1). Session identifier (default \code{"default"}).}
-}
-\if{html}{\out{</div>}}
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-ClaudeSDKClient-poll_messages"></a>}}
 \if{latex}{\out{\hypertarget{method-ClaudeSDKClient-poll_messages}{}}}
-\subsection{Method \code{poll_messages()}}{
-Non-blocking single-cycle poll.  Returns a list of
+\subsection{\code{ClaudeSDKClient$poll_messages()}}{
+  Non-blocking single-cycle poll.  Returns a list of
 messages available right now (may be empty).  Designed for
 Shiny \code{observe()} + \code{invalidateLater()} polling patterns where
 \code{later::later()}-based approaches starve input processing.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{ClaudeSDKClient$poll_messages()}\if{html}{\out{</div>}}
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{ClaudeSDKClient$poll_messages()}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    List of typed message objects (may be empty).
+  }
 }
 
-\subsection{Returns}{
-List of typed message objects (may be empty).
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-ClaudeSDKClient-receive_messages"></a>}}
 \if{latex}{\out{\hypertarget{method-ClaudeSDKClient-receive_messages}{}}}
-\subsection{Method \code{receive_messages()}}{
-Return a \code{coro} generator that yields ALL messages
+\subsection{\code{ClaudeSDKClient$receive_messages()}}{
+  Return a \code{coro} generator that yields ALL messages
 (no automatic stop).  Use \code{receive_response()} for a single
 request/response cycle.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{ClaudeSDKClient$receive_messages()}\if{html}{\out{</div>}}
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{ClaudeSDKClient$receive_messages()}
+    \if{html}{\out{</div>}}
+  }
 }
 
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-ClaudeSDKClient-receive_response"></a>}}
 \if{latex}{\out{\hypertarget{method-ClaudeSDKClient-receive_response}{}}}
-\subsection{Method \code{receive_response()}}{
-Return a \code{coro} generator that yields messages until
+\subsection{\code{ClaudeSDKClient$receive_response()}}{
+  Return a \code{coro} generator that yields messages until
 and including the next \code{ResultMessage}, then stops.
 The \code{session_id} from the \code{ResultMessage} is automatically captured;
 read it back with \code{client$session_id} after the loop completes.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{ClaudeSDKClient$receive_response()}\if{html}{\out{</div>}}
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{ClaudeSDKClient$receive_response()}
+    \if{html}{\out{</div>}}
+  }
 }
 
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-ClaudeSDKClient-receive_response_async"></a>}}
 \if{latex}{\out{\hypertarget{method-ClaudeSDKClient-receive_response_async}{}}}
-\subsection{Method \code{receive_response_async()}}{
-Return a \code{promises::promise} that resolves to the next
+\subsection{\code{ClaudeSDKClient$receive_response_async()}}{
+  Return a \code{promises::promise} that resolves to the next
 \code{ResultMessage}.  Each intermediate message is passed to \code{on_message}
 as it arrives.  Requires the \strong{promises} package (listed in Suggests).
 
@@ -248,64 +256,63 @@ results (e.g., into a \code{reactiveVal}) for real-time UI updates.
 
 The \code{session_id} from the \code{ResultMessage} is automatically captured;
 read it back with \code{client$session_id} after the promise resolves.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{ClaudeSDKClient$receive_response_async(on_message = NULL, poll_interval = 0.01)}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{on_message}}{Function(msg) or NULL.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{ClaudeSDKClient$receive_response_async(on_message = NULL, poll_interval = 0.01)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{on_message}}{Function(msg) or NULL.
 Called for every message (AssistantMessage, SystemMessage,
 StreamEvent, PermissionRequestMessage, etc.) except the final
 ResultMessage.  Handle \code{PermissionRequestMessage} here and call
 \code{client$approve_tool()} / \code{client$deny_tool()} to continue.}
-
-\item{\code{poll_interval}}{Numeric.
+      \item{\code{poll_interval}}{Numeric.
 Seconds between non-blocking polls (default 0.01 = 10 ms).}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    A \code{promises::promise} that resolves to the \code{ResultMessage}.
+  }
 }
-\if{html}{\out{</div>}}
-}
-\subsection{Returns}{
-A \code{promises::promise} that resolves to the \code{ResultMessage}.
-}
-}
+
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-ClaudeSDKClient-approve_tool"></a>}}
 \if{latex}{\out{\hypertarget{method-ClaudeSDKClient-approve_tool}{}}}
-\subsection{Method \code{approve_tool()}}{
-Approve a pending tool request.
+\subsection{\code{ClaudeSDKClient$approve_tool()}}{
+  Approve a pending tool request.
 Call this after receiving a \code{PermissionRequestMessage} from the
 message stream to allow the tool to execute.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{ClaudeSDKClient$approve_tool(
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{ClaudeSDKClient$approve_tool(
   request_id,
   updated_input = NULL,
   updated_permissions = NULL
-)}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{request_id}}{Character. The \code{request_id} from the
+)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{request_id}}{Character. The \code{request_id} from the
 \code{PermissionRequestMessage}.}
-
-\item{\code{updated_input}}{List or NULL. Modified tool input (default:
+      \item{\code{updated_input}}{List or NULL. Modified tool input (default:
 use original input).}
-
-\item{\code{updated_permissions}}{List of \code{PermissionUpdate} or NULL.
+      \item{\code{updated_permissions}}{List of \code{PermissionUpdate} or NULL.
 Permission rule changes to persist into project/user settings.
 Each entry is serialized to camelCase wire format before sending.
 The CLI writes these rules to settings after processing the response,
 making them permanent for future tool calls.}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Examples}{
-\if{html}{\out{<div class="r example copy">}}
-\preformatted{\dontrun{
-# Allow once (no rule written)
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Examples}{
+    \if{html}{\out{<div class="r example copy">}}
+    \preformatted{# Allow once (no rule written)
 client$approve_tool(rid)
 
 # Allow and persist rule to project settings
@@ -317,239 +324,260 @@ client$approve_tool(rid, updated_permissions = list(
   )
 ))
 }
+    \if{html}{\out{</div>}}
+  }
 }
-\if{html}{\out{</div>}}
 
-}
-
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-ClaudeSDKClient-deny_tool"></a>}}
 \if{latex}{\out{\hypertarget{method-ClaudeSDKClient-deny_tool}{}}}
-\subsection{Method \code{deny_tool()}}{
-Deny a pending tool request.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{ClaudeSDKClient$deny_tool(
+\subsection{\code{ClaudeSDKClient$deny_tool()}}{
+  Deny a pending tool request.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{ClaudeSDKClient$deny_tool(
   request_id,
   message = "Denied by user",
   interrupt = FALSE
-)}\if{html}{\out{</div>}}
-}
-
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{request_id}}{Character. The \code{request_id} from the
+)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{request_id}}{Character. The \code{request_id} from the
 \code{PermissionRequestMessage}.}
-
-\item{\code{message}}{Character. Reason for denial (default \code{"Denied by user"}).}
-
-\item{\code{interrupt}}{Logical. If \code{TRUE}, ask the CLI to interrupt the
+      \item{\code{message}}{Character. Reason for denial (default \code{"Denied by user"}).}
+      \item{\code{interrupt}}{Logical. If \code{TRUE}, ask the CLI to interrupt the
 running task entirely after denying (default \code{FALSE}).}
+    }
+    \if{html}{\out{</div>}}
+  }
 }
-\if{html}{\out{</div>}}
-}
-}
+
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-ClaudeSDKClient-interrupt"></a>}}
 \if{latex}{\out{\hypertarget{method-ClaudeSDKClient-interrupt}{}}}
-\subsection{Method \code{interrupt()}}{
-Send an interrupt control request.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{ClaudeSDKClient$interrupt()}\if{html}{\out{</div>}}
+\subsection{\code{ClaudeSDKClient$interrupt()}}{
+  Send an interrupt control request.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{ClaudeSDKClient$interrupt()}
+    \if{html}{\out{</div>}}
+  }
 }
 
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-ClaudeSDKClient-set_permission_mode"></a>}}
 \if{latex}{\out{\hypertarget{method-ClaudeSDKClient-set_permission_mode}{}}}
-\subsection{Method \code{set_permission_mode()}}{
-Change the permission mode at runtime.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{ClaudeSDKClient$set_permission_mode(mode)}\if{html}{\out{</div>}}
+\subsection{\code{ClaudeSDKClient$set_permission_mode()}}{
+  Change the permission mode at runtime.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{ClaudeSDKClient$set_permission_mode(mode)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{mode}}{Character. One of \code{"default"}, \code{"acceptEdits"},
+\code{"bypassPermissions"}, \code{"plan"}, \code{"dontAsk"}, \code{"auto"}.}
+    }
+    \if{html}{\out{</div>}}
+  }
 }
 
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{mode}}{Character. One of \code{"default"}, \code{"acceptEdits"},
-\code{"bypassPermissions"}, \code{"plan"}, \code{"dontAsk"}, \code{"auto"}.}
-}
-\if{html}{\out{</div>}}
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-ClaudeSDKClient-set_model"></a>}}
 \if{latex}{\out{\hypertarget{method-ClaudeSDKClient-set_model}{}}}
-\subsection{Method \code{set_model()}}{
-Change the AI model at runtime.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{ClaudeSDKClient$set_model(model = NULL)}\if{html}{\out{</div>}}
+\subsection{\code{ClaudeSDKClient$set_model()}}{
+  Change the AI model at runtime.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{ClaudeSDKClient$set_model(model = NULL)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{model}}{Character or NULL. Model ID, or NULL for default.}
+    }
+    \if{html}{\out{</div>}}
+  }
 }
 
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{model}}{Character or NULL. Model ID, or NULL for default.}
-}
-\if{html}{\out{</div>}}
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-ClaudeSDKClient-rewind_files"></a>}}
 \if{latex}{\out{\hypertarget{method-ClaudeSDKClient-rewind_files}{}}}
-\subsection{Method \code{rewind_files()}}{
-Rewind tracked files to their state at a specific
+\subsection{\code{ClaudeSDKClient$rewind_files()}}{
+  Rewind tracked files to their state at a specific
 user message.  Requires \code{enable_file_checkpointing = TRUE}.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{ClaudeSDKClient$rewind_files(user_message_id)}\if{html}{\out{</div>}}
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{ClaudeSDKClient$rewind_files(user_message_id)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{user_message_id}}{Character. UUID of the target user message.}
+    }
+    \if{html}{\out{</div>}}
+  }
 }
 
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{user_message_id}}{Character. UUID of the target user message.}
-}
-\if{html}{\out{</div>}}
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-ClaudeSDKClient-stop_task"></a>}}
 \if{latex}{\out{\hypertarget{method-ClaudeSDKClient-stop_task}{}}}
-\subsection{Method \code{stop_task()}}{
-Stop a running task by ID.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{ClaudeSDKClient$stop_task(task_id)}\if{html}{\out{</div>}}
+\subsection{\code{ClaudeSDKClient$stop_task()}}{
+  Stop a running task by ID.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{ClaudeSDKClient$stop_task(task_id)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{task_id}}{Character. Task ID from a \code{TaskNotificationMessage}.}
+    }
+    \if{html}{\out{</div>}}
+  }
 }
 
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{task_id}}{Character. Task ID from a \code{TaskNotificationMessage}.}
-}
-\if{html}{\out{</div>}}
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-ClaudeSDKClient-get_mcp_status"></a>}}
 \if{latex}{\out{\hypertarget{method-ClaudeSDKClient-get_mcp_status}{}}}
-\subsection{Method \code{get_mcp_status()}}{
-Get MCP server connection status.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{ClaudeSDKClient$get_mcp_status(timeout_ms = 30000L)}\if{html}{\out{</div>}}
+\subsection{\code{ClaudeSDKClient$get_mcp_status()}}{
+  Get MCP server connection status.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{ClaudeSDKClient$get_mcp_status(timeout_ms = 30000L)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{timeout_ms}}{Integer. Milliseconds to wait for response (default 30 000).}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    Named list with \code{mcpServers} key, or \code{NULL} on timeout.
+  }
 }
 
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{timeout_ms}}{Integer. Milliseconds to wait for response (default 30 000).}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Returns}{
-Named list with \code{mcpServers} key, or \code{NULL} on timeout.
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-ClaudeSDKClient-get_context_usage"></a>}}
 \if{latex}{\out{\hypertarget{method-ClaudeSDKClient-get_context_usage}{}}}
-\subsection{Method \code{get_context_usage()}}{
-Get context window usage breakdown.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{ClaudeSDKClient$get_context_usage(timeout_ms = 30000L)}\if{html}{\out{</div>}}
+\subsection{\code{ClaudeSDKClient$get_context_usage()}}{
+  Get context window usage breakdown.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{ClaudeSDKClient$get_context_usage(timeout_ms = 30000L)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{timeout_ms}}{Integer. Milliseconds to wait for response (default 30 000).}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    Named list with token counts by category, or \code{NULL} on timeout.
+  }
 }
 
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{timeout_ms}}{Integer. Milliseconds to wait for response (default 30 000).}
-}
-\if{html}{\out{</div>}}
-}
-\subsection{Returns}{
-Named list with token counts by category, or \code{NULL} on timeout.
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-ClaudeSDKClient-get_server_info"></a>}}
 \if{latex}{\out{\hypertarget{method-ClaudeSDKClient-get_server_info}{}}}
-\subsection{Method \code{get_server_info()}}{
-Get server initialization info.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{ClaudeSDKClient$get_server_info()}\if{html}{\out{</div>}}
+\subsection{\code{ClaudeSDKClient$get_server_info()}}{
+  Get server initialization info.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{ClaudeSDKClient$get_server_info()}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    List with server capabilities, or NULL.
+  }
 }
 
-\subsection{Returns}{
-List with server capabilities, or NULL.
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-ClaudeSDKClient-reconnect_mcp_server"></a>}}
 \if{latex}{\out{\hypertarget{method-ClaudeSDKClient-reconnect_mcp_server}{}}}
-\subsection{Method \code{reconnect_mcp_server()}}{
-Reconnect a failed MCP server.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{ClaudeSDKClient$reconnect_mcp_server(server_name)}\if{html}{\out{</div>}}
+\subsection{\code{ClaudeSDKClient$reconnect_mcp_server()}}{
+  Reconnect a failed MCP server.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{ClaudeSDKClient$reconnect_mcp_server(server_name)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{server_name}}{Character. Server name.}
+    }
+    \if{html}{\out{</div>}}
+  }
 }
 
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{server_name}}{Character. Server name.}
-}
-\if{html}{\out{</div>}}
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-ClaudeSDKClient-toggle_mcp_server"></a>}}
 \if{latex}{\out{\hypertarget{method-ClaudeSDKClient-toggle_mcp_server}{}}}
-\subsection{Method \code{toggle_mcp_server()}}{
-Enable or disable an MCP server.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{ClaudeSDKClient$toggle_mcp_server(server_name, enabled)}\if{html}{\out{</div>}}
+\subsection{\code{ClaudeSDKClient$toggle_mcp_server()}}{
+  Enable or disable an MCP server.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{ClaudeSDKClient$toggle_mcp_server(server_name, enabled)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{server_name}}{Character. Server name.}
+      \item{\code{enabled}}{Logical. \code{TRUE} to enable, \code{FALSE} to disable.}
+    }
+    \if{html}{\out{</div>}}
+  }
 }
 
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{server_name}}{Character. Server name.}
-
-\item{\code{enabled}}{Logical. \code{TRUE} to enable, \code{FALSE} to disable.}
-}
-\if{html}{\out{</div>}}
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-ClaudeSDKClient-resume"></a>}}
 \if{latex}{\out{\hypertarget{method-ClaudeSDKClient-resume}{}}}
-\subsection{Method \code{resume()}}{
-Prepare client to resume the last captured session.
+\subsection{\code{ClaudeSDKClient$resume()}}{
+  Prepare client to resume the last captured session.
 Sets \code{options$resume} to the \code{session_id} captured from the most
 recent \code{ResultMessage}.  The next \verb{$connect()} call will pass
 \verb{--resume <session_id>} to the CLI.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{ClaudeSDKClient$resume()}\if{html}{\out{</div>}}
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{ClaudeSDKClient$resume()}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    \code{self} invisibly (for chaining).
+  }
 }
 
-\subsection{Returns}{
-\code{self} invisibly (for chaining).
-}
-}
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-ClaudeSDKClient-clone"></a>}}
 \if{latex}{\out{\hypertarget{method-ClaudeSDKClient-clone}{}}}
-\subsection{Method \code{clone()}}{
-The objects of this class are cloneable with this method.
-\subsection{Usage}{
-\if{html}{\out{<div class="r">}}\preformatted{ClaudeSDKClient$clone(deep = FALSE)}\if{html}{\out{</div>}}
+\subsection{\code{ClaudeSDKClient$clone()}}{
+  The objects of this class are cloneable with this method.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{ClaudeSDKClient$clone(deep = FALSE)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{deep}}{Whether to make a deep clone.}
+    }
+    \if{html}{\out{</div>}}
+  }
 }
 
-\subsection{Arguments}{
-\if{html}{\out{<div class="arguments">}}
-\describe{
-\item{\code{deep}}{Whether to make a deep clone.}
-}
-\if{html}{\out{</div>}}
-}
-}
 }

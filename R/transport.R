@@ -22,7 +22,7 @@ NULL
 # flushed, re-feeding the returned remainder and briefly yielding so the CLI can
 # drain stdin (backpressure). This mirrors the official Python SDK, whose async
 # stdin write (`await TextSendStream.send(data)`) always writes the complete payload.
-#' @keywords internal
+#' @noRd
 .write_all_to_process <- function(proc, data, timeout_s = 60) {
   deadline <- Sys.time() + timeout_s
   repeat {

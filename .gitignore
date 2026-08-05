@@ -35,3 +35,7 @@ paper/
 claude-agent-sdk-python/
 docs/
 .codegraph/
+
+# agent workspace / scratch
+.kiro/
+test.R

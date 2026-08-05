@@ -1,6 +1,6 @@
 Package: ClaudeAgentSDK
 Title: R SDK for Claude Code Agent
-Version: 0.2.2
+Version: 0.2.3
 Authors@R: person("Kaiping", "Yang", role = c("aut", "cre"),
                   email = "1260146556@qq.com")
 Description: Provides an R interface to the 'Claude Code' command-line tool,
@@ -17,7 +17,6 @@ BugReports: https://github.com/kaipingyang/ClaudeAgentSDK/issues
 Depends: R (>= 4.1)
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.3
 Imports:
     processx (>= 3.8.0),
     jsonlite,
@@ -35,3 +34,4 @@ Suggests:
     stringi
 SystemRequirements: Claude Code CLI (>= 2.0.0)
 Config/testthat/edition: 3
+Config/roxygen2/version: 8.0.0
