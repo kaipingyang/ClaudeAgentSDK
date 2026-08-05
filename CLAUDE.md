@@ -115,32 +115,16 @@ automatically if not found.
 
 `_pkgdown.yml` uses a **curated** `reference:` index, so pkgdown
 requires **every** exported/documented topic to appear in it. When you
-add a new exported function or type (a new `man/*.Rd`), you MUST either:
-
-- add it to the appropriate `reference:` section in `_pkgdown.yml`,
-  **or**
-- mark it `@keywords internal` (drops it from the index).
-
-Otherwise the pkgdown site build fails with *“Reference metadata not ok
-/ N topics missing from index”*. Because that check only runs in the
-**pkgdown deploy workflow** (`.github/workflows/pkgdown.yaml`) — NOT in
-`devtools::test()` or the `pre-push` hook — it silently fails on every
-push to `main` (a failed-CI email) without blocking anything else, which
-is easy to miss.
-
-**pkgdown ships the check** — run it locally before pushing:
+add a new exported function or type (a new `man/*.Rd`), either add it to
+the appropriate `reference:` section in `_pkgdown.yml` or mark it
+`@keywords internal` — otherwise the pkgdown deploy fails (“Reference
+metadata not ok / N topics missing from index”) on every push to `main`.
+Verify before pushing with:
 
 ``` r
 
 pkgdown::check_pkgdown()   # "✔ No problems found", or lists the missing topics
 ```
-
-Run it manually before pushing whenever you’ve added/removed exports. A
-pre-push hook was deliberately **avoided** here — a hook can interfere
-with automated / AI-driven git flows, and keeping the push path simple
-is preferred. If you ever want an automatic red/green signal, a
-dedicated CI `check_pkgdown` job is an option, but note it would email
-on failure just like the deploy does.
 
 ## Running examples
 
@@ -195,14 +179,6 @@ Push without `gh` CLI (token in `~/.Renviron`):
 source ~/.Renviron
 git push https://kaipingyang:${GITHUB_TOKEN}@github.com/kaipingyang/ClaudeAgentSDK.git main
 ```
-
-## Development scripts
-
-    scripts/
-      pre-push          # Git pre-push hook — runs devtools::test() before allowing push
-      initial-setup.sh  # Installs pre-push hook into .git/hooks/
-
-Install: `bash scripts/initial-setup.sh`
 
 ## Python SDK parity assessment (as of v0.2.1, 2026-05-06)
 
