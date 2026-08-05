@@ -1,12 +1,12 @@
 pandoc: 3.8.3
-pkgdown: 2.2.0
+pkgdown: 2.2.1
 pkgdown_sha: ~
 articles:
   articles/sessions-management: sessions-management.html
   articles/shiny-streaming: shiny-streaming.html
   articles/shiny-thinking: shiny-thinking.html
   articles/shiny-tool-approval: shiny-tool-approval.html
-last_built: 2026-05-06T08:12Z
+last_built: 2026-08-05T07:00Z
 urls:
   reference: https://kaipingyang.github.io/ClaudeAgentSDK/reference
   article: https://kaipingyang.github.io/ClaudeAgentSDK/articles

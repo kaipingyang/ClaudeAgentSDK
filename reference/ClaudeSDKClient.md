@@ -1,11 +1,5 @@
 # ClaudeSDKClient R6 Class
 
-ClaudeSDKClient R6 Class
-
-ClaudeSDKClient R6 Class
-
-## Details
-
 Provides a stateful, bidirectional connection to the Claude Code CLI.
 Supports sending multiple prompts, receiving streamed responses, runtime
 permission-mode changes, interrupts, and MCP server management.
@@ -26,11 +20,20 @@ permission-mode changes, interrupts, and MCP server management.
 
   The `ClaudeAgentOptions` used by this client.
 
+## Active bindings
+
+- `session_id`:
+
+  The `session_id` captured from the most recent `ResultMessage`. Empty
+  string `""` if no turn has completed yet. Use with
+  `ClaudeAgentOptions(resume = client$session_id)` or call
+  `client$resume()` to set up the client for the next turn.
+
 ## Methods
 
 ### Public methods
 
-- [`ClaudeSDKClient$new()`](#method-ClaudeSDKClient-new)
+- [`ClaudeSDKClient$new()`](#method-ClaudeSDKClient-initialize)
 
 - [`ClaudeSDKClient$connect()`](#method-ClaudeSDKClient-connect)
 
@@ -72,11 +75,13 @@ permission-mode changes, interrupts, and MCP server management.
 
 - [`ClaudeSDKClient$toggle_mcp_server()`](#method-ClaudeSDKClient-toggle_mcp_server)
 
+- [`ClaudeSDKClient$resume()`](#method-ClaudeSDKClient-resume)
+
 - [`ClaudeSDKClient$clone()`](#method-ClaudeSDKClient-clone)
 
 ------------------------------------------------------------------------
 
-### Method `new()`
+### `ClaudeSDKClient$new()`
 
 Create a new ClaudeSDKClient.
 
@@ -98,7 +103,7 @@ Create a new ClaudeSDKClient.
 
 ------------------------------------------------------------------------
 
-### Method `connect()`
+### `ClaudeSDKClient$connect()`
 
 Connect to Claude Code.
 
@@ -115,7 +120,7 @@ Connect to Claude Code.
 
 ------------------------------------------------------------------------
 
-### Method `disconnect()`
+### `ClaudeSDKClient$disconnect()`
 
 Disconnect from Claude Code and clean up.
 
@@ -125,7 +130,7 @@ Disconnect from Claude Code and clean up.
 
 ------------------------------------------------------------------------
 
-### Method `send()`
+### `ClaudeSDKClient$send()`
 
 Send a new prompt to Claude.
 
@@ -145,7 +150,7 @@ Send a new prompt to Claude.
 
 ------------------------------------------------------------------------
 
-### Method [`query()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/query.md)
+### `ClaudeSDKClient$query()`
 
 Send a new request in streaming mode. Alias for `send()` that matches
 the Python SDK's `client.query()` API.
@@ -166,7 +171,7 @@ the Python SDK's `client.query()` API.
 
 ------------------------------------------------------------------------
 
-### Method `poll_messages()`
+### `ClaudeSDKClient$poll_messages()`
 
 Non-blocking single-cycle poll. Returns a list of messages available
 right now (may be empty). Designed for Shiny `observe()` +
@@ -184,7 +189,7 @@ List of typed message objects (may be empty).
 
 ------------------------------------------------------------------------
 
-### Method `receive_messages()`
+### `ClaudeSDKClient$receive_messages()`
 
 Return a `coro` generator that yields ALL messages (no automatic stop).
 Use `receive_response()` for a single request/response cycle.
@@ -195,10 +200,12 @@ Use `receive_response()` for a single request/response cycle.
 
 ------------------------------------------------------------------------
 
-### Method `receive_response()`
+### `ClaudeSDKClient$receive_response()`
 
 Return a `coro` generator that yields messages until and including the
-next `ResultMessage`, then stops.
+next `ResultMessage`, then stops. The `session_id` from the
+`ResultMessage` is automatically captured; read it back with
+`client$session_id` after the loop completes.
 
 #### Usage
 
@@ -206,7 +213,7 @@ next `ResultMessage`, then stops.
 
 ------------------------------------------------------------------------
 
-### Method `receive_response_async()`
+### `ClaudeSDKClient$receive_response_async()`
 
 Return a
 [`promises::promise`](https://rstudio.github.io/promises/reference/promise.html)
@@ -217,6 +224,9 @@ passed to `on_message` as it arrives. Requires the **promises** package
 Designed for Shiny `ExtendedTask` integration: the promise keeps the
 Shiny session unblocked while `on_message` streams intermediate results
 (e.g., into a `reactiveVal`) for real-time UI updates.
+
+The `session_id` from the `ResultMessage` is automatically captured;
+read it back with `client$session_id` after the promise resolves.
 
 #### Usage
 
@@ -243,7 +253,7 @@ that resolves to the `ResultMessage`.
 
 ------------------------------------------------------------------------
 
-### Method `approve_tool()`
+### `ClaudeSDKClient$approve_tool()`
 
 Approve a pending tool request. Call this after receiving a
 `PermissionRequestMessage` from the message stream to allow the tool to
@@ -251,7 +261,11 @@ execute.
 
 #### Usage
 
-    ClaudeSDKClient$approve_tool(request_id, updated_input = NULL)
+    ClaudeSDKClient$approve_tool(
+      request_id,
+      updated_input = NULL,
+      updated_permissions = NULL
+    )
 
 #### Arguments
 
@@ -263,15 +277,40 @@ execute.
 
   List or NULL. Modified tool input (default: use original input).
 
+- `updated_permissions`:
+
+  List of `PermissionUpdate` or NULL. Permission rule changes to persist
+  into project/user settings. Each entry is serialized to camelCase wire
+  format before sending. The CLI writes these rules to settings after
+  processing the response, making them permanent for future tool calls.
+
+#### Examples
+
+    # Allow once (no rule written)
+    client$approve_tool(rid)
+
+    # Allow and persist rule to project settings
+    client$approve_tool(rid, updated_permissions = list(
+      PermissionUpdate("addRules",
+        rules    = list(PermissionRuleValue("Bash", "allow")),
+        behavior = "allow",
+        destination = "projectSettings"
+      )
+    ))
+
 ------------------------------------------------------------------------
 
-### Method `deny_tool()`
+### `ClaudeSDKClient$deny_tool()`
 
 Deny a pending tool request.
 
 #### Usage
 
-    ClaudeSDKClient$deny_tool(request_id, message = "Denied by user")
+    ClaudeSDKClient$deny_tool(
+      request_id,
+      message = "Denied by user",
+      interrupt = FALSE
+    )
 
 #### Arguments
 
@@ -283,9 +322,14 @@ Deny a pending tool request.
 
   Character. Reason for denial (default `"Denied by user"`).
 
+- `interrupt`:
+
+  Logical. If `TRUE`, ask the CLI to interrupt the running task entirely
+  after denying (default `FALSE`).
+
 ------------------------------------------------------------------------
 
-### Method `interrupt()`
+### `ClaudeSDKClient$interrupt()`
 
 Send an interrupt control request.
 
@@ -295,13 +339,13 @@ Send an interrupt control request.
 
 ------------------------------------------------------------------------
 
-### Method `set_permission_mode()`
+### `ClaudeSDKClient$set_permission_mode()`
 
 Change the permission mode at runtime.
 
 #### Usage
 
-    ClaudeSDKClient$set_permission_mode(mode, destination = "session")
+    ClaudeSDKClient$set_permission_mode(mode)
 
 #### Arguments
 
@@ -310,13 +354,9 @@ Change the permission mode at runtime.
   Character. One of `"default"`, `"acceptEdits"`, `"bypassPermissions"`,
   `"plan"`, `"dontAsk"`, `"auto"`.
 
-- `destination`:
-
-  Character. Where to apply the mode change (default `"session"`).
-
 ------------------------------------------------------------------------
 
-### Method `set_model()`
+### `ClaudeSDKClient$set_model()`
 
 Change the AI model at runtime.
 
@@ -332,7 +372,7 @@ Change the AI model at runtime.
 
 ------------------------------------------------------------------------
 
-### Method `rewind_files()`
+### `ClaudeSDKClient$rewind_files()`
 
 Rewind tracked files to their state at a specific user message. Requires
 `enable_file_checkpointing = TRUE`.
@@ -349,7 +389,7 @@ Rewind tracked files to their state at a specific user message. Requires
 
 ------------------------------------------------------------------------
 
-### Method `stop_task()`
+### `ClaudeSDKClient$stop_task()`
 
 Stop a running task by ID.
 
@@ -365,7 +405,7 @@ Stop a running task by ID.
 
 ------------------------------------------------------------------------
 
-### Method `get_mcp_status()`
+### `ClaudeSDKClient$get_mcp_status()`
 
 Get MCP server connection status.
 
@@ -385,7 +425,7 @@ Named list with `mcpServers` key, or `NULL` on timeout.
 
 ------------------------------------------------------------------------
 
-### Method `get_context_usage()`
+### `ClaudeSDKClient$get_context_usage()`
 
 Get context window usage breakdown.
 
@@ -405,7 +445,7 @@ Named list with token counts by category, or `NULL` on timeout.
 
 ------------------------------------------------------------------------
 
-### Method `get_server_info()`
+### `ClaudeSDKClient$get_server_info()`
 
 Get server initialization info.
 
@@ -419,7 +459,7 @@ List with server capabilities, or NULL.
 
 ------------------------------------------------------------------------
 
-### Method `reconnect_mcp_server()`
+### `ClaudeSDKClient$reconnect_mcp_server()`
 
 Reconnect a failed MCP server.
 
@@ -435,7 +475,7 @@ Reconnect a failed MCP server.
 
 ------------------------------------------------------------------------
 
-### Method `toggle_mcp_server()`
+### `ClaudeSDKClient$toggle_mcp_server()`
 
 Enable or disable an MCP server.
 
@@ -455,7 +495,24 @@ Enable or disable an MCP server.
 
 ------------------------------------------------------------------------
 
-### Method `clone()`
+### `ClaudeSDKClient$resume()`
+
+Prepare client to resume the last captured session. Sets
+`options$resume` to the `session_id` captured from the most recent
+`ResultMessage`. The next `$connect()` call will pass
+`--resume <session_id>` to the CLI.
+
+#### Usage
+
+    ClaudeSDKClient$resume()
+
+#### Returns
+
+`self` invisibly (for chaining).
+
+------------------------------------------------------------------------
+
+### `ClaudeSDKClient$clone()`
 
 The objects of this class are cloneable with this method.
 
@@ -486,5 +543,23 @@ coro::loop(for (msg in client$receive_response()) {
 })
 
 client$disconnect()
+} # }
+
+## ------------------------------------------------
+## Method `ClaudeSDKClient$approve_tool()`
+## ------------------------------------------------
+
+if (FALSE) { # \dontrun{
+# Allow once (no rule written)
+client$approve_tool(rid)
+
+# Allow and persist rule to project settings
+client$approve_tool(rid, updated_permissions = list(
+  PermissionUpdate("addRules",
+    rules    = list(PermissionRuleValue("Bash", "allow")),
+    behavior = "allow",
+    destination = "projectSettings"
+  )
+))
 } # }
 ```

@@ -41,6 +41,8 @@ Rename, tag, delete, or fork existing sessions.
   : Delete a session
 - [`fork_session()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/fork_session.md)
   : Fork a session
+- [`ForkSessionResult()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/ForkSessionResult.md)
+  : Result of a fork_session() operation
 
 ## Permission Types
 
@@ -56,6 +58,8 @@ Return values for `can_use_tool` callbacks and message-driven approval.
   : Create a PermissionRuleValue
 - [`PermissionUpdate()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/PermissionUpdate.md)
   : Create a PermissionUpdate
+- [`ToolPermissionContext()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/ToolPermissionContext.md)
+  : Context passed to can_use_tool callbacks
 
 ## Message Types
 
@@ -83,6 +87,12 @@ and the client.
   : Create a TaskProgressMessage
 - [`TaskNotificationMessage()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/TaskNotificationMessage.md)
   : Create a TaskNotificationMessage
+- [`TaskUpdatedMessage()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/TaskUpdatedMessage.md)
+  : Create a TaskUpdatedMessage
+- [`HookEventMessage()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/HookEventMessage.md)
+  : Create a HookEventMessage
+- [`DeferredToolUse()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/DeferredToolUse.md)
+  : Create a DeferredToolUse
 
 ## Content Block Types
 
@@ -96,6 +106,10 @@ Blocks that appear inside `AssistantMessage$content`.
   : Create a ToolUseBlock
 - [`ToolResultBlock()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/ToolResultBlock.md)
   : Create a ToolResultBlock
+- [`ServerToolUseBlock()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/ServerToolUseBlock.md)
+  : Create a ServerToolUseBlock
+- [`ServerToolResultBlock()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/ServerToolResultBlock.md)
+  : Create a ServerToolResultBlock
 
 ## Hook Types
 
@@ -127,6 +141,22 @@ Input and output types for the hook system.
   : Create an AsyncHookOutput
 - [`HookMatcher()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/HookMatcher.md)
   : Create a HookMatcher
+- [`PreToolUseHookSpecificOutput()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/PreToolUseHookSpecificOutput.md)
+  : Hook-specific output for PreToolUse hook
+- [`PostToolUseHookSpecificOutput()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/PostToolUseHookSpecificOutput.md)
+  : Hook-specific output for PostToolUse hook
+- [`PostToolUseFailureHookSpecificOutput()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/PostToolUseFailureHookSpecificOutput.md)
+  : Hook-specific output for PostToolUseFailure hook
+- [`UserPromptSubmitHookSpecificOutput()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/UserPromptSubmitHookSpecificOutput.md)
+  : Hook-specific output for UserPromptSubmit hook
+- [`SessionStartHookSpecificOutput()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/SessionStartHookSpecificOutput.md)
+  : Hook-specific output for SessionStart hook
+- [`SubagentStartHookSpecificOutput()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/SubagentStartHookSpecificOutput.md)
+  : Hook-specific output for SubagentStart hook
+- [`NotificationHookSpecificOutput()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/NotificationHookSpecificOutput.md)
+  : Hook-specific output for Notification hook
+- [`PermissionRequestHookSpecificOutput()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/PermissionRequestHookSpecificOutput.md)
+  : Hook-specific output for PermissionRequest hook
 
 ## Agent & MCP Types
 
@@ -142,6 +172,12 @@ Configuration and status types for agents and MCP servers.
   : Create a McpServerStatus
 - [`McpStatusResponse()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/McpStatusResponse.md)
   : Create a McpStatusResponse
+- [`create_sdk_mcp_server()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/create_sdk_mcp_server.md)
+  : Create an in-process SDK MCP server
+- [`sdk_mcp_tool()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/sdk_mcp_tool.md)
+  : Define an in-process SDK MCP tool
+- [`mcp_serve_stdio()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/mcp_serve_stdio.md)
+  : Serve SDK MCP tools over stdio (newline-delimited JSON-RPC)
 
 ## Thinking & Effort Types
 
@@ -217,3 +253,31 @@ Typed error objects raised by the SDK.
   : Raise CLIJSONDecodeError
 - [`claude_message_parse_error()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/claude_message_parse_error.md)
   : Raise MessageParseError
+
+## Constants
+
+Exported constant vectors (recognized statuses / server tool names).
+
+- [`RATE_LIMIT_STATUSES`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/RATE_LIMIT_STATUSES.md)
+  :
+
+  Valid rate-limit status values (`RateLimitStatus`)
+
+- [`RATE_LIMIT_TYPES`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/RATE_LIMIT_TYPES.md)
+  :
+
+  Valid rate-limit type values (`RateLimitType`)
+
+- [`SERVER_TOOL_NAMES`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/SERVER_TOOL_NAMES.md)
+  :
+
+  Valid server-side tool names (`ServerToolName`)
+
+- [`TASK_UPDATED_STATUSES`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/TASK_UPDATED_STATUSES.md)
+  :
+
+  Possible status values reported inside a `task_updated` patch
+
+- [`TERMINAL_TASK_STATUSES`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/TERMINAL_TASK_STATUSES.md)
+  : Terminal task statuses (a task in one of these will not transition
+  further)

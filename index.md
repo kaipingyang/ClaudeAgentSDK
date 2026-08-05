@@ -368,6 +368,56 @@ cat("Context:", usage$percentage, "% used\n")
 client$disconnect()
 ```
 
+## MCP tools
+
+Give Claude custom tools via the Model Context Protocol. Two flavours:
+
+- **External MCP server** (a separate process the CLI connects to over
+  stdio / http) — the SDK just forwards the config; use
+  [`r_mcp_server()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/r_mcp_server.md)
+  to build a `mcptools`-based R stdio server entry.
+- **In-process SDK MCP server** — tools run *inside this R session* (no
+  subprocess). The CLI routes each call back over the control protocol
+  and your handler runs in-process with direct access to session state.
+  Depends only on `jsonlite` (no `ellmer` / `curl`), so it is safe in
+  `curl`-pinned `renv` projects.
+
+``` r
+
+library(ClaudeAgentSDK)
+
+add <- sdk_mcp_tool(
+  name         = "add",
+  description  = "Add two numbers and return their sum.",
+  input_schema = list(a = "number", b = "number"),
+  handler      = function(args) {
+    list(content = list(list(
+      type = "text", text = paste0("Sum: ", args$a + args$b)
+    )))
+  }
+)
+
+server <- create_sdk_mcp_server("calc", tools = list(add))
+
+result <- claude_run(
+  "Use the add tool to compute 17 + 25.",
+  options = ClaudeAgentOptions(
+    mcp_servers   = list(calc = server),
+    allowed_tools = "mcp__calc__add"      # naming: mcp__<server>__<tool>
+  )
+)
+```
+
+[`sdk_mcp_tool()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/sdk_mcp_tool.md)
+/
+[`create_sdk_mcp_server()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/create_sdk_mcp_server.md)
+mirror the Python SDK’s `tool()` /
+[`create_sdk_mcp_server()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/create_sdk_mcp_server.md);
+the tool constructor is named
+[`sdk_mcp_tool()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/sdk_mcp_tool.md)
+to avoid masking `ellmer::tool()`. Handlers return
+`list(content = list(list(type = "text", text = ...)), isError = FALSE)`.
+
 ## Types
 
 See
@@ -556,8 +606,9 @@ options <- ClaudeAgentOptions(
 
 ## Advanced: Custom Tools via MCP
 
-The Python SDK provides `create_sdk_mcp_server()` for defining tools
-in-process. The R SDK uses
+The Python SDK provides
+[`create_sdk_mcp_server()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/create_sdk_mcp_server.md)
+for defining tools in-process. The R SDK uses
 [`mcptools`](https://github.com/posit-dev/mcptools) instead, which runs
 tools in a separate R subprocess via the standard MCP protocol.
 Functionally equivalent — the only difference is shared-memory access.

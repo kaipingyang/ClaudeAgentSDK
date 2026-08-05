@@ -6,7 +6,7 @@ Mirrors Python's `HookMatcher` dataclass in `types.py`.
 ## Usage
 
 ``` r
-HookMatcher(matcher, hooks, timeout = NULL)
+HookMatcher(matcher = NULL, hooks = list(), timeout = NULL)
 ```
 
 ## Arguments

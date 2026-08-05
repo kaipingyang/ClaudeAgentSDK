@@ -7,8 +7,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 <title>ClaudeAgentSDK — R SDK for Claude Code Agent • ClaudeAgentSDK</title>
 <script src="deps/jquery-3.6.0/jquery-3.6.0.min.js"></script><meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<link href="deps/bootstrap-5.3.1/bootstrap.min.css" rel="stylesheet">
-<script src="deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
+<link href="deps/bootstrap-5.3.8/bootstrap.min.css" rel="stylesheet">
+<script src="deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="ClaudeAgentSDK — R SDK for Claude Code Agent">
 <meta name="description" content="R implementation of the Claude Agent SDK. Spawns the Claude Code CLI as a subprocess and communicates via newline-delimited JSON stream protocol, including bidirectional control (permission requests, hooks, interrupt).
@@ -24,7 +24,7 @@
 
     <a class="navbar-brand me-2" href="index.html">ClaudeAgentSDK</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.3</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -368,6 +368,41 @@
 </div>
 </div>
 <div class="section level2">
+<h2 id="mcp-tools">MCP tools<a class="anchor" aria-label="anchor" href="#mcp-tools"></a>
+</h2>
+<p>Give Claude custom tools via the Model Context Protocol. Two flavours:</p>
+<ul>
+<li>
+<strong>External MCP server</strong> (a separate process the CLI connects to over stdio / http) — the SDK just forwards the config; use <code><a href="reference/r_mcp_server.html">r_mcp_server()</a></code> to build a <code>mcptools</code>-based R stdio server entry.</li>
+<li>
+<strong>In-process SDK MCP server</strong> — tools run <em>inside this R session</em> (no subprocess). The CLI routes each call back over the control protocol and your handler runs in-process with direct access to session state. Depends only on <code>jsonlite</code> (no <code>ellmer</code> / <code>curl</code>), so it is safe in <code>curl</code>-pinned <code>renv</code> projects.</li>
+</ul>
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://kaipingyang.github.io/ClaudeAgentSDK/">ClaudeAgentSDK</a></span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">add</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/sdk_mcp_tool.html">sdk_mcp_tool</a></span><span class="op">(</span></span>
+<span>  name         <span class="op">=</span> <span class="st">"add"</span>,</span>
+<span>  description  <span class="op">=</span> <span class="st">"Add two numbers and return their sum."</span>,</span>
+<span>  input_schema <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>a <span class="op">=</span> <span class="st">"number"</span>, b <span class="op">=</span> <span class="st">"number"</span><span class="op">)</span>,</span>
+<span>  handler      <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">args</span><span class="op">)</span> <span class="op">{</span></span>
+<span>    <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>content <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>      type <span class="op">=</span> <span class="st">"text"</span>, text <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"Sum: "</span>, <span class="va">args</span><span class="op">$</span><span class="va">a</span> <span class="op">+</span> <span class="va">args</span><span class="op">$</span><span class="va">b</span><span class="op">)</span></span>
+<span>    <span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="op">}</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">server</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/create_sdk_mcp_server.html">create_sdk_mcp_server</a></span><span class="op">(</span><span class="st">"calc"</span>, tools <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">add</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/claude_run.html">claude_run</a></span><span class="op">(</span></span>
+<span>  <span class="st">"Use the add tool to compute 17 + 25."</span>,</span>
+<span>  options <span class="op">=</span> <span class="fu"><a href="reference/ClaudeAgentOptions.html">ClaudeAgentOptions</a></span><span class="op">(</span></span>
+<span>    mcp_servers   <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>calc <span class="op">=</span> <span class="va">server</span><span class="op">)</span>,</span>
+<span>    allowed_tools <span class="op">=</span> <span class="st">"mcp__calc__add"</span>      <span class="co"># naming: mcp__&lt;server&gt;__&lt;tool&gt;</span></span>
+<span>  <span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p><code><a href="reference/sdk_mcp_tool.html">sdk_mcp_tool()</a></code> / <code><a href="reference/create_sdk_mcp_server.html">create_sdk_mcp_server()</a></code> mirror the Python SDK’s <code>tool()</code> / <code><a href="reference/create_sdk_mcp_server.html">create_sdk_mcp_server()</a></code>; the tool constructor is named <code><a href="reference/sdk_mcp_tool.html">sdk_mcp_tool()</a></code> to avoid masking <code>ellmer::tool()</code>. Handlers return <code>list(content = list(list(type = "text", text = ...)), isError = FALSE)</code>.</p>
+</div>
+<div class="section level2">
 <h2 id="types">Types<a class="anchor" aria-label="anchor" href="#types"></a>
 </h2>
 <p>See <a href="R/types.R"><code>R/types.R</code></a> for complete type definitions:</p>
@@ -406,7 +441,7 @@
 <div class="section level2">
 <h2 id="error-handling">Error Handling<a class="anchor" aria-label="anchor" href="#error-handling"></a>
 </h2>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://kaipingyang.github.io/ClaudeAgentSDK/">ClaudeAgentSDK</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/conditions.html" class="external-link">tryCatch</a></span><span class="op">(</span></span>
@@ -478,7 +513,7 @@
 <div class="section level2">
 <h2 id="session-management">Session Management<a class="anchor" aria-label="anchor" href="#session-management"></a>
 </h2>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://kaipingyang.github.io/ClaudeAgentSDK/">ClaudeAgentSDK</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># List recent sessions for a project</span></span>
@@ -509,7 +544,7 @@
 <div class="section level2">
 <h2 id="advanced-continuing-and-resuming-sessions">Advanced: Continuing and Resuming Sessions<a class="anchor" aria-label="anchor" href="#advanced-continuing-and-resuming-sessions"></a>
 </h2>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Continue the most recent session</span></span>
 <span><span class="va">result</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/claude_run.html">claude_run</a></span><span class="op">(</span></span>
 <span>  <span class="st">"Continue where we left off"</span>,</span>
@@ -534,7 +569,7 @@
 <div class="section level2">
 <h2 id="advanced-thinking-and-effort">Advanced: Thinking and Effort<a class="anchor" aria-label="anchor" href="#advanced-thinking-and-effort"></a>
 </h2>
-<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Extended thinking (adaptive) — using typed constructor or plain list</span></span>
 <span><span class="va">options</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/ClaudeAgentOptions.html">ClaudeAgentOptions</a></span><span class="op">(</span></span>
 <span>  thinking <span class="op">=</span> <span class="fu"><a href="reference/ThinkingConfigAdaptive.html">ThinkingConfigAdaptive</a></span><span class="op">(</span><span class="op">)</span></span>
@@ -556,7 +591,7 @@
 <div class="section level2">
 <h2 id="advanced-structured-output">Advanced: Structured Output<a class="anchor" aria-label="anchor" href="#advanced-structured-output"></a>
 </h2>
-<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">options</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/ClaudeAgentOptions.html">ClaudeAgentOptions</a></span><span class="op">(</span></span>
 <span>  output_format <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>    type   <span class="op">=</span> <span class="st">"json_schema"</span>,</span>
@@ -575,7 +610,7 @@
 <div class="section level2">
 <h2 id="advanced-mcp-servers">Advanced: MCP Servers<a class="anchor" aria-label="anchor" href="#advanced-mcp-servers"></a>
 </h2>
-<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">options</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/ClaudeAgentOptions.html">ClaudeAgentOptions</a></span><span class="op">(</span></span>
 <span>  mcp_servers <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>    my_server <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
@@ -590,8 +625,8 @@
 <div class="section level2">
 <h2 id="advanced-custom-tools-via-mcp">Advanced: Custom Tools via MCP<a class="anchor" aria-label="anchor" href="#advanced-custom-tools-via-mcp"></a>
 </h2>
-<p>The Python SDK provides <code>create_sdk_mcp_server()</code> for defining tools in-process. The R SDK uses <a href="https://github.com/posit-dev/mcptools" class="external-link"><code>mcptools</code></a> instead, which runs tools in a separate R subprocess via the standard MCP protocol. Functionally equivalent — the only difference is shared-memory access.</p>
-<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<p>The Python SDK provides <code><a href="reference/create_sdk_mcp_server.html">create_sdk_mcp_server()</a></code> for defining tools in-process. The R SDK uses <a href="https://github.com/posit-dev/mcptools" class="external-link"><code>mcptools</code></a> instead, which runs tools in a separate R subprocess via the standard MCP protocol. Functionally equivalent — the only difference is shared-memory access.</p>
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># 1. Define tools in a file (e.g., mcp_tools_def.R)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>  <span class="fu">ellmer</span><span class="fu">::</span><span class="fu">tool</span><span class="op">(</span></span>
@@ -622,7 +657,7 @@
 <a class="anchor" aria-label="anchor" href="#recommended-coroasync--poll_messages"></a>
 </h3>
 <p>The recommended Shiny pattern uses <code><a href="https://coro.r-lib.org/reference/async.html" class="external-link">coro::async</a></code> with <code>poll_messages()</code> inside an <code>ExtendedTask</code>. Each <code><a href="https://coro.r-lib.org/reference/async.html" class="external-link">await()</a></code> call yields the R event loop, allowing Shiny input events (interrupt button, approval buttons) to fire between tokens.</p>
-<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/r-lib/coro" class="external-link">coro</a></span><span class="op">)</span>; <span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://rstudio.github.io/promises/" class="external-link">promises</a></span><span class="op">)</span>; <span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://posit-dev.github.io/shinychat/r/" class="external-link">shinychat</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">client</span> <span class="op">&lt;-</span> <span class="va"><a href="reference/ClaudeSDKClient.html">ClaudeSDKClient</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="fu"><a href="reference/ClaudeAgentOptions.html">ClaudeAgentOptions</a></span><span class="op">(</span></span>
@@ -714,7 +749,7 @@
 <h3 id="simple-non-streaming-pattern-receive_response_async">Simple non-streaming pattern (<code>receive_response_async</code>)<a class="anchor" aria-label="anchor" href="#simple-non-streaming-pattern-receive_response_async"></a>
 </h3>
 <p>For cases where streaming is not needed, <code>receive_response_async()</code> returns a <code><a href="https://rstudio.github.io/promises/reference/promise.html" class="external-link">promises::promise</a></code> that resolves to the <code>ResultMessage</code>:</p>
-<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://kaipingyang.github.io/ClaudeAgentSDK/">ClaudeAgentSDK</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://rstudio.github.io/promises/" class="external-link">promises</a></span><span class="op">)</span></span>
 <span></span>
@@ -749,7 +784,7 @@
 <div class="section level3">
 <h3 id="running-tests">Running Tests<a class="anchor" aria-label="anchor" href="#running-tests"></a>
 </h3>
-<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Unit tests (no CLI required)</span></span>
 <span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">test</span><span class="op">(</span><span class="st">"/path/to/ClaudeAgentSDK"</span><span class="op">)</span></span>
 <span></span>
@@ -759,8 +794,8 @@
 <div class="section level3">
 <h3 id="development-setup">Development Setup<a class="anchor" aria-label="anchor" href="#development-setup"></a>
 </h3>
-<div class="sourceCode" id="cb23"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb23-1"><a href="#cb23-1" tabindex="-1"></a><span class="co"># Install git hooks (runs tests before push)</span></span>
-<span id="cb23-2"><a href="#cb23-2" tabindex="-1"></a><span class="fu">bash</span> scripts/initial-setup.sh</span></code></pre></div>
+<div class="sourceCode" id="cb24"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb24-1"><a href="#cb24-1" tabindex="-1"></a><span class="co"># Install git hooks (runs tests before push)</span></span>
+<span id="cb24-2"><a href="#cb24-2" tabindex="-1"></a><span class="fu">bash</span> scripts/initial-setup.sh</span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="package-structure">Package Structure<a class="anchor" aria-label="anchor" href="#package-structure"></a>
@@ -779,7 +814,7 @@
 <div class="section level3">
 <h3 id="package-checks">Package Checks<a class="anchor" aria-label="anchor" href="#package-checks"></a>
 </h3>
-<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">check</span><span class="op">(</span><span class="st">"/path/to/ClaudeAgentSDK"</span><span class="op">)</span></span></code></pre></div>
 </div>
 </div>
@@ -832,7 +867,7 @@
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.0.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.2.1.</p>
 </div>
 
     </footer>

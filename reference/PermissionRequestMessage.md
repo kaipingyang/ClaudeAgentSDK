@@ -15,7 +15,12 @@ PermissionRequestMessage(
   tool_input,
   tool_use_id = NULL,
   agent_id = NULL,
-  suggestions = NULL
+  suggestions = NULL,
+  blocked_path = NULL,
+  decision_reason = NULL,
+  title = NULL,
+  display_name = NULL,
+  description = NULL
 )
 ```
 
@@ -44,6 +49,26 @@ PermissionRequestMessage(
 - suggestions:
 
   List or NULL. Permission suggestions from the CLI.
+
+- blocked_path:
+
+  Character or NULL. File path that triggered the request.
+
+- decision_reason:
+
+  Character or NULL. Why the request was triggered.
+
+- title:
+
+  Character or NULL. Full permission prompt sentence.
+
+- display_name:
+
+  Character or NULL. Short noun phrase for the action.
+
+- description:
+
+  Character or NULL. Subtitle for the permission UI.
 
 ## Value
 

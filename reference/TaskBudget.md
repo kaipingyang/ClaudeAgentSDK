@@ -7,12 +7,12 @@ limit.
 ## Usage
 
 ``` r
-TaskBudget(max_tokens)
+TaskBudget(total)
 ```
 
 ## Arguments
 
-- max_tokens:
+- total:
 
   Integer. Maximum token budget for the task.
 
@@ -23,8 +23,7 @@ Object of class `TaskBudget`.
 ## Examples
 
 ``` r
-budget <- TaskBudget(max_tokens = 10000L)
-#> Error in TaskBudget(max_tokens = 10000L): unused argument (max_tokens = 10000)
-budget$max_tokens
-#> Error: object 'budget' not found
+budget <- TaskBudget(total = 10000L)
+budget$total
+#> [1] 10000
 ```

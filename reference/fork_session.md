@@ -37,7 +37,7 @@ fork_session(
 
 ## Value
 
-Named list with `session_id` — the UUID of the new forked session.
+A `ForkSessionResult` object with a `session_id` field.
 
 ## Examples
 

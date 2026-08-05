@@ -5,7 +5,7 @@ Create a ThinkingConfigEnabled
 ## Usage
 
 ``` r
-ThinkingConfigEnabled(budget_tokens)
+ThinkingConfigEnabled(budget_tokens, display = NULL)
 ```
 
 ## Arguments
@@ -13,6 +13,11 @@ ThinkingConfigEnabled(budget_tokens)
 - budget_tokens:
 
   Integer. Token budget for thinking.
+
+- display:
+
+  Character or NULL. `"summarized"` or `"omitted"`. See
+  [`ThinkingConfigAdaptive()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/ThinkingConfigAdaptive.md).
 
 ## Value
 

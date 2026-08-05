@@ -1,11 +1,5 @@
 # SubprocessCLITransport R6 Class
 
-SubprocessCLITransport R6 Class
-
-SubprocessCLITransport R6 Class
-
-## Details
-
 Internal class (not exported). Spawns a `claude` subprocess with
 `--output-format stream-json --input-format stream-json --verbose`,
 reads newline-delimited JSON from stdout, and handles the bidirectional
@@ -25,7 +19,7 @@ interrupt).
 
 ### Public methods
 
-- [`SubprocessCLITransport$new()`](#method-SubprocessCLITransport-new)
+- [`SubprocessCLITransport$new()`](#method-SubprocessCLITransport-initialize)
 
 - [`SubprocessCLITransport$connect()`](#method-SubprocessCLITransport-connect)
 
@@ -51,7 +45,7 @@ interrupt).
 
 ------------------------------------------------------------------------
 
-### Method `new()`
+### `SubprocessCLITransport$new()`
 
 Initialize the transport with a `ClaudeAgentOptions` object.
 
@@ -69,7 +63,7 @@ Initialize the transport with a `ClaudeAgentOptions` object.
 
 ------------------------------------------------------------------------
 
-### Method `connect()`
+### `SubprocessCLITransport$connect()`
 
 Start the subprocess and wait for the `initialize` control-request
 handshake.
@@ -80,7 +74,7 @@ handshake.
 
 ------------------------------------------------------------------------
 
-### Method `disconnect()`
+### `SubprocessCLITransport$disconnect()`
 
 Gracefully shut down the subprocess.
 
@@ -90,7 +84,7 @@ Gracefully shut down the subprocess.
 
 ------------------------------------------------------------------------
 
-### Method `send()`
+### `SubprocessCLITransport$send()`
 
 Write a JSON string to the subprocess stdin.
 
@@ -107,7 +101,7 @@ Write a JSON string to the subprocess stdin.
 
 ------------------------------------------------------------------------
 
-### Method `is_alive()`
+### `SubprocessCLITransport$is_alive()`
 
 Return TRUE if the subprocess is running.
 
@@ -117,7 +111,7 @@ Return TRUE if the subprocess is running.
 
 ------------------------------------------------------------------------
 
-### Method `get_init_result()`
+### `SubprocessCLITransport$get_init_result()`
 
 Return the server initialization info captured during the initialize
 handshake, or NULL if not yet connected.
@@ -128,7 +122,7 @@ handshake, or NULL if not yet connected.
 
 ------------------------------------------------------------------------
 
-### Method `send_and_wait()`
+### `SubprocessCLITransport$send_and_wait()`
 
 Send a control request and synchronously poll for its response. Buffers
 any SDK messages received before the response so they are not lost from
@@ -158,7 +152,7 @@ Named list with the response payload, or `NULL` on timeout.
 
 ------------------------------------------------------------------------
 
-### Method `read_available_messages()`
+### `SubprocessCLITransport$read_available_messages()`
 
 Perform a single non-blocking read cycle. Polls stdout with a 0 ms
 timeout, reads any available data, parses complete JSON lines into typed
@@ -180,7 +174,7 @@ List of typed message objects (may be empty).
 
 ------------------------------------------------------------------------
 
-### Method `get_pending_permission()`
+### `SubprocessCLITransport$get_pending_permission()`
 
 Get a pending permission request by ID, or NULL.
 
@@ -196,7 +190,7 @@ Get a pending permission request by ID, or NULL.
 
 ------------------------------------------------------------------------
 
-### Method `resolve_pending_permission()`
+### `SubprocessCLITransport$resolve_pending_permission()`
 
 Resolve a pending permission request by sending the control response to
 the CLI.
@@ -218,7 +212,7 @@ the CLI.
 
 ------------------------------------------------------------------------
 
-### Method `receive_messages()`
+### `SubprocessCLITransport$receive_messages()`
 
 Return a `coro` generator that yields typed message objects until a
 `ResultMessage` is received or the process exits. Control requests are
@@ -230,7 +224,7 @@ handled internally and never yielded.
 
 ------------------------------------------------------------------------
 
-### Method `clone()`
+### `SubprocessCLITransport$clone()`
 
 The objects of this class are cloneable with this method.
 

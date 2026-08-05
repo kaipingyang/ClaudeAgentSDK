@@ -1,5 +1,111 @@
 # Changelog
 
+## ClaudeAgentSDK 0.2.3 (2026-08-05)
+
+Bug-fix and additive release (no breaking changes).
+
+#### Bug Fixes
+
+- **Large messages no longer hang the CLI.** `transport$send()` (and the
+  `initialize` handshake) wrote the whole message to the CLI’s stdin
+  with a single non-blocking `processx::write_input()` and ignored its
+  return value. Any message larger than the OS pipe buffer (~200 KB) was
+  silently truncated, so the CLI never received the line’s terminating
+  newline and the turn hung forever — this hit large text prompts and
+  (especially) image attachments. Writes now loop until the entire
+  payload is flushed, re-feeding the unwritten remainder and briefly
+  yielding for stdin backpressure, matching the official Python SDK’s
+  awaited full stdin write.
+
+#### New Features
+
+- **[`mcp_serve_stdio()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/mcp_serve_stdio.md)**
+  — serve SDK-defined MCP tools over stdio, avoiding the in-process idle
+  stall.
+
+#### Internal
+
+- Documentation regenerated with roxygen2 8.0.0; minor build hygiene
+  (`.Rbuildignore`, `.gitignore`).
+
+## ClaudeAgentSDK 0.2.2 (2026-07-24)
+
+Additive feature release (no breaking changes).
+
+#### New Features
+
+- **In-process SDK MCP servers.** Define MCP tools that run *inside* the
+  R session — no subprocess — and register them via
+  `ClaudeAgentOptions(mcp_servers = list(<name> = create_sdk_mcp_server(...)))`.
+  New exports
+  [`sdk_mcp_tool()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/sdk_mcp_tool.md)
+  and
+  [`create_sdk_mcp_server()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/create_sdk_mcp_server.md)
+  mirror the Python SDK’s `tool()` /
+  [`create_sdk_mcp_server()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/create_sdk_mcp_server.md)
+  (the tool constructor is named
+  [`sdk_mcp_tool()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/sdk_mcp_tool.md)
+  to avoid masking `ellmer::tool()`). The CLI routes each tool call back
+  over the stream-json control protocol (`control_request` with
+  `subtype = "mcp_message"` carrying JSON-RPC `initialize` /
+  `tools/list` / `tools/call`), and the handler runs in-process with
+  direct access to session state. **Depends only on `jsonlite` — no new
+  dependencies** (notably no `ellmer` / `httr2` / `curl`), so it is safe
+  in `curl`-pinned `renv` projects. This complements the existing
+  external-server helper
+  [`r_mcp_server()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/r_mcp_server.md).
+  Verified end-to-end against the live Claude Code CLI.
+
+## ClaudeAgentSDK 0.2.1 (2026-07-05)
+
+Parity upgrade against the official Python `claude-agent-sdk` v0.2.110.
+All changes are additive (no breaking changes).
+
+#### New Features
+
+- **Server-side tool blocks**: parse `server_tool_use` and
+  `advisor_tool_result` content blocks into new
+  [`ServerToolUseBlock()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/ServerToolUseBlock.md)
+  /
+  [`ServerToolResultBlock()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/ServerToolResultBlock.md)
+  types (used by `web_search`, `web_fetch`, `advisor`, etc.). Added the
+  `SERVER_TOOL_NAMES` constant.
+- **`TaskUpdatedMessage`**: parse `system`/`task_updated` events,
+  exposing `task_id`, `patch`, and `status` (from `patch$status`).
+  Terminal task completion sometimes arrives only via `task_updated` (no
+  `task_notification`). Added `TASK_UPDATED_STATUSES` /
+  `TERMINAL_TASK_STATUSES` constants.
+- **`HookEventMessage`**: parse `hook_started` / `hook_response` system
+  messages (emitted when the new `include_hook_events` option is
+  `TRUE`).
+- **`DeferredToolUse`** type plus `ResultMessage$deferred_tool_use` and
+  `ResultMessage$api_error_status` fields.
+- **New `ClaudeAgentOptions`**: `strict_mcp_config`
+  (`--strict-mcp-config`), `skills` (injects `Skill` / `Skill(name)`
+  into allowed tools and defaults setting sources), and
+  `include_hook_events` (`--include-hook-events`).
+- **Thinking display**:
+  [`ThinkingConfigAdaptive()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/ThinkingConfigAdaptive.md)
+  /
+  [`ThinkingConfigEnabled()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/ThinkingConfigEnabled.md)
+  gain a `display` argument (`"summarized"` / `"omitted"`), emitted as
+  `--thinking-display` (relevant for Opus 4.7+, which defaults to
+  signature-only).
+- **Sandbox network config**:
+  [`SandboxNetworkConfig()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/SandboxNetworkConfig.md)
+  gains `allowed_domains`, `denied_domains`,
+  `allow_managed_domains_only`, and `allow_mach_lookup`.
+- **Permission UI context**:
+  [`ToolPermissionContext()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/ToolPermissionContext.md)
+  and
+  [`PermissionRequestMessage()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/PermissionRequestMessage.md)
+  gain `blocked_path`, `decision_reason`, `title`, `display_name`, and
+  `description` (populated from the incoming request).
+- **[`PostToolUseHookSpecificOutput()`](https://kaipingyang.github.io/ClaudeAgentSDK/reference/PostToolUseHookSpecificOutput.md)**
+  gains `updated_tool_output` (rewrite a regular tool’s output,
+  alongside the existing `updated_mcp_tool_output`).
+- Added `RATE_LIMIT_STATUSES` / `RATE_LIMIT_TYPES` constants.
+
 ## ClaudeAgentSDK 0.2.0 (2026-04-12)
 
 #### Breaking Changes

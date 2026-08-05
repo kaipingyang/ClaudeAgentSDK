@@ -19,7 +19,9 @@ ResultMessage(
   structured_output = NULL,
   model_usage = NULL,
   permission_denials = NULL,
+  deferred_tool_use = NULL,
   errors = NULL,
+  api_error_status = NULL,
   uuid = NULL
 )
 ```
@@ -78,9 +80,20 @@ ResultMessage(
 
   List or NULL.
 
+- deferred_tool_use:
+
+  `DeferredToolUse` or NULL. Present when a PreToolUse hook deferred a
+  tool call.
+
 - errors:
 
   List or NULL.
+
+- api_error_status:
+
+  Integer or NULL. HTTP status code (e.g. 429, 500, 529) of the failing
+  API call when `is_error` is `TRUE` and `subtype` is `"success"`;
+  `NULL` otherwise.
 
 - uuid:
 
