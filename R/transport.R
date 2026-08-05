@@ -12,6 +12,32 @@ NULL
 
 .DEFAULT_MAX_BUFFER_SIZE <- 1024L * 1024L  # 1 MB
 
+# Write the full payload to a process's stdin, looping until it is flushed.
+#
+# processx `write_input()` is NON-BLOCKING: it writes only what currently fits the
+# OS pipe buffer and RETURNS the unwritten remainder (a raw vector). A single call
+# therefore TRUNCATES any message larger than the pipe buffer (~200 KB on Linux) —
+# the CLI then never receives the line's terminating newline and hangs forever
+# (e.g. large text messages or image attachments). Loop until the whole payload is
+# flushed, re-feeding the returned remainder and briefly yielding so the CLI can
+# drain stdin (backpressure). This mirrors the official Python SDK, whose async
+# stdin write (`await TextSendStream.send(data)`) always writes the complete payload.
+#' @keywords internal
+.write_all_to_process <- function(proc, data, timeout_s = 60) {
+  deadline <- Sys.time() + timeout_s
+  repeat {
+    remaining <- proc$write_input(data)          # raw vector of unwritten bytes
+    if (length(remaining) == 0L) break
+    if (!proc$is_alive())
+      stop("process terminated during stdin write", call. = FALSE)
+    if (Sys.time() > deadline)
+      stop("timed out flushing message to process stdin", call. = FALSE)
+    data <- remaining
+    Sys.sleep(0.002)
+  }
+  invisible(NULL)
+}
+
 #' SubprocessCLITransport R6 Class
 #'
 #' Internal class (not exported). Spawns a `claude` subprocess with
@@ -132,7 +158,7 @@ SubprocessCLITransport <- R6::R6Class(
         ))
       }
       tryCatch(
-        private$proc$write_input(paste0(message_json, "\n")),
+        .write_all_to_process(private$proc, paste0(message_json, "\n")),
         error = function(e) {
           private$ready <- FALSE
           claude_cli_connection_error(
@@ -661,7 +687,7 @@ SubprocessCLITransport <- R6::R6Class(
         request    = init_req_body
       )
       init_json <- jsonlite::toJSON(init_request, auto_unbox = TRUE, null = "null")
-      private$proc$write_input(paste0(init_json, "\n"))
+      .write_all_to_process(private$proc, paste0(init_json, "\n"))
 
       # Poll stdout for the matching control_response
       # Respect CLAUDE_CODE_STREAM_CLOSE_TIMEOUT env var (mirrors Python query.py)
