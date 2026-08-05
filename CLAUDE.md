@@ -66,6 +66,31 @@ devtools::test()
 
 699+ tests. Integration tests require a real Claude Code CLI and skip automatically if not found.
 
+## Documentation (pkgdown reference index)
+
+`_pkgdown.yml` uses a **curated** `reference:` index, so pkgdown requires **every**
+exported/documented topic to appear in it. When you add a new exported function or
+type (a new `man/*.Rd`), you MUST either:
+
+- add it to the appropriate `reference:` section in `_pkgdown.yml`, **or**
+- mark it `@keywords internal` (drops it from the index).
+
+Otherwise the pkgdown site build fails with *"Reference metadata not ok / N topics
+missing from index"*. Because that check only runs in the **pkgdown deploy workflow**
+(`.github/workflows/pkgdown.yaml`) — NOT in `devtools::test()` or the `pre-push`
+hook — it silently fails on every push to `main` (a failed-CI email) without blocking
+anything else, which is easy to miss.
+
+**pkgdown ships the check** — run it locally before pushing:
+
+```r
+pkgdown::check_pkgdown()   # "✔ No problems found", or lists the missing topics
+```
+
+Recommended: wire `pkgdown::check_pkgdown()` into `scripts/pre-push` (next to
+`devtools::test()`) or a CI check job so index drift is caught *before* the deploy
+fails, not after.
+
 ## Running examples
 
 **Always reinstall before running examples.** `library(ClaudeAgentSDK)` loads the installed package, not the dev source. After any code change, the installed `.rdb` can become stale or corrupt, causing:
