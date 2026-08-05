@@ -51,6 +51,7 @@ reference:
       - tag_session
       - delete_session
       - fork_session
+      - ForkSessionResult
 
   - title: "Permission Types"
     desc: "Return values for `can_use_tool` callbacks and message-driven approval."
@@ -60,6 +61,7 @@ reference:
       - PermissionRequestMessage
       - PermissionRuleValue
       - PermissionUpdate
+      - ToolPermissionContext
 
   - title: "Message Types"
     desc: "S3 classes representing messages yielded by `claude_query()` and the client."
@@ -74,6 +76,9 @@ reference:
       - TaskStartedMessage
       - TaskProgressMessage
       - TaskNotificationMessage
+      - TaskUpdatedMessage
+      - HookEventMessage
+      - DeferredToolUse
 
   - title: "Content Block Types"
     desc: "Blocks that appear inside `AssistantMessage$content`."
@@ -82,6 +87,8 @@ reference:
       - ThinkingBlock
       - ToolUseBlock
       - ToolResultBlock
+      - ServerToolUseBlock
+      - ServerToolResultBlock
 
   - title: "Hook Types"
     desc: "Input and output types for the hook system."
@@ -99,6 +106,14 @@ reference:
       - SyncHookOutput
       - AsyncHookOutput
       - HookMatcher
+      - PreToolUseHookSpecificOutput
+      - PostToolUseHookSpecificOutput
+      - PostToolUseFailureHookSpecificOutput
+      - UserPromptSubmitHookSpecificOutput
+      - SessionStartHookSpecificOutput
+      - SubagentStartHookSpecificOutput
+      - NotificationHookSpecificOutput
+      - PermissionRequestHookSpecificOutput
 
   - title: "Agent & MCP Types"
     desc: "Configuration and status types for agents and MCP servers."
@@ -108,6 +123,9 @@ reference:
       - McpServerInfo
       - McpServerStatus
       - McpStatusResponse
+      - create_sdk_mcp_server
+      - sdk_mcp_tool
+      - mcp_serve_stdio
 
   - title: "Thinking & Effort Types"
     desc: "Configuration for extended thinking / effort level."
@@ -150,6 +168,15 @@ reference:
       - claude_process_error
       - claude_json_decode_error
       - claude_message_parse_error
+
+  - title: "Constants"
+    desc: "Exported constant vectors (recognized statuses / server tool names)."
+    contents:
+      - RATE_LIMIT_STATUSES
+      - RATE_LIMIT_TYPES
+      - SERVER_TOOL_NAMES
+      - TASK_UPDATED_STATUSES
+      - TERMINAL_TASK_STATUSES
 
 articles:
   - title: "Shiny Integration"
