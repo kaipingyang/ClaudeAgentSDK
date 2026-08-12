@@ -31,8 +31,9 @@ paper/
 # Local secrets — never commit
 .Renviron
 
-# Python SDK reference copy (not part of this R package)
+# Official SDK reference copies (not part of this R package)
 claude-agent-sdk-python/
+claude-agent-sdk-typescript/
 docs/
 .codegraph/
 
