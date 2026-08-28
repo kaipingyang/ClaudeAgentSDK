@@ -134,6 +134,7 @@ ServerToolResultBlock <- function(tool_use_id, content) {
 #' @param uuid Character or NULL. Unique message ID.
 #' @param parent_tool_use_id Character or NULL.
 #' @param tool_use_result List or NULL.
+#' @param is_replay Logical or NULL. Whether the CLI marked this as a replayed message.
 #' @return Object of class `UserMessage`.
 #' @examples
 #' msg <- UserMessage("Hello, Claude!")
@@ -142,13 +143,15 @@ ServerToolResultBlock <- function(tool_use_id, content) {
 UserMessage <- function(content,
                         uuid               = NULL,
                         parent_tool_use_id = NULL,
-                        tool_use_result    = NULL) {
+                        tool_use_result    = NULL,
+                        is_replay          = NULL) {
   .new_obj(
     list(
       content            = content,
       uuid               = uuid,
       parent_tool_use_id = parent_tool_use_id,
-      tool_use_result    = tool_use_result
+      tool_use_result    = tool_use_result,
+      is_replay          = is_replay
     ),
     "UserMessage"
   )
@@ -723,14 +726,18 @@ sdk_session_info <- function(session_id, summary, last_modified,
 
 #' @keywords internal
 session_message_obj <- function(type, uuid, session_id, message,
-                                parent_tool_use_id = NULL) {
+                                parent_tool_use_id = NULL,
+                                is_compact_summary = NULL,
+                                is_visible_in_transcript_only = NULL) {
   .new_obj(
     list(
-      type               = type,
-      uuid               = uuid,
-      session_id         = session_id,
-      message            = message,
-      parent_tool_use_id = parent_tool_use_id
+      type                          = type,
+      uuid                          = uuid,
+      session_id                    = session_id,
+      message                       = message,
+      parent_tool_use_id            = parent_tool_use_id,
+      is_compact_summary            = is_compact_summary,
+      is_visible_in_transcript_only = is_visible_in_transcript_only
     ),
     "SessionMessage"
   )

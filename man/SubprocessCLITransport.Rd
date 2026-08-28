@@ -31,6 +31,8 @@ t$disconnect()
     \item \href{#method-SubprocessCLITransport-send}{\code{SubprocessCLITransport$send()}}
     \item \href{#method-SubprocessCLITransport-is_alive}{\code{SubprocessCLITransport$is_alive()}}
     \item \href{#method-SubprocessCLITransport-get_init_result}{\code{SubprocessCLITransport$get_init_result()}}
+    \item \href{#method-SubprocessCLITransport-send_async_callback}{\code{SubprocessCLITransport$send_async_callback()}}
+    \item \href{#method-SubprocessCLITransport-send_async}{\code{SubprocessCLITransport$send_async()}}
     \item \href{#method-SubprocessCLITransport-send_and_wait}{\code{SubprocessCLITransport$send_and_wait()}}
     \item \href{#method-SubprocessCLITransport-read_available_messages}{\code{SubprocessCLITransport$read_available_messages()}}
     \item \href{#method-SubprocessCLITransport-get_pending_permission}{\code{SubprocessCLITransport$get_pending_permission()}}
@@ -125,6 +127,63 @@ the initialize handshake, or NULL if not yet connected.
     \if{html}{\out{<div class="r">}}
     \preformatted{SubprocessCLITransport$get_init_result()}
     \if{html}{\out{</div>}}
+  }
+}
+
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-SubprocessCLITransport-send_async_callback"></a>}}
+\if{latex}{\out{\hypertarget{method-SubprocessCLITransport-send_async_callback}{}}}
+\subsection{\code{SubprocessCLITransport$send_async_callback()}}{
+  Send a control request and settle callbacks from the
+transport's normal stdout reader. This method creates no promise and
+never reads stdout.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{SubprocessCLITransport$send_async_callback(
+  request,
+  on_fulfilled,
+  on_rejected,
+  timeout_ms = 5000L
+)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{request}}{List. Control request body (must have \code{subtype}).}
+      \item{\code{on_fulfilled}}{Function called with the response payload.}
+      \item{\code{on_rejected}}{Function called with an error condition.}
+      \item{\code{timeout_ms}}{Numeric. Milliseconds before asynchronous rejection;
+use \code{Inf} to disable the callback timer.}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    The request id invisibly.
+  }
+}
+
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-SubprocessCLITransport-send_async"></a>}}
+\if{latex}{\out{\hypertarget{method-SubprocessCLITransport-send_async}{}}}
+\subsection{\code{SubprocessCLITransport$send_async()}}{
+  Send a control request and return a promise settled by the
+transport's normal stdout reader. This method never reads stdout.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{SubprocessCLITransport$send_async(request, timeout_ms = 5000L)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{request}}{List. Control request body (must have \code{subtype}).}
+      \item{\code{timeout_ms}}{Integer. Milliseconds before asynchronous rejection.}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    A \code{promises::promise} resolving to the response payload.
   }
 }
 

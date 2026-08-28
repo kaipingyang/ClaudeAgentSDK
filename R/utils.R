@@ -105,6 +105,242 @@ check_claude_version <- function(cli_path,
   invisible(version)
 }
 
+# Advisory CLI version checks are cached per R process. The executable's
+# normalized path owns one entry; replacing it or changing the required minimum
+# invalidates that entry. Store the result inside a list so a failed check (NULL)
+# is distinguishable from a cache miss.
+.claude_version_check_cache <- new.env(parent = emptyenv())
+
+check_claude_version_once <- function(
+    cli_path,
+    min_version = MINIMUM_CLAUDE_CODE_VERSION,
+    cache = .claude_version_check_cache,
+    checker = check_claude_version,
+    file_info = file.info) {
+  if (nzchar(Sys.getenv("CLAUDE_AGENT_SDK_SKIP_VERSION_CHECK"))) {
+    return(invisible(NULL))
+  }
+
+  normalized <- tryCatch(
+    normalizePath(cli_path, winslash = "/", mustWork = FALSE),
+    error = function(e) as.character(cli_path)
+  )
+  info <- tryCatch(file_info(normalized), error = function(e) NULL)
+  size <- if (!is.null(info) && NROW(info) > 0L) {
+    as.numeric(info$size[[1L]])
+  } else {
+    NA_real_
+  }
+  mtime <- if (!is.null(info) && NROW(info) > 0L) {
+    as.numeric(info$mtime[[1L]])
+  } else {
+    NA_real_
+  }
+  signature <- list(
+    size = size,
+    mtime = mtime,
+    min_version = as.character(min_version)
+  )
+
+  entry <- get0(normalized, envir = cache, inherits = FALSE)
+  if (!is.null(entry) && identical(entry$signature, signature)) {
+    return(invisible(entry$value[[1L]]))
+  }
+
+  value <- checker(normalized, min_version = min_version)
+  assign(
+    normalized,
+    list(signature = signature, value = list(value)),
+    envir = cache
+  )
+  invisible(value)
+}
+
+# Background advisory checks never participate in the transport's stdout reader
+# or connection lifecycle. A separate short-lived `claude -v` process is launched
+# from a later callback, then polled without blocking the R event loop.
+.claude_version_async_cache <- new.env(parent = emptyenv())
+
+.launch_claude_version_process <- function(cli_path) {
+  processx::process$new(
+    command = cli_path,
+    args = "-v",
+    stdout = "|",
+    stderr = "2>&1",
+    cleanup = TRUE
+  )
+}
+
+.inspect_claude_version_output <- function(
+    output,
+    cli_path,
+    min_version = MINIMUM_CLAUDE_CODE_VERSION,
+    warn = warning) {
+  if (is.null(output) || !length(output)) return(invisible(NULL))
+  text <- paste(output, collapse = "\n")
+  match <- regmatches(text, regexpr("[0-9]+\\.[0-9]+\\.[0-9]+", text))
+  if (!length(match)) return(invisible(NULL))
+
+  version <- match[[1L]]
+  if (.compare_versions(version, min_version) < 0L) {
+    warn(sprintf(
+      "Claude Code version %s at %s is below the minimum required version %s. ",
+      version, cli_path, min_version
+    ), call. = FALSE)
+  }
+  invisible(version)
+}
+
+schedule_claude_version_check <- function(
+    cli_path,
+    min_version = MINIMUM_CLAUDE_CODE_VERSION,
+    cache = .claude_version_async_cache,
+    launcher = .launch_claude_version_process,
+    schedule = function(callback, delay = 0) later::later(callback, delay = delay),
+    now = function() unname(proc.time()[["elapsed"]]),
+    warn = warning,
+    file_info = file.info,
+    timeout = 2,
+    poll_interval = 0.05) {
+  if (nzchar(Sys.getenv("CLAUDE_AGENT_SDK_SKIP_VERSION_CHECK"))) {
+    return(invisible(FALSE))
+  }
+
+  normalized <- tryCatch(
+    normalizePath(cli_path, winslash = "/", mustWork = FALSE),
+    error = function(e) as.character(cli_path)
+  )
+  info <- tryCatch(file_info(normalized), error = function(e) NULL)
+  size <- if (!is.null(info) && NROW(info) > 0L) {
+    as.numeric(info$size[[1L]])
+  } else {
+    NA_real_
+  }
+  mtime <- if (!is.null(info) && NROW(info) > 0L) {
+    as.numeric(info$mtime[[1L]])
+  } else {
+    NA_real_
+  }
+  signature <- list(
+    size = size,
+    mtime = mtime,
+    min_version = as.character(min_version)
+  )
+
+  previous <- get0(normalized, envir = cache, inherits = FALSE)
+  if (!is.null(previous) && identical(previous$signature, signature)) {
+    return(invisible(FALSE))
+  }
+  if (!is.null(previous) && !is.null(previous$process)) {
+    tryCatch({
+      if (isTRUE(previous$process$is_alive())) previous$process$kill()
+    }, error = function(e) NULL)
+  }
+
+  state <- new.env(parent = emptyenv())
+  state$signature <- signature
+  state$status <- "scheduled"
+  state$process <- NULL
+  state$value <- list(NULL)
+  assign(normalized, state, envir = cache)
+
+  is_current <- function() {
+    identical(get0(normalized, envir = cache, inherits = FALSE), state)
+  }
+  finish <- function(value = NULL) {
+    if (!is_current()) return(invisible(FALSE))
+    state$status <- "done"
+    state$process <- NULL
+    state$value <- list(value)
+    invisible(TRUE)
+  }
+  cancel_process <- function() {
+    process <- state$process
+    if (!is.null(process)) {
+      tryCatch({
+        if (isTRUE(process$is_alive())) process$kill()
+      }, error = function(e) NULL)
+    }
+    invisible(NULL)
+  }
+
+  poll_check <- NULL
+  poll_check <- function() {
+    if (!is_current()) {
+      cancel_process()
+      return(invisible(NULL))
+    }
+    process <- state$process
+    if (is.null(process)) {
+      finish(NULL)
+      return(invisible(NULL))
+    }
+
+    alive <- tryCatch(isTRUE(process$is_alive()), error = function(e) FALSE)
+    if (alive) {
+      timed_out <- tryCatch(now() >= state$deadline, error = function(e) TRUE)
+      if (isTRUE(timed_out)) {
+        cancel_process()
+        finish(NULL)
+      } else {
+        tryCatch(
+          schedule(poll_check, delay = poll_interval),
+          error = function(e) {
+            cancel_process()
+            finish(NULL)
+          }
+        )
+      }
+      return(invisible(NULL))
+    }
+
+    output <- tryCatch(process$read_all_output(), error = function(e) character())
+    value <- tryCatch(
+      .inspect_claude_version_output(
+        output,
+        normalized,
+        min_version = min_version,
+        warn = warn
+      ),
+      error = function(e) NULL
+    )
+    finish(value)
+    invisible(NULL)
+  }
+
+  start_check <- function() {
+    if (!is_current()) return(invisible(NULL))
+    if (nzchar(Sys.getenv("CLAUDE_AGENT_SDK_SKIP_VERSION_CHECK"))) {
+      rm(list = normalized, envir = cache)
+      return(invisible(NULL))
+    }
+
+    process <- tryCatch(launcher(normalized), error = function(e) NULL)
+    if (is.null(process)) {
+      finish(NULL)
+      return(invisible(NULL))
+    }
+    state$status <- "running"
+    state$process <- process
+    state$deadline <- tryCatch(now() + timeout, error = function(e) timeout)
+    tryCatch(
+      schedule(poll_check, delay = 0),
+      error = function(e) {
+        cancel_process()
+        finish(NULL)
+      }
+    )
+    invisible(NULL)
+  }
+
+  scheduled <- tryCatch({
+    schedule(start_check, delay = 0)
+    TRUE
+  }, error = function(e) FALSE)
+  if (!scheduled && is_current()) rm(list = normalized, envir = cache)
+  invisible(scheduled)
+}
+
 # Compare two "major.minor.patch" strings. Returns -1, 0, or 1.
 .compare_versions <- function(a, b) {
   av <- as.integer(strsplit(a, "\\.")[[1]])
@@ -263,19 +499,105 @@ r_mcp_server <- function(
 # Buffer / line splitting
 # ---------------------------------------------------------------------------
 
+#' Create a chunked decoder for newline-delimited subprocess output
+#'
+#' Partial lines stay as separate chunks and are collapsed only once, when a
+#' newline completes the frame. This avoids repeatedly copying the full partial
+#' line when a large stream-json frame arrives across many process reads.
+#' @keywords internal
+.new_stream_line_decoder <- function() {
+  state <- new.env(parent = emptyenv())
+  state$chunks <- list()
+  state$buffered_chars <- 0L
+  state$deferred <- character()
+
+  clear_partial <- function() {
+    state$chunks <- list()
+    state$buffered_chars <- 0L
+  }
+  append_partial <- function(value) {
+    if (!nzchar(value)) return(invisible(NULL))
+    state$chunks[[length(state$chunks) + 1L]] <- value
+    state$buffered_chars <- state$buffered_chars + nchar(value, type = "chars")
+    invisible(NULL)
+  }
+  complete_partial <- function(suffix) {
+    pieces <- c(state$chunks, list(suffix))
+    value <- paste0(unlist(pieces, use.names = FALSE), collapse = "")
+    clear_partial()
+    value
+  }
+
+  decoder <- list(
+    feed = function(new_output) {
+      if (!is.character(new_output) || length(new_output) != 1L || is.na(new_output)) {
+        stop("new_output must be one non-missing character value", call. = FALSE)
+      }
+      ready <- state$deferred
+      state$deferred <- character()
+      if (!nzchar(new_output)) return(ready)
+
+      newline_positions <- gregexpr("\n", new_output, fixed = TRUE)[[1L]]
+      if (length(newline_positions) == 1L && newline_positions[[1L]] == -1L) {
+        append_partial(new_output)
+        return(ready)
+      }
+
+      first_newline <- newline_positions[[1L]]
+      first_part <- if (first_newline > 1L) {
+        substr(new_output, 1L, first_newline - 1L)
+      } else {
+        ""
+      }
+      completed <- complete_partial(first_part)
+
+      if (length(newline_positions) > 1L) {
+        for (index in 2:length(newline_positions)) {
+          start <- newline_positions[[index - 1L]] + 1L
+          end <- newline_positions[[index]] - 1L
+          completed <- c(completed, if (start <= end) {
+            substr(new_output, start, end)
+          } else {
+            ""
+          })
+        }
+      }
+
+      last_newline <- newline_positions[[length(newline_positions)]]
+      total_chars <- nchar(new_output, type = "chars")
+      if (last_newline < total_chars) {
+        append_partial(substr(new_output, last_newline + 1L, total_chars))
+      }
+      c(ready, completed)
+    },
+    defer = function(lines) {
+      if (length(lines)) state$deferred <- c(state$deferred, as.character(lines))
+      invisible(NULL)
+    },
+    buffered_chunks = function() length(state$chunks),
+    buffered_chars = function() state$buffered_chars
+  )
+  class(decoder) <- c("stream_line_decoder", "list")
+  decoder
+}
+
 #' Split buffered output into complete lines
 #'
 #' Appends `new_output` to the existing `buf` and splits on newlines.
 #' Returns completed lines and any remaining partial line.
 #'
-#' @param buf Character(1). Current carry-over buffer (may be empty string).
+#' @param buf Character(1), or an internal chunked decoder. Current carry-over
+#'   buffer (may be empty string).
 #' @param new_output Character(1). Raw bytes / text just read from the process.
 #' @return Named list with:
 #'   * `complete_lines` — Character vector of fully terminated lines (newline
 #'     stripped).
-#'   * `remaining` — Character(1) with any trailing partial line.
+#'   * `remaining` — Carry-over buffer or decoder.
 #' @keywords internal
 split_lines_with_buffer <- function(buf, new_output) {
+  if (inherits(buf, "stream_line_decoder")) {
+    return(list(complete_lines = buf$feed(new_output), remaining = buf))
+  }
   combined <- paste0(buf, new_output)
   # Split on \n (keep trailing empty string as remaining)
   parts    <- strsplit(combined, "\n", fixed = TRUE)[[1]]

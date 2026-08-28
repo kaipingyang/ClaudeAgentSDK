@@ -117,7 +117,8 @@ parse_message <- function(line) {
     content            = parsed_content,
     uuid               = obj[["uuid"]],
     parent_tool_use_id = obj[["parent_tool_use_id"]],
-    tool_use_result    = obj[["tool_use_result"]]
+    tool_use_result    = obj[["tool_use_result"]],
+    is_replay          = obj[["isReplay"]]
   )
 }
 

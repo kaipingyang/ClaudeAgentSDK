@@ -355,6 +355,29 @@ ClaudeSDKClient <- R6::R6Class(
       invisible(self)
     },
 
+    #' @description Change the AI model and wait asynchronously for the
+    #'   correlated Claude Code acknowledgement. The transport's normal stdout
+    #'   reader settles the result; this method never reads stdout itself.
+    #' @param model Character or NULL. Model ID, or NULL for default.
+    #' @param timeout_ms Numeric. Milliseconds before asynchronous rejection.
+    #' @param on_fulfilled Optional callback for no-Promise mode.
+    #' @param on_rejected Optional callback for no-Promise mode.
+    #' @return A `promises::promise`, or the request id invisibly in callback mode.
+    set_model_async = function(model = NULL, timeout_ms = 5000L,
+                               on_fulfilled = NULL, on_rejected = NULL) {
+      private$assert_connected()
+      request <- list(subtype = "set_model", model = model)
+      if (is.function(on_fulfilled) && is.function(on_rejected)) {
+        return(private$transport$send_async_callback(
+          request = request,
+          on_fulfilled = on_fulfilled,
+          on_rejected = on_rejected,
+          timeout_ms = timeout_ms
+        ))
+      }
+      private$transport$send_async(request, timeout_ms = timeout_ms)
+    },
+
     #' @description Rewind tracked files to their state at a specific
     #'   user message.  Requires `enable_file_checkpointing = TRUE`.
     #' @param user_message_id Character. UUID of the target user message.
@@ -393,6 +416,32 @@ ClaudeSDKClient <- R6::R6Class(
     get_context_usage = function(timeout_ms = 30000L) {
       private$assert_connected()
       private$transport$send_and_wait(list(subtype = "get_context_usage"), timeout_ms)
+    },
+
+    #' @description Get context window usage without blocking the R event loop.
+    #'   The returned promise is settled by the transport's normal stdout
+    #'   dispatcher, so this method never starts another reader.
+    #' @param timeout_ms Numeric. Milliseconds before asynchronous rejection.
+    #'   In callback mode, use `Inf` to disable the callback timer.
+    #' @param on_fulfilled Optional callback receiving the context usage payload.
+    #' @param on_rejected Optional callback receiving an error condition.
+    #' @return With no callbacks, a `promises::promise`; otherwise the request id invisibly.
+    get_context_usage_async = function(timeout_ms = 5000L,
+                                       on_fulfilled = NULL,
+                                       on_rejected = NULL) {
+      private$assert_connected()
+      if (is.function(on_fulfilled) && is.function(on_rejected)) {
+        return(private$transport$send_async_callback(
+          list(subtype = "get_context_usage"),
+          on_fulfilled = on_fulfilled,
+          on_rejected = on_rejected,
+          timeout_ms = timeout_ms
+        ))
+      }
+      private$transport$send_async(
+        list(subtype = "get_context_usage"),
+        timeout_ms = timeout_ms
+      )
     },
 
     #' @description Get server initialization info.

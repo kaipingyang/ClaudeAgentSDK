@@ -90,10 +90,12 @@ Use with \code{ClaudeAgentOptions(resume = client$session_id)} or call
     \item \href{#method-ClaudeSDKClient-interrupt}{\code{ClaudeSDKClient$interrupt()}}
     \item \href{#method-ClaudeSDKClient-set_permission_mode}{\code{ClaudeSDKClient$set_permission_mode()}}
     \item \href{#method-ClaudeSDKClient-set_model}{\code{ClaudeSDKClient$set_model()}}
+    \item \href{#method-ClaudeSDKClient-set_model_async}{\code{ClaudeSDKClient$set_model_async()}}
     \item \href{#method-ClaudeSDKClient-rewind_files}{\code{ClaudeSDKClient$rewind_files()}}
     \item \href{#method-ClaudeSDKClient-stop_task}{\code{ClaudeSDKClient$stop_task()}}
     \item \href{#method-ClaudeSDKClient-get_mcp_status}{\code{ClaudeSDKClient$get_mcp_status()}}
     \item \href{#method-ClaudeSDKClient-get_context_usage}{\code{ClaudeSDKClient$get_context_usage()}}
+    \item \href{#method-ClaudeSDKClient-get_context_usage_async}{\code{ClaudeSDKClient$get_context_usage_async()}}
     \item \href{#method-ClaudeSDKClient-get_server_info}{\code{ClaudeSDKClient$get_server_info()}}
     \item \href{#method-ClaudeSDKClient-reconnect_mcp_server}{\code{ClaudeSDKClient$reconnect_mcp_server()}}
     \item \href{#method-ClaudeSDKClient-toggle_mcp_server}{\code{ClaudeSDKClient$toggle_mcp_server()}}
@@ -407,6 +409,38 @@ running task entirely after denying (default \code{FALSE}).}
 }
 
 \if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-ClaudeSDKClient-set_model_async"></a>}}
+\if{latex}{\out{\hypertarget{method-ClaudeSDKClient-set_model_async}{}}}
+\subsection{\code{ClaudeSDKClient$set_model_async()}}{
+  Change the AI model and wait asynchronously for the
+correlated Claude Code acknowledgement. The transport's normal stdout
+reader settles the result; this method never reads stdout itself.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{ClaudeSDKClient$set_model_async(
+  model = NULL,
+  timeout_ms = 5000L,
+  on_fulfilled = NULL,
+  on_rejected = NULL
+)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{model}}{Character or NULL. Model ID, or NULL for default.}
+      \item{\code{timeout_ms}}{Numeric. Milliseconds before asynchronous rejection.}
+      \item{\code{on_fulfilled}}{Optional callback for no-Promise mode.}
+      \item{\code{on_rejected}}{Optional callback for no-Promise mode.}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    A \code{promises::promise}, or the request id invisibly in callback mode.
+  }
+}
+
+\if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-ClaudeSDKClient-rewind_files"></a>}}
 \if{latex}{\out{\hypertarget{method-ClaudeSDKClient-rewind_files}{}}}
 \subsection{\code{ClaudeSDKClient$rewind_files()}}{
@@ -486,6 +520,37 @@ user message.  Requires \code{enable_file_checkpointing = TRUE}.
   }
   \subsection{Returns}{
     Named list with token counts by category, or \code{NULL} on timeout.
+  }
+}
+
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-ClaudeSDKClient-get_context_usage_async"></a>}}
+\if{latex}{\out{\hypertarget{method-ClaudeSDKClient-get_context_usage_async}{}}}
+\subsection{\code{ClaudeSDKClient$get_context_usage_async()}}{
+  Get context window usage without blocking the R event loop.
+The returned promise is settled by the transport's normal stdout
+dispatcher, so this method never starts another reader.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{ClaudeSDKClient$get_context_usage_async(
+  timeout_ms = 5000L,
+  on_fulfilled = NULL,
+  on_rejected = NULL
+)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{timeout_ms}}{Numeric. Milliseconds before asynchronous rejection.
+In callback mode, use \code{Inf} to disable the callback timer.}
+      \item{\code{on_fulfilled}}{Optional callback receiving the context usage payload.}
+      \item{\code{on_rejected}}{Optional callback receiving an error condition.}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    With no callbacks, a \code{promises::promise}; otherwise the request id invisibly.
   }
 }
 

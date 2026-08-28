@@ -8,7 +8,8 @@ UserMessage(
   content,
   uuid = NULL,
   parent_tool_use_id = NULL,
-  tool_use_result = NULL
+  tool_use_result = NULL,
+  is_replay = NULL
 )
 }
 \arguments{
@@ -19,6 +20,8 @@ UserMessage(
 \item{parent_tool_use_id}{Character or NULL.}
 
 \item{tool_use_result}{List or NULL.}
+
+\item{is_replay}{Logical or NULL. Whether the CLI marked this as a replayed message.}
 }
 \value{
 Object of class \code{UserMessage}.

@@ -12,6 +12,83 @@ NULL
 
 .DEFAULT_MAX_BUFFER_SIZE <- 1024L * 1024L  # 1 MB
 
+# Correlate outgoing control requests with responses consumed by the transport's
+# single stdout reader. Returning FALSE from dispatch() means the frame is a
+# regular SDK message and must continue through the normal message path.
+#' @noRd
+.new_control_dispatcher <- function() {
+  pending <- new.env(parent = emptyenv())
+
+  settle <- function(request_id, value = NULL, error = NULL) {
+    if (!exists(request_id, envir = pending, inherits = FALSE)) return(FALSE)
+    record <- get(request_id, envir = pending, inherits = FALSE)
+    rm(list = request_id, envir = pending)
+    if (is.function(record$on_settle)) {
+      try(record$on_settle(), silent = TRUE)
+    }
+    try(
+      if (is.null(error)) {
+        record$resolve(value)
+      } else {
+        record$reject(error)
+      },
+      silent = TRUE
+    )
+    TRUE
+  }
+
+  list(
+    register = function(request_id, subtype, resolve, reject,
+                        on_settle = NULL) {
+      if (exists(request_id, envir = pending, inherits = FALSE)) {
+        stop("Duplicate pending control request: ", request_id, call. = FALSE)
+      }
+      assign(
+        request_id,
+        list(
+          subtype = subtype,
+          resolve = resolve,
+          reject = reject,
+          on_settle = on_settle
+        ),
+        envir = pending
+      )
+      invisible(request_id)
+    },
+    dispatch = function(message) {
+      if (!is.list(message) || !identical(message[["type"]], "control_response")) {
+        return(FALSE)
+      }
+      response <- message[["response"]] %||% list()
+      request_id <- response[["request_id"]]
+      if (is.null(request_id) ||
+          !exists(request_id, envir = pending, inherits = FALSE)) {
+        return(TRUE)
+      }
+      if (identical(response[["subtype"]], "error")) {
+        settle(
+          request_id,
+          error = simpleError(response[["error"]] %||% "Control request error")
+        )
+      } else {
+        settle(request_id, value = response[["response"]] %||% list())
+      }
+      TRUE
+    },
+    reject = function(request_id, error) {
+      settle(request_id, error = error)
+    },
+    reject_all = function(error) {
+      request_ids <- ls(envir = pending, all.names = TRUE)
+      for (request_id in request_ids) settle(request_id, error = error)
+      invisible(length(request_ids))
+    },
+    pending_count = function() {
+      length(ls(envir = pending, all.names = TRUE))
+    }
+  )
+}
+
 # Write the full payload to a process's stdin, looping until it is flushed.
 #
 # processx `write_input()` is NON-BLOCKING: it writes only what currently fits the
@@ -64,11 +141,12 @@ SubprocessCLITransport <- R6::R6Class(
     #' @param options A [ClaudeAgentOptions()] object.
     initialize = function(options) {
       private$options    <- options
-      private$buffer     <- ""
+      private$buffer     <- .new_stream_line_decoder()
       private$write_lock <- FALSE
       private$session_id <- ""
       private$req_counter <- 0L
       private$pending_permissions <- new.env(parent = emptyenv())
+      private$control_dispatcher <- .new_control_dispatcher()
       invisible(self)
     },
 
@@ -78,11 +156,6 @@ SubprocessCLITransport <- R6::R6Class(
       if (!is.null(private$proc) && private$proc$is_alive()) return(invisible(self))
 
       cli_path <- find_claude(private$options$cli_path)
-
-      skip_version_check <- nzchar(Sys.getenv("CLAUDE_AGENT_SDK_SKIP_VERSION_CHECK"))
-      if (!skip_version_check) {
-        check_claude_version(cli_path)
-      }
 
       args <- private$build_command()
 
@@ -120,8 +193,10 @@ SubprocessCLITransport <- R6::R6Class(
 
       private$ready <- TRUE
 
-      # Wait for the initialize control-request from the CLI
+      # Wait for the initialize control-request from the CLI. Version checking is
+      # advisory and starts only after the usable connection is established.
       private$wait_for_initialize()
+      schedule_claude_version_check(cli_path)
 
       invisible(self)
     },
@@ -129,6 +204,11 @@ SubprocessCLITransport <- R6::R6Class(
     #' @description Gracefully shut down the subprocess.
     disconnect = function() {
       private$ready <- FALSE
+      if (!is.null(private$control_dispatcher)) {
+        private$control_dispatcher$reject_all(
+          simpleError("Claude Code transport disconnected")
+        )
+      }
       if (is.null(private$proc)) return(invisible(self))
       tryCatch({
         if (private$proc$is_alive()) {
@@ -178,6 +258,130 @@ SubprocessCLITransport <- R6::R6Class(
     #'   the initialize handshake, or NULL if not yet connected.
     get_init_result = function() {
       private$init_result
+    },
+
+    #' @description Send a control request and settle callbacks from the
+    #'   transport's normal stdout reader. This method creates no promise and
+    #'   never reads stdout.
+    #' @param request List. Control request body (must have `subtype`).
+    #' @param on_fulfilled Function called with the response payload.
+    #' @param on_rejected Function called with an error condition.
+    #' @param timeout_ms Numeric. Milliseconds before asynchronous rejection;
+    #'   use `Inf` to disable the callback timer.
+    #' @return The request id invisibly.
+    send_async_callback = function(request, on_fulfilled, on_rejected,
+                                   timeout_ms = 5000L) {
+      if (!is.function(on_fulfilled) || !is.function(on_rejected)) {
+        stop("on_fulfilled and on_rejected must be functions", call. = FALSE)
+      }
+      timeout_ms <- as.numeric(timeout_ms)
+      if (length(timeout_ms) != 1L || is.na(timeout_ms) || timeout_ms < 0) {
+        stop("timeout_ms must be one non-negative number", call. = FALSE)
+      }
+
+      private$req_counter <- private$req_counter + 1L
+      request_id <- paste0(
+        "req_", private$req_counter, "_",
+        paste0(as.hexmode(sample.int(256, 4) - 1), collapse = "")
+      )
+      json <- jsonlite::toJSON(
+        list(type = "control_request", request_id = request_id, request = request),
+        auto_unbox = TRUE,
+        null = "null"
+      )
+      subtype <- request[["subtype"]] %||% "unknown"
+      timer_handle <- NULL
+      cancel_timer <- function() {
+        if (!is.null(timer_handle)) {
+          try(later::cancel(timer_handle), silent = TRUE)
+          timer_handle <<- NULL
+        }
+        invisible(NULL)
+      }
+      private$control_dispatcher$register(
+        request_id = request_id,
+        subtype = subtype,
+        resolve = on_fulfilled,
+        reject = on_rejected,
+        on_settle = cancel_timer
+      )
+      if (is.finite(timeout_ms)) {
+        timer_handle <- later::later(function() {
+          private$control_dispatcher$reject(
+            request_id,
+            simpleError(paste0("Control request timeout: ", subtype))
+          )
+        }, delay = timeout_ms / 1000)
+      }
+      tryCatch(
+        self$send(json),
+        error = function(error) {
+          private$control_dispatcher$reject(request_id, error)
+        }
+      )
+      invisible(request_id)
+    },
+
+    #' @description Send a control request and return a promise settled by the
+    #'   transport's normal stdout reader. This method never reads stdout.
+    #' @param request List. Control request body (must have `subtype`).
+    #' @param timeout_ms Integer. Milliseconds before asynchronous rejection.
+    #' @return A `promises::promise` resolving to the response payload.
+    send_async = function(request, timeout_ms = 5000L) {
+      if (!requireNamespace("promises", quietly = TRUE)) {
+        stop(
+          "The 'promises' package is required for send_async(). ",
+          "Install with: install.packages('promises')",
+          call. = FALSE
+        )
+      }
+      timeout_ms <- as.numeric(timeout_ms)
+      if (length(timeout_ms) != 1L || is.na(timeout_ms) ||
+          !is.finite(timeout_ms) || timeout_ms < 0) {
+        stop("timeout_ms must be one non-negative finite number", call. = FALSE)
+      }
+
+      private$req_counter <- private$req_counter + 1L
+      request_id <- paste0(
+        "req_", private$req_counter, "_",
+        paste0(as.hexmode(sample.int(256, 4) - 1), collapse = "")
+      )
+      json <- jsonlite::toJSON(
+        list(type = "control_request", request_id = request_id, request = request),
+        auto_unbox = TRUE,
+        null = "null"
+      )
+      subtype <- request[["subtype"]] %||% "unknown"
+
+      promises::promise(function(resolve, reject) {
+        timer_handle <- NULL
+        cancel_timer <- function() {
+          if (!is.null(timer_handle)) {
+            try(later::cancel(timer_handle), silent = TRUE)
+            timer_handle <<- NULL
+          }
+          invisible(NULL)
+        }
+        private$control_dispatcher$register(
+          request_id = request_id,
+          subtype = subtype,
+          resolve = resolve,
+          reject = reject,
+          on_settle = cancel_timer
+        )
+        timer_handle <- later::later(function() {
+          private$control_dispatcher$reject(
+            request_id,
+            simpleError(paste0("Control request timeout: ", subtype))
+          )
+        }, delay = timeout_ms / 1000)
+        tryCatch(
+          self$send(json),
+          error = function(error) {
+            private$control_dispatcher$reject(request_id, error)
+          }
+        )
+      })
     },
 
     #' @description Send a control request and synchronously poll for its
@@ -231,7 +435,7 @@ SubprocessCLITransport <- R6::R6Class(
             return(resp[["response"]] %||% list())
           }
           # Not our response — buffer it so the main receive loop can pick it up
-          private$buffer <- paste0(private$buffer, line, "\n")
+          private$buffer$defer(line)
         }
       }
       warning(paste0("send_and_wait timed out waiting for: ", request[["subtype"]]),
@@ -249,7 +453,14 @@ SubprocessCLITransport <- R6::R6Class(
     #'   polling.
     #' @return List of typed message objects (may be empty).
     read_available_messages = function() {
-      if (is.null(private$proc) || !private$proc$is_alive()) return(list())
+      if (is.null(private$proc) || !private$proc$is_alive()) {
+        if (!is.null(private$control_dispatcher)) {
+          private$control_dispatcher$reject_all(
+            simpleError("Claude Code process exited")
+          )
+        }
+        return(list())
+      }
 
       msgs <- list()
       opts <- private$options
@@ -295,6 +506,8 @@ SubprocessCLITransport <- R6::R6Class(
               }
             )
             if (is.null(msg)) next
+            if (!is.null(private$control_dispatcher) &&
+                private$control_dispatcher$dispatch(msg)) next
 
             # Route control requests; may return a PermissionRequestMessage
             if (is.list(msg) && identical(msg[["type"]], "control_request")) {
@@ -348,7 +561,14 @@ SubprocessCLITransport <- R6::R6Class(
       self_ref <- self
       coro::generator(function() {
         while (TRUE) {
-          if (is.null(private$proc) || !private$proc$is_alive()) break
+          if (is.null(private$proc) || !private$proc$is_alive()) {
+            if (!is.null(private$control_dispatcher)) {
+              private$control_dispatcher$reject_all(
+                simpleError("Claude Code process exited")
+              )
+            }
+            break
+          }
 
           # Poll stdout with 50 ms timeout
           status <- tryCatch(
@@ -392,6 +612,8 @@ SubprocessCLITransport <- R6::R6Class(
                   }
                 )
                 if (is.null(msg)) next
+                if (!is.null(private$control_dispatcher) &&
+                    private$control_dispatcher$dispatch(msg)) next
 
                 # Route control requests; may return a PermissionRequestMessage
                 if (is.list(msg) && identical(msg[["type"]], "control_request")) {
@@ -416,6 +638,11 @@ SubprocessCLITransport <- R6::R6Class(
           # Process exited
           if (!private$proc$is_alive()) {
             exit_code <- private$proc$get_exit_status()
+            if (!is.null(private$control_dispatcher)) {
+              private$control_dispatcher$reject_all(
+                simpleError("Claude Code process exited")
+              )
+            }
             if (!is.null(exit_code) && exit_code != 0L) {
               stop(claude_process_error(
                 "Claude CLI process exited unexpectedly",
@@ -442,6 +669,7 @@ SubprocessCLITransport <- R6::R6Class(
     next_callback_id = 0L,    # counter for unique IDs
     init_result     = NULL,   # captured from the initialize control_response
     pending_permissions = NULL,    # env: request_id → request list (message-driven approval)
+    control_dispatcher = NULL,     # request_id → async control callbacks
 
     # -----------------------------------------------------------------------
     # CLI command builder — mirrors _build_command() in subprocess_cli.py
@@ -728,7 +956,7 @@ SubprocessCLITransport <- R6::R6Class(
             return(invisible(NULL))
           }
           # Queue any other messages that arrived before the init response (append preserves order)
-          private$buffer <- paste0(private$buffer, line, "\n")
+          private$buffer$defer(line)
         }
       }
       warning("Timed out waiting for initialize handshake from Claude Code", call. = FALSE)

@@ -637,10 +637,12 @@ get_session_messages <- function(session_id,
 
 .to_session_message <- function(entry) {
   session_message_obj(
-    type               = if (identical(entry[["type"]], "user")) "user" else "assistant",
-    uuid               = entry[["uuid"]] %||% "",
-    session_id         = entry[["sessionId"]] %||% "",
-    message            = entry[["message"]],
-    parent_tool_use_id = NULL
+    type                          = if (identical(entry[["type"]], "user")) "user" else "assistant",
+    uuid                          = entry[["uuid"]] %||% "",
+    session_id                    = entry[["sessionId"]] %||% "",
+    message                       = entry[["message"]],
+    parent_tool_use_id            = NULL,
+    is_compact_summary            = entry[["isCompactSummary"]],
+    is_visible_in_transcript_only = entry[["isVisibleInTranscriptOnly"]]
   )
 }

@@ -6,6 +6,14 @@ test_that("parse_message: user message with text content", {
   expect_equal(msg$uuid, "u1")
 })
 
+
+
+test_that("parse_message: user replay metadata is preserved", {
+  json <- '{"type":"user","message":{"role":"user","content":"control replay"},"uuid":"u-replay","isReplay":true}'
+  msg <- parse_message(json)
+  expect_s3_class(msg, "UserMessage")
+  expect_true(msg$is_replay)
+})
 test_that("parse_message: user message with content blocks", {
   json <- '{"type":"user","message":{"role":"user","content":[{"type":"text","text":"hi"}]},"uuid":"u2"}'
   msg  <- parse_message(json)
