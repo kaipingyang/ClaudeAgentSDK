@@ -1,5 +1,20 @@
 # Changelog
 
+## ClaudeAgentSDK 0.2.4 (2026-08-26)
+
+Performance-focused bug-fix release (no API changes).
+
+#### Performance
+
+- **Claude Code version checks no longer block `connect()`.** A
+  successful initialize schedules a separate short-lived `claude -v`
+  process; `later` polls it without blocking the R/Shiny event loop.
+  Checks are deduplicated per normalized CLI executable and file
+  signature, failures/timeouts never affect the usable connection, and
+  only an unsupported version emits an asynchronous warning.
+  `CLAUDE_AGENT_SDK_SKIP_VERSION_CHECK` still disables the advisory
+  check.
+
 ## ClaudeAgentSDK 0.2.3 (2026-08-05)
 
 Bug-fix and additive release (no breaking changes).

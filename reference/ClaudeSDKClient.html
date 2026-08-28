@@ -11,7 +11,7 @@ permission-mode changes, interrupts, and MCP server management."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">ClaudeAgentSDK</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -100,10 +100,12 @@ Use with <code>ClaudeAgentOptions(resume = client$session_id)</code> or call
 <li><p><a href="#method-ClaudeSDKClient-interrupt"><code>ClaudeSDKClient$interrupt()</code></a></p></li>
 <li><p><a href="#method-ClaudeSDKClient-set_permission_mode"><code>ClaudeSDKClient$set_permission_mode()</code></a></p></li>
 <li><p><a href="#method-ClaudeSDKClient-set_model"><code>ClaudeSDKClient$set_model()</code></a></p></li>
+<li><p><a href="#method-ClaudeSDKClient-set_model_async"><code>ClaudeSDKClient$set_model_async()</code></a></p></li>
 <li><p><a href="#method-ClaudeSDKClient-rewind_files"><code>ClaudeSDKClient$rewind_files()</code></a></p></li>
 <li><p><a href="#method-ClaudeSDKClient-stop_task"><code>ClaudeSDKClient$stop_task()</code></a></p></li>
 <li><p><a href="#method-ClaudeSDKClient-get_mcp_status"><code>ClaudeSDKClient$get_mcp_status()</code></a></p></li>
 <li><p><a href="#method-ClaudeSDKClient-get_context_usage"><code>ClaudeSDKClient$get_context_usage()</code></a></p></li>
+<li><p><a href="#method-ClaudeSDKClient-get_context_usage_async"><code>ClaudeSDKClient$get_context_usage_async()</code></a></p></li>
 <li><p><a href="#method-ClaudeSDKClient-get_server_info"><code>ClaudeSDKClient$get_server_info()</code></a></p></li>
 <li><p><a href="#method-ClaudeSDKClient-reconnect_mcp_server"><code>ClaudeSDKClient$reconnect_mcp_server()</code></a></p></li>
 <li><p><a href="#method-ClaudeSDKClient-toggle_mcp_server"><code>ClaudeSDKClient$toggle_mcp_server()</code></a></p></li>
@@ -383,14 +385,49 @@ running task entirely after denying (default <code>FALSE</code>).</p></dd>
 
 </div>
 
+<p></p><hr><a id="method-ClaudeSDKClient-set_model_async"></a><div class="section">
+<h3 id="claudesdkclient-set-model-async-"><code>ClaudeSDKClient$set_model_async()</code><a class="anchor" aria-label="anchor" href="#claudesdkclient-set-model-async-"></a></h3>
+<p>Change the AI model and wait asynchronously for the
+correlated Claude Code acknowledgement. The transport's normal stdout
+reader settles the result; this method never reads stdout itself.</p><div class="section">
+<h4 id="usage-14">Usage<a class="anchor" aria-label="anchor" href="#usage-14"></a></h4>
+<p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">ClaudeSDKClient</span><span class="op">$</span><span class="fu">set_model_async</span><span class="op">(</span></span>
+<span>  model <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  timeout_ms <span class="op">=</span> <span class="fl">5000L</span>,</span>
+<span>  on_fulfilled <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  on_rejected <span class="op">=</span> <span class="cn">NULL</span></span>
+<span><span class="op">)</span></span></code></pre></div><p></p></div>
+</div><p></p><div class="section">
+<h4 id="arguments-9">Arguments<a class="anchor" aria-label="anchor" href="#arguments-9"></a></h4>
+<p></p><div class="arguments"><dl><dt><code>model</code></dt>
+<dd><p>Character or NULL. Model ID, or NULL for default.</p></dd>
+
+      <dt><code>timeout_ms</code></dt>
+<dd><p>Numeric. Milliseconds before asynchronous rejection.</p></dd>
+
+      <dt><code>on_fulfilled</code></dt>
+<dd><p>Optional callback for no-Promise mode.</p></dd>
+
+      <dt><code>on_rejected</code></dt>
+<dd><p>Optional callback for no-Promise mode.</p></dd>
+
+
+</dl><p></p></div>
+</div><p></p><div class="section">
+<h4 id="returns-2">Returns<a class="anchor" aria-label="anchor" href="#returns-2"></a></h4>
+<p>A <code><a href="https://rstudio.github.io/promises/reference/promise.html" class="external-link">promises::promise</a></code>, or the request id invisibly in callback mode.</p>
+</div>
+
+</div>
+
 <p></p><hr><a id="method-ClaudeSDKClient-rewind_files"></a><div class="section">
 <h3 id="claudesdkclient-rewind-files-"><code>ClaudeSDKClient$rewind_files()</code><a class="anchor" aria-label="anchor" href="#claudesdkclient-rewind-files-"></a></h3>
 <p>Rewind tracked files to their state at a specific
 user message.  Requires <code>enable_file_checkpointing = TRUE</code>.</p><div class="section">
-<h4 id="usage-14">Usage<a class="anchor" aria-label="anchor" href="#usage-14"></a></h4>
+<h4 id="usage-15">Usage<a class="anchor" aria-label="anchor" href="#usage-15"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">ClaudeSDKClient</span><span class="op">$</span><span class="fu">rewind_files</span><span class="op">(</span><span class="va">user_message_id</span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div><p></p><div class="section">
-<h4 id="arguments-9">Arguments<a class="anchor" aria-label="anchor" href="#arguments-9"></a></h4>
+<h4 id="arguments-10">Arguments<a class="anchor" aria-label="anchor" href="#arguments-10"></a></h4>
 <p></p><div class="arguments"><dl><dt><code>user_message_id</code></dt>
 <dd><p>Character. UUID of the target user message.</p></dd>
 
@@ -403,10 +440,10 @@ user message.  Requires <code>enable_file_checkpointing = TRUE</code>.</p><div c
 <p></p><hr><a id="method-ClaudeSDKClient-stop_task"></a><div class="section">
 <h3 id="claudesdkclient-stop-task-"><code>ClaudeSDKClient$stop_task()</code><a class="anchor" aria-label="anchor" href="#claudesdkclient-stop-task-"></a></h3>
 <p>Stop a running task by ID.</p><div class="section">
-<h4 id="usage-15">Usage<a class="anchor" aria-label="anchor" href="#usage-15"></a></h4>
+<h4 id="usage-16">Usage<a class="anchor" aria-label="anchor" href="#usage-16"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">ClaudeSDKClient</span><span class="op">$</span><span class="fu">stop_task</span><span class="op">(</span><span class="va">task_id</span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div><p></p><div class="section">
-<h4 id="arguments-10">Arguments<a class="anchor" aria-label="anchor" href="#arguments-10"></a></h4>
+<h4 id="arguments-11">Arguments<a class="anchor" aria-label="anchor" href="#arguments-11"></a></h4>
 <p></p><div class="arguments"><dl><dt><code>task_id</code></dt>
 <dd><p>Character. Task ID from a <code>TaskNotificationMessage</code>.</p></dd>
 
@@ -419,27 +456,8 @@ user message.  Requires <code>enable_file_checkpointing = TRUE</code>.</p><div c
 <p></p><hr><a id="method-ClaudeSDKClient-get_mcp_status"></a><div class="section">
 <h3 id="claudesdkclient-get-mcp-status-"><code>ClaudeSDKClient$get_mcp_status()</code><a class="anchor" aria-label="anchor" href="#claudesdkclient-get-mcp-status-"></a></h3>
 <p>Get MCP server connection status.</p><div class="section">
-<h4 id="usage-16">Usage<a class="anchor" aria-label="anchor" href="#usage-16"></a></h4>
-<p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">ClaudeSDKClient</span><span class="op">$</span><span class="fu">get_mcp_status</span><span class="op">(</span>timeout_ms <span class="op">=</span> <span class="fl">30000L</span><span class="op">)</span></span></code></pre></div><p></p></div>
-</div><p></p><div class="section">
-<h4 id="arguments-11">Arguments<a class="anchor" aria-label="anchor" href="#arguments-11"></a></h4>
-<p></p><div class="arguments"><dl><dt><code>timeout_ms</code></dt>
-<dd><p>Integer. Milliseconds to wait for response (default 30 000).</p></dd>
-
-
-</dl><p></p></div>
-</div><p></p><div class="section">
-<h4 id="returns-2">Returns<a class="anchor" aria-label="anchor" href="#returns-2"></a></h4>
-<p>Named list with <code>mcpServers</code> key, or <code>NULL</code> on timeout.</p>
-</div>
-
-</div>
-
-<p></p><hr><a id="method-ClaudeSDKClient-get_context_usage"></a><div class="section">
-<h3 id="claudesdkclient-get-context-usage-"><code>ClaudeSDKClient$get_context_usage()</code><a class="anchor" aria-label="anchor" href="#claudesdkclient-get-context-usage-"></a></h3>
-<p>Get context window usage breakdown.</p><div class="section">
 <h4 id="usage-17">Usage<a class="anchor" aria-label="anchor" href="#usage-17"></a></h4>
-<p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">ClaudeSDKClient</span><span class="op">$</span><span class="fu">get_context_usage</span><span class="op">(</span>timeout_ms <span class="op">=</span> <span class="fl">30000L</span><span class="op">)</span></span></code></pre></div><p></p></div>
+<p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">ClaudeSDKClient</span><span class="op">$</span><span class="fu">get_mcp_status</span><span class="op">(</span>timeout_ms <span class="op">=</span> <span class="fl">30000L</span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div><p></p><div class="section">
 <h4 id="arguments-12">Arguments<a class="anchor" aria-label="anchor" href="#arguments-12"></a></h4>
 <p></p><div class="arguments"><dl><dt><code>timeout_ms</code></dt>
@@ -449,7 +467,58 @@ user message.  Requires <code>enable_file_checkpointing = TRUE</code>.</p><div c
 </dl><p></p></div>
 </div><p></p><div class="section">
 <h4 id="returns-3">Returns<a class="anchor" aria-label="anchor" href="#returns-3"></a></h4>
+<p>Named list with <code>mcpServers</code> key, or <code>NULL</code> on timeout.</p>
+</div>
+
+</div>
+
+<p></p><hr><a id="method-ClaudeSDKClient-get_context_usage"></a><div class="section">
+<h3 id="claudesdkclient-get-context-usage-"><code>ClaudeSDKClient$get_context_usage()</code><a class="anchor" aria-label="anchor" href="#claudesdkclient-get-context-usage-"></a></h3>
+<p>Get context window usage breakdown.</p><div class="section">
+<h4 id="usage-18">Usage<a class="anchor" aria-label="anchor" href="#usage-18"></a></h4>
+<p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">ClaudeSDKClient</span><span class="op">$</span><span class="fu">get_context_usage</span><span class="op">(</span>timeout_ms <span class="op">=</span> <span class="fl">30000L</span><span class="op">)</span></span></code></pre></div><p></p></div>
+</div><p></p><div class="section">
+<h4 id="arguments-13">Arguments<a class="anchor" aria-label="anchor" href="#arguments-13"></a></h4>
+<p></p><div class="arguments"><dl><dt><code>timeout_ms</code></dt>
+<dd><p>Integer. Milliseconds to wait for response (default 30 000).</p></dd>
+
+
+</dl><p></p></div>
+</div><p></p><div class="section">
+<h4 id="returns-4">Returns<a class="anchor" aria-label="anchor" href="#returns-4"></a></h4>
 <p>Named list with token counts by category, or <code>NULL</code> on timeout.</p>
+</div>
+
+</div>
+
+<p></p><hr><a id="method-ClaudeSDKClient-get_context_usage_async"></a><div class="section">
+<h3 id="claudesdkclient-get-context-usage-async-"><code>ClaudeSDKClient$get_context_usage_async()</code><a class="anchor" aria-label="anchor" href="#claudesdkclient-get-context-usage-async-"></a></h3>
+<p>Get context window usage without blocking the R event loop.
+The returned promise is settled by the transport's normal stdout
+dispatcher, so this method never starts another reader.</p><div class="section">
+<h4 id="usage-19">Usage<a class="anchor" aria-label="anchor" href="#usage-19"></a></h4>
+<p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">ClaudeSDKClient</span><span class="op">$</span><span class="fu">get_context_usage_async</span><span class="op">(</span></span>
+<span>  timeout_ms <span class="op">=</span> <span class="fl">5000L</span>,</span>
+<span>  on_fulfilled <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  on_rejected <span class="op">=</span> <span class="cn">NULL</span></span>
+<span><span class="op">)</span></span></code></pre></div><p></p></div>
+</div><p></p><div class="section">
+<h4 id="arguments-14">Arguments<a class="anchor" aria-label="anchor" href="#arguments-14"></a></h4>
+<p></p><div class="arguments"><dl><dt><code>timeout_ms</code></dt>
+<dd><p>Numeric. Milliseconds before asynchronous rejection.
+In callback mode, use <code>Inf</code> to disable the callback timer.</p></dd>
+
+      <dt><code>on_fulfilled</code></dt>
+<dd><p>Optional callback receiving the context usage payload.</p></dd>
+
+      <dt><code>on_rejected</code></dt>
+<dd><p>Optional callback receiving an error condition.</p></dd>
+
+
+</dl><p></p></div>
+</div><p></p><div class="section">
+<h4 id="returns-5">Returns<a class="anchor" aria-label="anchor" href="#returns-5"></a></h4>
+<p>With no callbacks, a <code><a href="https://rstudio.github.io/promises/reference/promise.html" class="external-link">promises::promise</a></code>; otherwise the request id invisibly.</p>
 </div>
 
 </div>
@@ -457,10 +526,10 @@ user message.  Requires <code>enable_file_checkpointing = TRUE</code>.</p><div c
 <p></p><hr><a id="method-ClaudeSDKClient-get_server_info"></a><div class="section">
 <h3 id="claudesdkclient-get-server-info-"><code>ClaudeSDKClient$get_server_info()</code><a class="anchor" aria-label="anchor" href="#claudesdkclient-get-server-info-"></a></h3>
 <p>Get server initialization info.</p><div class="section">
-<h4 id="usage-18">Usage<a class="anchor" aria-label="anchor" href="#usage-18"></a></h4>
+<h4 id="usage-20">Usage<a class="anchor" aria-label="anchor" href="#usage-20"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">ClaudeSDKClient</span><span class="op">$</span><span class="fu">get_server_info</span><span class="op">(</span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div><p></p><div class="section">
-<h4 id="returns-4">Returns<a class="anchor" aria-label="anchor" href="#returns-4"></a></h4>
+<h4 id="returns-6">Returns<a class="anchor" aria-label="anchor" href="#returns-6"></a></h4>
 <p>List with server capabilities, or NULL.</p>
 </div>
 
@@ -469,10 +538,10 @@ user message.  Requires <code>enable_file_checkpointing = TRUE</code>.</p><div c
 <p></p><hr><a id="method-ClaudeSDKClient-reconnect_mcp_server"></a><div class="section">
 <h3 id="claudesdkclient-reconnect-mcp-server-"><code>ClaudeSDKClient$reconnect_mcp_server()</code><a class="anchor" aria-label="anchor" href="#claudesdkclient-reconnect-mcp-server-"></a></h3>
 <p>Reconnect a failed MCP server.</p><div class="section">
-<h4 id="usage-19">Usage<a class="anchor" aria-label="anchor" href="#usage-19"></a></h4>
+<h4 id="usage-21">Usage<a class="anchor" aria-label="anchor" href="#usage-21"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">ClaudeSDKClient</span><span class="op">$</span><span class="fu">reconnect_mcp_server</span><span class="op">(</span><span class="va">server_name</span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div><p></p><div class="section">
-<h4 id="arguments-13">Arguments<a class="anchor" aria-label="anchor" href="#arguments-13"></a></h4>
+<h4 id="arguments-15">Arguments<a class="anchor" aria-label="anchor" href="#arguments-15"></a></h4>
 <p></p><div class="arguments"><dl><dt><code>server_name</code></dt>
 <dd><p>Character. Server name.</p></dd>
 
@@ -485,10 +554,10 @@ user message.  Requires <code>enable_file_checkpointing = TRUE</code>.</p><div c
 <p></p><hr><a id="method-ClaudeSDKClient-toggle_mcp_server"></a><div class="section">
 <h3 id="claudesdkclient-toggle-mcp-server-"><code>ClaudeSDKClient$toggle_mcp_server()</code><a class="anchor" aria-label="anchor" href="#claudesdkclient-toggle-mcp-server-"></a></h3>
 <p>Enable or disable an MCP server.</p><div class="section">
-<h4 id="usage-20">Usage<a class="anchor" aria-label="anchor" href="#usage-20"></a></h4>
+<h4 id="usage-22">Usage<a class="anchor" aria-label="anchor" href="#usage-22"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">ClaudeSDKClient</span><span class="op">$</span><span class="fu">toggle_mcp_server</span><span class="op">(</span><span class="va">server_name</span>, <span class="va">enabled</span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div><p></p><div class="section">
-<h4 id="arguments-14">Arguments<a class="anchor" aria-label="anchor" href="#arguments-14"></a></h4>
+<h4 id="arguments-16">Arguments<a class="anchor" aria-label="anchor" href="#arguments-16"></a></h4>
 <p></p><div class="arguments"><dl><dt><code>server_name</code></dt>
 <dd><p>Character. Server name.</p></dd>
 
@@ -507,10 +576,10 @@ user message.  Requires <code>enable_file_checkpointing = TRUE</code>.</p><div c
 Sets <code>options$resume</code> to the <code>session_id</code> captured from the most
 recent <code>ResultMessage</code>.  The next <code>$connect()</code> call will pass
 <code>--resume &lt;session_id&gt;</code> to the CLI.</p><div class="section">
-<h4 id="usage-21">Usage<a class="anchor" aria-label="anchor" href="#usage-21"></a></h4>
+<h4 id="usage-23">Usage<a class="anchor" aria-label="anchor" href="#usage-23"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">ClaudeSDKClient</span><span class="op">$</span><span class="fu">resume</span><span class="op">(</span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div><p></p><div class="section">
-<h4 id="returns-5">Returns<a class="anchor" aria-label="anchor" href="#returns-5"></a></h4>
+<h4 id="returns-7">Returns<a class="anchor" aria-label="anchor" href="#returns-7"></a></h4>
 <p><code>self</code> invisibly (for chaining).</p>
 </div>
 
@@ -519,10 +588,10 @@ recent <code>ResultMessage</code>.  The next <code>$connect()</code> call will p
 <p></p><hr><a id="method-ClaudeSDKClient-clone"></a><div class="section">
 <h3 id="claudesdkclient-clone-"><code>ClaudeSDKClient$clone()</code><a class="anchor" aria-label="anchor" href="#claudesdkclient-clone-"></a></h3>
 <p>The objects of this class are cloneable with this method.</p><div class="section">
-<h4 id="usage-22">Usage<a class="anchor" aria-label="anchor" href="#usage-22"></a></h4>
+<h4 id="usage-24">Usage<a class="anchor" aria-label="anchor" href="#usage-24"></a></h4>
 <p></p><div class="r"><div class="sourceCode"><pre><code><span><span class="va">ClaudeSDKClient</span><span class="op">$</span><span class="fu">clone</span><span class="op">(</span>deep <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div><p></p></div>
 </div><p></p><div class="section">
-<h4 id="arguments-15">Arguments<a class="anchor" aria-label="anchor" href="#arguments-15"></a></h4>
+<h4 id="arguments-17">Arguments<a class="anchor" aria-label="anchor" href="#arguments-17"></a></h4>
 <p></p><div class="arguments"><dl><dt><code>deep</code></dt>
 <dd><p>Whether to make a deep clone.</p></dd>
 

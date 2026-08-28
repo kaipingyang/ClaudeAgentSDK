@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">ClaudeAgentSDK</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -37,6 +37,15 @@
       <small>Source: <a href="https://github.com/kaipingyang/ClaudeAgentSDK/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.2.4" id="claudeagentsdk-024-2026-08-26">ClaudeAgentSDK 0.2.4 (2026-08-26)<a class="anchor" aria-label="anchor" href="#claudeagentsdk-024-2026-08-26"></a></h2>
+<p>Performance-focused bug-fix release (no API changes).</p>
+<div class="section level4">
+<h4 id="performance-0-2-4">Performance<a class="anchor" aria-label="anchor" href="#performance-0-2-4"></a></h4>
+<ul><li>
+<strong>Claude Code version checks no longer block <code>connect()</code>.</strong> A successful initialize schedules a separate short-lived <code>claude -v</code> process; <code>later</code> polls it without blocking the R/Shiny event loop. Checks are deduplicated per normalized CLI executable and file signature, failures/timeouts never affect the usable connection, and only an unsupported version emits an asynchronous warning. <code>CLAUDE_AGENT_SDK_SKIP_VERSION_CHECK</code> still disables the advisory check.</li>
+</ul></div>
+</div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.2.3" id="claudeagentsdk-023-2026-08-05">ClaudeAgentSDK 0.2.3 (2026-08-05)<a class="anchor" aria-label="anchor" href="#claudeagentsdk-023-2026-08-05"></a></h2>
 <p>Bug-fix and additive release (no breaking changes).</p>

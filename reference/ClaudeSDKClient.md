@@ -61,6 +61,8 @@ permission-mode changes, interrupts, and MCP server management.
 
 - [`ClaudeSDKClient$set_model()`](#method-ClaudeSDKClient-set_model)
 
+- [`ClaudeSDKClient$set_model_async()`](#method-ClaudeSDKClient-set_model_async)
+
 - [`ClaudeSDKClient$rewind_files()`](#method-ClaudeSDKClient-rewind_files)
 
 - [`ClaudeSDKClient$stop_task()`](#method-ClaudeSDKClient-stop_task)
@@ -68,6 +70,8 @@ permission-mode changes, interrupts, and MCP server management.
 - [`ClaudeSDKClient$get_mcp_status()`](#method-ClaudeSDKClient-get_mcp_status)
 
 - [`ClaudeSDKClient$get_context_usage()`](#method-ClaudeSDKClient-get_context_usage)
+
+- [`ClaudeSDKClient$get_context_usage_async()`](#method-ClaudeSDKClient-get_context_usage_async)
 
 - [`ClaudeSDKClient$get_server_info()`](#method-ClaudeSDKClient-get_server_info)
 
@@ -372,6 +376,47 @@ Change the AI model at runtime.
 
 ------------------------------------------------------------------------
 
+### `ClaudeSDKClient$set_model_async()`
+
+Change the AI model and wait asynchronously for the correlated Claude
+Code acknowledgement. The transport's normal stdout reader settles the
+result; this method never reads stdout itself.
+
+#### Usage
+
+    ClaudeSDKClient$set_model_async(
+      model = NULL,
+      timeout_ms = 5000L,
+      on_fulfilled = NULL,
+      on_rejected = NULL
+    )
+
+#### Arguments
+
+- `model`:
+
+  Character or NULL. Model ID, or NULL for default.
+
+- `timeout_ms`:
+
+  Numeric. Milliseconds before asynchronous rejection.
+
+- `on_fulfilled`:
+
+  Optional callback for no-Promise mode.
+
+- `on_rejected`:
+
+  Optional callback for no-Promise mode.
+
+#### Returns
+
+A
+[`promises::promise`](https://rstudio.github.io/promises/reference/promise.html),
+or the request id invisibly in callback mode.
+
+------------------------------------------------------------------------
+
 ### `ClaudeSDKClient$rewind_files()`
 
 Rewind tracked files to their state at a specific user message. Requires
@@ -442,6 +487,43 @@ Get context window usage breakdown.
 #### Returns
 
 Named list with token counts by category, or `NULL` on timeout.
+
+------------------------------------------------------------------------
+
+### `ClaudeSDKClient$get_context_usage_async()`
+
+Get context window usage without blocking the R event loop. The returned
+promise is settled by the transport's normal stdout dispatcher, so this
+method never starts another reader.
+
+#### Usage
+
+    ClaudeSDKClient$get_context_usage_async(
+      timeout_ms = 5000L,
+      on_fulfilled = NULL,
+      on_rejected = NULL
+    )
+
+#### Arguments
+
+- `timeout_ms`:
+
+  Numeric. Milliseconds before asynchronous rejection. In callback mode,
+  use `Inf` to disable the callback timer.
+
+- `on_fulfilled`:
+
+  Optional callback receiving the context usage payload.
+
+- `on_rejected`:
+
+  Optional callback receiving an error condition.
+
+#### Returns
+
+With no callbacks, a
+[`promises::promise`](https://rstudio.github.io/promises/reference/promise.html);
+otherwise the request id invisibly.
 
 ------------------------------------------------------------------------
 

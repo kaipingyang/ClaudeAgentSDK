@@ -9,7 +9,8 @@ UserMessage(
   content,
   uuid = NULL,
   parent_tool_use_id = NULL,
-  tool_use_result = NULL
+  tool_use_result = NULL,
+  is_replay = NULL
 )
 ```
 
@@ -30,6 +31,10 @@ UserMessage(
 - tool_use_result:
 
   List or NULL.
+
+- is_replay:
+
+  Logical or NULL. Whether the CLI marked this as a replayed message.
 
 ## Value
 

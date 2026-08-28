@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">ClaudeAgentSDK</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.2.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -48,7 +48,8 @@
 <span>  <span class="va">content</span>,</span>
 <span>  uuid <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  parent_tool_use_id <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  tool_use_result <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  tool_use_result <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  is_replay <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -70,6 +71,10 @@
 
 <dt id="arg-tool-use-result">tool_use_result<a class="anchor" aria-label="anchor" href="#arg-tool-use-result"></a></dt>
 <dd><p>List or NULL.</p></dd>
+
+
+<dt id="arg-is-replay">is_replay<a class="anchor" aria-label="anchor" href="#arg-is-replay"></a></dt>
+<dd><p>Logical or NULL. Whether the CLI marked this as a replayed message.</p></dd>
 
 </dl></div>
     <div class="section level2">

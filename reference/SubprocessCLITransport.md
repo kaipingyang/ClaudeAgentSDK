@@ -31,6 +31,10 @@ interrupt).
 
 - [`SubprocessCLITransport$get_init_result()`](#method-SubprocessCLITransport-get_init_result)
 
+- [`SubprocessCLITransport$send_async_callback()`](#method-SubprocessCLITransport-send_async_callback)
+
+- [`SubprocessCLITransport$send_async()`](#method-SubprocessCLITransport-send_async)
+
 - [`SubprocessCLITransport$send_and_wait()`](#method-SubprocessCLITransport-send_and_wait)
 
 - [`SubprocessCLITransport$read_available_messages()`](#method-SubprocessCLITransport-read_available_messages)
@@ -119,6 +123,72 @@ handshake, or NULL if not yet connected.
 #### Usage
 
     SubprocessCLITransport$get_init_result()
+
+------------------------------------------------------------------------
+
+### `SubprocessCLITransport$send_async_callback()`
+
+Send a control request and settle callbacks from the transport's normal
+stdout reader. This method creates no promise and never reads stdout.
+
+#### Usage
+
+    SubprocessCLITransport$send_async_callback(
+      request,
+      on_fulfilled,
+      on_rejected,
+      timeout_ms = 5000L
+    )
+
+#### Arguments
+
+- `request`:
+
+  List. Control request body (must have `subtype`).
+
+- `on_fulfilled`:
+
+  Function called with the response payload.
+
+- `on_rejected`:
+
+  Function called with an error condition.
+
+- `timeout_ms`:
+
+  Numeric. Milliseconds before asynchronous rejection; use `Inf` to
+  disable the callback timer.
+
+#### Returns
+
+The request id invisibly.
+
+------------------------------------------------------------------------
+
+### `SubprocessCLITransport$send_async()`
+
+Send a control request and return a promise settled by the transport's
+normal stdout reader. This method never reads stdout.
+
+#### Usage
+
+    SubprocessCLITransport$send_async(request, timeout_ms = 5000L)
+
+#### Arguments
+
+- `request`:
+
+  List. Control request body (must have `subtype`).
+
+- `timeout_ms`:
+
+  Integer. Milliseconds before asynchronous rejection.
+
+#### Returns
+
+A
+[`promises::promise`](https://rstudio.github.io/promises/reference/promise.html)
+resolving to the response payload.
 
 ------------------------------------------------------------------------
 
