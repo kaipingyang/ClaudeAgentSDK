@@ -71,27 +71,13 @@ ClaudeSDKClient <- R6::R6Class(
     #' @param prompt Character(1) or NULL. Optional initial prompt to send
     #'   immediately after connecting.
     connect = function(prompt = NULL) {
+      if (private$connecting) {
+        claude_cli_connection_error("An asynchronous connection is already pending")
+      }
       if (!is.null(private$transport) && private$is_connected()) {
         return(invisible(self))
       }
-
-      opts <- self$options
-
-      # can_use_tool requires permission_prompt_tool_name = "stdio"
-      if (!is.null(opts$can_use_tool)) {
-        if (!is.null(opts$permission_prompt_tool_name)) {
-          stop("can_use_tool cannot be combined with permission_prompt_tool_name.", call. = FALSE)
-        }
-        opts_list <- unclass(opts)
-        opts_list[["permission_prompt_tool_name"]] <- "stdio"
-        opts <- do.call(ClaudeAgentOptions, opts_list)
-      }
-
-      if (!is.null(private$custom_transport)) {
-        private$transport <- private$custom_transport
-      } else {
-        private$transport <- SubprocessCLITransport$new(opts)
-      }
+      private$transport <- private$new_transport()
       private$transport$connect()
       private$init_result <- private$transport$get_init_result()
 
@@ -105,11 +91,59 @@ ClaudeSDKClient <- R6::R6Class(
       invisible(self)
     },
 
+    #' @description Connect without blocking the R event loop. Do not poll or send
+    #'   until on_fulfilled is called. Cancellation never sends a user prompt.
+    #' @param on_fulfilled Function called with this client after initialization.
+    #' @param on_rejected Function called on connection failure or cancellation.
+    #' @param timeout_ms Positive deadline in milliseconds. NULL preserves the
+    #'   transport's environment-controlled initialization timeout.
+    #' @return A cancellation function, returning FALSE after settlement.
+    connect_async = function(on_fulfilled, on_rejected, timeout_ms = NULL) {
+      stopifnot(is.function(on_fulfilled), is.function(on_rejected))
+      if (private$connecting) {
+        claude_cli_connection_error("An asynchronous connection is already pending")
+      }
+      if (private$is_connected()) {
+        on_fulfilled(self)
+        return(invisible(function() FALSE))
+      }
+      transport <- private$new_transport()
+      if (!is.function(transport$connect_async)) {
+        stop("The supplied transport must support connect_async().", call. = FALSE)
+      }
+      private$transport <- transport
+      private$connecting <- TRUE
+      tryCatch(transport$connect_async(
+        on_fulfilled = function(value) {
+          if (!identical(private$transport, transport)) {
+            transport$disconnect()
+            error <- simpleError("Claude connection initialization was superseded")
+            class(error) <- c("claude_connection_cancelled", class(error))
+            on_rejected(error)
+            return(invisible(NULL))
+          }
+          private$connecting <- FALSE
+          private$init_result <- transport$get_init_result()
+          on_fulfilled(self)
+        },
+        on_rejected = function(error) {
+          if (identical(private$transport, transport)) private$connecting <- FALSE
+          on_rejected(error)
+        },
+        timeout_ms = timeout_ms
+      ), error = function(error) {
+        if (identical(private$transport, transport)) private$connecting <- FALSE
+        stop(error)
+      })
+    },
+
     #' @description Disconnect from Claude Code and clean up.
     disconnect = function() {
-      if (!is.null(private$transport)) {
-        tryCatch(private$transport$disconnect(), error = function(e) NULL)
-        private$transport <- NULL
+      transport <- private$transport
+      private$transport <- NULL
+      private$connecting <- FALSE
+      if (!is.null(transport)) {
+        tryCatch(transport$disconnect(), error = function(e) NULL)
       }
       invisible(self)
     },
@@ -558,12 +592,30 @@ ClaudeSDKClient <- R6::R6Class(
     .session_id      = "",
     req_counter      = 0L,
     init_result      = NULL,
+    connecting       = FALSE,
+
+    new_transport = function() {
+      opts <- self$options
+      if (!is.null(opts$can_use_tool)) {
+        if (!is.null(opts$permission_prompt_tool_name)) {
+          stop("can_use_tool cannot be combined with permission_prompt_tool_name.", call. = FALSE)
+        }
+        opts_list <- unclass(opts)
+        opts_list[["permission_prompt_tool_name"]] <- "stdio"
+        opts <- do.call(ClaudeAgentOptions, opts_list)
+      }
+      if (!is.null(private$custom_transport)) private$custom_transport else
+        SubprocessCLITransport$new(opts)
+    },
 
     is_connected = function() {
       !is.null(private$transport) && private$transport$is_alive()
     },
 
     assert_connected = function() {
+      if (private$connecting) {
+        claude_cli_connection_error("Claude initialize handshake is still pending")
+      }
       if (is.null(private$transport)) {
         claude_cli_connection_error("Not connected. Call $connect() first.")
       }

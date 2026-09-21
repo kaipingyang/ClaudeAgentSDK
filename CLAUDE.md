@@ -22,6 +22,7 @@ R/
 
 **`SubprocessCLITransport`** spawns `claude --output-format stream-json --input-format stream-json --verbose`, reads newline-delimited JSON from stdout, and handles the bidirectional control protocol:
 - `wait_for_initialize()` — sends the SDK's `initialize` control request and waits for the CLI's `control_response`. Captures the response in `private$init_result` (exposed via `get_init_result()`).
+- `connect_async()` shares process setup and request construction with synchronous connect, but uses one nonblocking initialization timer. The returned cancel function settles once and reclaims only its initializing process. Sending/polling before completion is an error; the normal owner starts only afterward. Frames before and after the ACK stay ordered in the decoder's deferred queue. Default deadlines preserve `CLAUDE_CODE_STREAM_CLOSE_TIMEOUT`; never replace this with nested `later::run_now()`.
 - `send_and_wait()` — synchronous polling loop for control requests that return data (mirrors Python's async `_send_control_request`). Safe only when called *between* generator iterations.
 - `receive_messages()` — `coro` generator; routes `control_request` and `control_cancel_request` internally, yields all other message types.
 - `read_available_messages()` — non-blocking single-cycle read (0ms `poll_io`). Returns a list of parsed SDK messages; control requests handled internally. Used by `receive_response_async()` for event-loop-friendly polling.
@@ -117,6 +118,7 @@ Alternatively, add `devtools::load_all(quiet = TRUE)` at the top of the example 
 | `test-session-mutations.R` | rename/tag/delete/fork (file I/O) | No |
 | `test-client-unit.R` | Client lifecycle without CLI (disconnect/send/interrupt/receive_response_async before connect) | No |
 | `test-client-lifecycle.R` | Liveness without I/O, dead-connection errors, buffered EOF Result, shared-dispatcher asynchronous task stop | No |
+| `test-connect-async.R` | Nonblocking initialization, cancellation/deadline/death, ordered ACK-adjacent frames, environment timeout | Local synthetic peer only |
 | `test-control-dispatcher.R` | Correlation, acknowledgement errors/timeouts, late replies, and queue preservation | No |
 | `test-rate-limit-event.R` | Rate limit event parsing: allowed_warning, rejected with overage, minimal fields, forward compat | No |
 | `test-buffering.R` | split_lines_with_buffer edge cases: split reads, large JSON, mixed complete/partial, non-JSON debug lines | No |

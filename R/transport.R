@@ -153,74 +153,130 @@ SubprocessCLITransport <- R6::R6Class(
     #' @description Start the subprocess and wait for the `initialize`
     #'   control-request handshake.
     connect = function() {
-      if (!is.null(private$proc) && private$proc$is_alive()) return(invisible(self))
-
-      cli_path <- find_claude(private$options$cli_path)
-
-      args <- private$build_command()
-
-      # Build process environment
-      inherited_env <- as.list(Sys.getenv())
-      inherited_env[["CLAUDECODE"]] <- NULL  # prevent nested detection
-      process_env <- c(
-        inherited_env,
-        list(CLAUDE_CODE_ENTRYPOINT = "sdk-r"),
-        private$options$env,
-        list(CLAUDE_AGENT_SDK_VERSION = as.character(
-          utils::packageVersion("ClaudeAgentSDK")
-        ))
-      )
-      if (isTRUE(private$options$enable_file_checkpointing)) {
-        process_env[["CLAUDE_CODE_ENABLE_SDK_FILE_CHECKPOINTING"]] <- "true"
+      if (!is.null(private$initialize_state)) {
+        claude_cli_connection_error("An asynchronous initialize handshake is already pending")
       }
-      cwd <- private$options$cwd %||% getwd()
-      process_env[["PWD"]] <- cwd
-
-      # Determine whether to pipe stderr
-      should_pipe_stderr <- !is.null(private$options$stderr) ||
-        "debug-to-stderr" %in% names(private$options$extra_args)
-
-      private$proc <- processx::process$new(
-        command = cli_path,
-        args    = args,
-        stdin   = "|",
-        stdout  = "|",
-        stderr  = if (should_pipe_stderr) "|" else NULL,
-        wd      = cwd,
-        env     = unlist(process_env, use.names = TRUE),
-        cleanup = TRUE
-      )
-
-      private$ready <- TRUE
-
-      # Wait for the initialize control-request from the CLI. Version checking is
-      # advisory and starts only after the usable connection is established.
+      if (!is.null(private$proc) && private$proc$is_alive()) return(invisible(self))
+      cli_path <- private$start_process()
       private$wait_for_initialize()
       schedule_claude_version_check(cli_path)
-
       invisible(self)
+    },
+
+    #' @description Initialize without blocking the R event loop. This owns stdout
+    #'   only until initialization settles; normal message polling starts afterward.
+    #' @param on_fulfilled Function called with this transport after initialization.
+    #' @param on_rejected Function called with an error on failure or cancellation.
+    #' @param timeout_ms Positive deadline in milliseconds. NULL uses
+    #'   CLAUDE_CODE_STREAM_CLOSE_TIMEOUT, with the existing 60-second minimum.
+    #' @return A cancellation function; FALSE after the request has settled.
+    connect_async = function(on_fulfilled, on_rejected, timeout_ms = NULL) {
+      stopifnot(is.function(on_fulfilled), is.function(on_rejected))
+      if (!requireNamespace("later", quietly = TRUE)) {
+        stop("connect_async() requires the later package.", call. = FALSE)
+      }
+      if (is.null(timeout_ms)) timeout_ms <- private$initialize_timeout()
+      if (length(timeout_ms) != 1L || !is.numeric(timeout_ms) ||
+          is.na(timeout_ms) || !is.finite(timeout_ms) || timeout_ms <= 0) {
+        stop("timeout_ms must be one positive finite number.", call. = FALSE)
+      }
+      if (!is.null(private$initialize_state)) {
+        claude_cli_connection_error("An asynchronous initialize handshake is already pending")
+      }
+      if (!is.null(private$proc) && private$proc$is_alive()) {
+        on_fulfilled(self)
+        return(invisible(function() FALSE))
+      }
+      cli_path <- private$start_process()
+      process <- private$proc
+      state <- new.env(parent = emptyenv())
+      state$settled <- FALSE
+      state$timer <- NULL
+      state$deadline <- proc.time()[["elapsed"]] + timeout_ms / 1000
+      finish <- function(reply = NULL, error = NULL) {
+        if (state$settled) return(invisible(FALSE))
+        state$settled <- TRUE
+        timer <- state$timer
+        state$timer <- NULL
+        if (is.function(timer)) timer()
+        if (identical(private$initialize_state, state)) private$initialize_state <- NULL
+        if (!is.null(error)) {
+          if (identical(private$proc, process)) {
+            private$ready <- FALSE
+            private$proc <- NULL
+          }
+          if (process$is_alive()) process$kill_tree()
+          private$control_dispatcher$reject_all(error)
+          on_rejected(error)
+        } else {
+          private$init_result <- reply
+          schedule_claude_version_check(cli_path)
+          on_fulfilled(self)
+        }
+        invisible(TRUE)
+      }
+      state$cancel <- function() {
+        error <- simpleError("Claude initialize handshake was cancelled")
+        class(error) <- c("claude_connection_cancelled", class(error))
+        finish(error = error)
+      }
+      private$initialize_state <- state
+      request_error <- tryCatch({
+        private$send_initialize_request()
+        NULL
+      }, error = identity)
+      if (!is.null(request_error)) {
+        finish(error = request_error)
+        return(invisible(state$cancel))
+      }
+      tick <- function() {
+        state$timer <- NULL
+        if (state$settled) return(invisible(NULL))
+        if (proc.time()[["elapsed"]] >= state$deadline) {
+          finish(error = simpleError("Claude initialize handshake timed out"))
+          return(invisible(NULL))
+        }
+        observed <- tryCatch(
+          private$read_initialize_reply(0L),
+          error = function(error) list(error = error)
+        )
+        if (!is.null(observed$error)) {
+          finish(error = observed$error)
+        } else if (isTRUE(observed$complete)) {
+          finish(reply = observed$reply)
+        } else {
+          state$timer <- later::later(tick, 0.01)
+        }
+        invisible(NULL)
+      }
+      state$timer <- later::later(tick, 0)
+      invisible(state$cancel)
     },
 
     #' @description Gracefully shut down the subprocess.
     disconnect = function() {
+      initialization <- private$initialize_state
+      process <- private$proc
+      private$initialize_state <- NULL
+      private$proc <- NULL
       private$ready <- FALSE
       if (!is.null(private$control_dispatcher)) {
         private$control_dispatcher$reject_all(
           simpleError("Claude Code transport disconnected")
         )
       }
-      if (is.null(private$proc)) return(invisible(self))
+      if (!is.null(initialization)) initialization$cancel()
+      if (is.null(process)) return(invisible(self))
       tryCatch({
-        if (private$proc$is_alive()) {
-          private$proc$interrupt()
-          private$proc$wait(timeout = 3000)
-          if (private$proc$is_alive()) {
-            private$proc$kill()
-            private$proc$wait(timeout = 2000)
+        if (process$is_alive()) {
+          process$interrupt()
+          process$wait(timeout = 3000)
+          if (process$is_alive()) {
+            process$kill()
+            process$wait(timeout = 2000)
           }
         }
       }, error = function(e) NULL)
-      private$proc <- NULL
       invisible(self)
     },
 
@@ -488,10 +544,11 @@ SubprocessCLITransport <- R6::R6Class(
         "output" %in% names(status) &&
         identical(status[["output"]], "ready")
 
-      if (stdout_ready) {
+      deferred <- private$buffer$has_deferred()
+      if (stdout_ready || deferred) {
         max_buf <- opts$max_buffer_size %||% .DEFAULT_MAX_BUFFER_SIZE
-        raw <- private$proc$read_output(if (alive) max_buf else -1L)
-        if (nzchar(raw)) {
+        raw <- if (stdout_ready) private$proc$read_output(if (alive) max_buf else -1L) else ""
+        if (nzchar(raw) || deferred) {
           result <- split_lines_with_buffer(private$buffer, raw)
           private$buffer <- result$remaining
           for (line in result$complete_lines) {
@@ -596,10 +653,12 @@ SubprocessCLITransport <- R6::R6Class(
             "output" %in% names(status) &&
             identical(status[["output"]], "ready")
 
-          if (stdout_ready) {
+          deferred <- private$buffer$has_deferred()
+          if (stdout_ready || deferred) {
             max_buf <- private$options$max_buffer_size %||% .DEFAULT_MAX_BUFFER_SIZE
-            raw <- tryCatch(private$proc$read_output(max_buf), error = function(e) "")
-            if (nzchar(raw)) {
+            raw <- ""
+            if (stdout_ready) raw <- private$proc$read_output(max_buf)
+            if (nzchar(raw) || deferred) {
               result <- split_lines_with_buffer(private$buffer, raw)
               private$buffer <- result$remaining
               for (line in result$complete_lines) {
@@ -674,6 +733,35 @@ SubprocessCLITransport <- R6::R6Class(
     init_result     = NULL,   # captured from the initialize control_response
     pending_permissions = NULL,    # env: request_id → request list (message-driven approval)
     control_dispatcher = NULL,     # request_id → async control callbacks
+    initialize_state = NULL,
+
+    start_process = function() {
+      cli_path <- find_claude(private$options$cli_path)
+      inherited_env <- as.list(Sys.getenv())
+      inherited_env[["CLAUDECODE"]] <- NULL
+      process_env <- c(
+        inherited_env,
+        list(CLAUDE_CODE_ENTRYPOINT = "sdk-r"),
+        private$options$env,
+        list(CLAUDE_AGENT_SDK_VERSION = as.character(utils::packageVersion("ClaudeAgentSDK")))
+      )
+      if (isTRUE(private$options$enable_file_checkpointing)) {
+        process_env[["CLAUDE_CODE_ENABLE_SDK_FILE_CHECKPOINTING"]] <- "true"
+      }
+      cwd <- private$options$cwd %||% getwd()
+      process_env[["PWD"]] <- cwd
+      should_pipe_stderr <- !is.null(private$options$stderr) ||
+        "debug-to-stderr" %in% names(private$options$extra_args)
+      private$buffer <- .new_stream_line_decoder()
+      private$init_result <- NULL
+      private$proc <- processx::process$new(
+        command = cli_path, args = private$build_command(),
+        stdin = "|", stdout = "|", stderr = if (should_pipe_stderr) "|" else NULL,
+        wd = cwd, env = unlist(process_env, use.names = TRUE), cleanup = TRUE
+      )
+      private$ready <- TRUE
+      cli_path
+    },
 
     # -----------------------------------------------------------------------
     # CLI command builder — mirrors _build_command() in subprocess_cli.py
@@ -863,7 +951,7 @@ SubprocessCLITransport <- R6::R6Class(
     # -----------------------------------------------------------------------
     # Send initialize control-request and wait for the CLI's control_response
     # -----------------------------------------------------------------------
-    wait_for_initialize = function() {
+    send_initialize_request = function() {
       req_id <- "req_init_1"
 
       # Build hooks config and register callbacks with unique IDs (mirrors query.py:initialize())
@@ -920,47 +1008,58 @@ SubprocessCLITransport <- R6::R6Class(
       )
       init_json <- jsonlite::toJSON(init_request, auto_unbox = TRUE, null = "null")
       .write_all_to_process(private$proc, paste0(init_json, "\n"))
+      invisible(NULL)
+    },
 
-      # Poll stdout for the matching control_response
-      # Respect CLAUDE_CODE_STREAM_CLOSE_TIMEOUT env var (mirrors Python query.py)
-      timeout_ms  <- suppressWarnings(as.numeric(
+    read_initialize_reply = function(poll_ms) {
+      if (is.null(private$proc) || !private$proc$is_alive()) {
+        claude_cli_connection_error("Claude Code process exited before initialize handshake")
+      }
+      status <- private$proc$poll_io(poll_ms)
+      if (!identical(status[["output"]], "ready")) return(list(complete = FALSE))
+      raw <- private$proc$read_output(65536L)
+      if (!nzchar(raw)) return(list(complete = FALSE))
+      result <- split_lines_with_buffer(private$buffer, raw)
+      private$buffer <- result$remaining
+      observed <- list(complete = FALSE)
+      for (line in result$complete_lines) {
+        line <- trimws(line)
+        if (!nzchar(line) || !startsWith(line, "{")) next
+        obj <- jsonlite::fromJSON(line, simplifyVector = FALSE)
+        if (identical(obj[["type"]], "control_response") &&
+            identical(obj[["response"]][["request_id"]], "req_init_1")) {
+          response <- obj[["response"]]
+          if (identical(response[["subtype"]], "error")) {
+            observed <- list(error = simpleError(
+              response[["error"]] %||% "Claude initialize handshake was rejected"
+            ))
+          } else {
+            observed <- list(complete = TRUE, reply = response[["response"]] %||% list())
+          }
+        } else {
+          private$buffer$defer(line)
+        }
+      }
+      observed
+    },
+
+    initialize_timeout = function() {
+      timeout_ms <- suppressWarnings(as.numeric(
         Sys.getenv("CLAUDE_CODE_STREAM_CLOSE_TIMEOUT", unset = "60000")
       ))
-      if (is.na(timeout_ms) || timeout_ms < 60000) timeout_ms <- 60000
-      deadline <- proc.time()[["elapsed"]] + timeout_ms / 1000
+      if (is.na(timeout_ms) || !is.finite(timeout_ms) || timeout_ms < 60000) timeout_ms <- 60000
+      timeout_ms
+    },
+
+    wait_for_initialize = function() {
+      private$send_initialize_request()
+      deadline <- proc.time()[["elapsed"]] + private$initialize_timeout() / 1000
       while (proc.time()[["elapsed"]] < deadline) {
-        if (is.null(private$proc) || !private$proc$is_alive()) {
-          claude_cli_connection_error("Claude Code process exited before initialize handshake")
-        }
-        status <- tryCatch(private$proc$poll_io(100L), error = function(e) NULL)
-        if (is.null(status)) next
-
-        stdout_ready <- !is.null(names(status)) &&
-          "output" %in% names(status) &&
-          identical(status[["output"]], "ready")
-        if (!stdout_ready) next
-
-        raw <- tryCatch(private$proc$read_output(65536L), error = function(e) "")
-        if (!nzchar(raw)) next
-
-        result <- split_lines_with_buffer(private$buffer, raw)
-        private$buffer <- result$remaining
-        for (line in result$complete_lines) {
-          line <- trimws(line)
-          if (!nzchar(line) || !startsWith(line, "{")) next
-          obj <- tryCatch(
-            jsonlite::fromJSON(line, simplifyVector = FALSE),
-            error = function(e) NULL
-          )
-          if (is.null(obj)) next
-          if (identical(obj[["type"]], "control_response") &&
-              identical(obj[["response"]][["request_id"]], req_id)) {
-            # Capture server info for get_server_info()
-            private$init_result <- obj[["response"]][["response"]] %||% list()
-            return(invisible(NULL))
-          }
-          # Queue any other messages that arrived before the init response (append preserves order)
-          private$buffer$defer(line)
+        observed <- private$read_initialize_reply(100L)
+        if (!is.null(observed$error)) stop(observed$error)
+        if (isTRUE(observed$complete)) {
+          private$init_result <- observed$reply
+          return(invisible(NULL))
         }
       }
       warning("Timed out waiting for initialize handshake from Claude Code", call. = FALSE)

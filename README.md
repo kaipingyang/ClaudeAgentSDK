@@ -588,6 +588,28 @@ for a complete example.
 
 ## Advanced: Async / Shiny Integration
 
+### Nonblocking connection initialization
+
+`connect()` is synchronous. In a multi-session Shiny app, use `connect_async()`
+so a slow CLI initialization does not pause unrelated streams or input events:
+
+```r
+cancel_connect <- client$connect_async(
+  on_fulfilled = function(connected) {
+    connected$send("Explain R in one sentence")
+    # Start the application's single message consumer here.
+  },
+  on_rejected = function(error) message(conditionMessage(error))
+)
+```
+
+The return value cancels this initialization only; cancellation rejects with
+`claude_connection_cancelled` and sends no prompt. Do not send or poll until
+`on_fulfilled`. The handshake owns one nonblocking timer and preserves messages
+on both sides of its ACK before handing stdout to the normal consumer.
+`timeout_ms = NULL` keeps the `CLAUDE_CODE_STREAM_CLOSE_TIMEOUT` setting and
+60-second minimum; an explicit positive millisecond deadline overrides it.
+
 ### Long-lived clients and acknowledged task stop
 
 `client$is_alive()` checks the existing transport without connecting or reading stdout.

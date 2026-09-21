@@ -1,5 +1,16 @@
 # Changelog
 
+# ClaudeAgentSDK 0.2.5.9001
+
+- Add callback-based `ClaudeSDKClient$connect_async()` and transport initialization
+  with one nonblocking poll timer. The returned cancellation function settles
+  once and reclaims its initializing process; sending or polling before
+  completion is rejected. The synchronous `connect()` API remains available.
+- Preserve frames before and after an initialization ACK, including when they
+  arrive in the same stdout read. Failed handshakes, process death, and deadlines
+  reject explicitly; the default deadline still honors
+  `CLAUDE_CODE_STREAM_CLOSE_TIMEOUT` with a 60-second minimum.
+
 # ClaudeAgentSDK 0.2.5.9000
 
 - Added `ClaudeSDKClient$is_alive()` for side-effect-free subprocess liveness

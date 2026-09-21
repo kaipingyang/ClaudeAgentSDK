@@ -574,6 +574,7 @@ r_mcp_server <- function(
       if (length(lines)) state$deferred <- c(state$deferred, as.character(lines))
       invisible(NULL)
     },
+    has_deferred = function() length(state$deferred) > 0L,
     buffered_chunks = function() length(state$chunks),
     buffered_chars = function() state$buffered_chars
   )
