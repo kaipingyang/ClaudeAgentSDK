@@ -1,5 +1,35 @@
 # Changelog
 
+# ClaudeAgentSDK 0.2.5.9000
+
+- Added `ClaudeSDKClient$is_alive()` for side-effect-free subprocess liveness
+  checks and `stop_task_async()` for correlated, nonblocking stop acknowledgements.
+  A stop acknowledgement is distinct from a terminal task event.
+- Nonblocking and asynchronous receives preserve buffered final messages after
+  process exit. An empty `poll_messages()` on a dead connection now raises an
+  explicit connection error instead of looking like an indefinitely idle peer.
+
+# ClaudeAgentSDK 0.2.5 (2026-09-07)
+
+Additive release for event-loop-safe control requests and more robust stream/session handling.
+
+### New Features
+
+- **Nonblocking context usage and model controls.** `get_context_usage_async()` and
+  `set_model_async()` return a `promises::promise` by default or accept
+  `on_fulfilled` / `on_rejected` callbacks. Responses are correlated through the
+  transport's normal stdout dispatcher, so Shiny integrations do not start a
+  competing reader or block the event loop.
+- **Callback-mode control dispatch.** `send_async_callback()` provides a
+  Promise-free path with correlated response delivery and bounded timeout
+  rejection, used by `shinyAssistantUI` for `/context` and context-ring updates.
+
+### Bug Fixes
+
+- Incremental stream decoding now preserves fragmented NDJSON records across
+  subprocess reads, and session/history parsing retains the metadata needed for
+  compacted-session reconstruction.
+
 # ClaudeAgentSDK 0.2.4 (2026-08-26)
 
 Performance-focused bug-fix release (no API changes).

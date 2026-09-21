@@ -206,6 +206,20 @@ test_that("get_context_usage_async supports callback mode without send_async", {
 })
 
 
+test_that("callback-style async context API is versioned at 0.2.5 or newer", {
+  description <- system.file("DESCRIPTION", package = "ClaudeAgentSDK")
+  expect_true(nzchar(description))
+  version <- base::package_version(read.dcf(description, fields = "Version")[[1L]])
+  expect_gte(version, base::package_version("0.2.5"))
+
+  method <- ClaudeSDKClient$public_methods$get_context_usage_async
+  expect_identical(
+    names(formals(method)),
+    c("timeout_ms", "on_fulfilled", "on_rejected")
+  )
+})
+
+
 test_that("set_model_async delegates a correlated Promise request", {
   skip_if_not_installed("promises")
   client <- ClaudeSDKClient$new(ClaudeAgentOptions())

@@ -25,6 +25,8 @@ R/
 - `send_and_wait()` — synchronous polling loop for control requests that return data (mirrors Python's async `_send_control_request`). Safe only when called *between* generator iterations.
 - `receive_messages()` — `coro` generator; routes `control_request` and `control_cancel_request` internally, yields all other message types.
 - `read_available_messages()` — non-blocking single-cycle read (0ms `poll_io`). Returns a list of parsed SDK messages; control requests handled internally. Used by `receive_response_async()` for event-loop-friendly polling.
+- EOF is not an empty healthy poll: read buffered stdout after process exit before reporting failure. `ClaudeSDKClient$poll_messages()` raises `claude_error_cli_connection` only after that tail is empty; never catch it as `list()` in a long-lived owner.
+- `ClaudeSDKClient$is_alive()` is side-effect-free. `stop_task_async()` reuses `send_async_callback` / `send_async`, without its own reader. The existing owner must keep polling controls during approval waits. An ACK is not a terminal Task status; drain a global interrupt before handing the queue to a new turn, or disconnect if the boundary remains unconfirmed.
 
 **Agents** are sent as a named dict `{name: config}` via the `initialize` control request (not CLI args). `AgentDefinition` stores fields in snake_case; `build_agents_config()` converts to camelCase (`disallowed_tools` -> `disallowedTools`, `mcp_servers` -> `mcpServers`, etc.) during serialization.
 
@@ -114,6 +116,8 @@ Alternatively, add `devtools::load_all(quiet = TRUE)` at the top of the example 
 | `test-sessions-unit.R` | validate_uuid, sanitize_path, simple_hash, JSON field extraction, sort_and_slice, list_sessions with mock data, get_session_messages chain reconstruction | No |
 | `test-session-mutations.R` | rename/tag/delete/fork (file I/O) | No |
 | `test-client-unit.R` | Client lifecycle without CLI (disconnect/send/interrupt/receive_response_async before connect) | No |
+| `test-client-lifecycle.R` | Liveness without I/O, dead-connection errors, buffered EOF Result, shared-dispatcher asynchronous task stop | No |
+| `test-control-dispatcher.R` | Correlation, acknowledgement errors/timeouts, late replies, and queue preservation | No |
 | `test-rate-limit-event.R` | Rate limit event parsing: allowed_warning, rejected with overage, minimal fields, forward compat | No |
 | `test-buffering.R` | split_lines_with_buffer edge cases: split reads, large JSON, mixed complete/partial, non-JSON debug lines | No |
 | `test-query.R` | claude_run, claude_query, ClaudeSDKClient lifecycle | **Yes** |
@@ -169,7 +173,7 @@ Python has `streaming_mode_trio.py`, `streaming_mode_ipython.py` (multiple async
 
 ### Known remaining gaps
 
-- `rewind_files()` / `stop_task()` — fire-and-forget control messages, no integration test
+- `rewind_files()` / legacy `stop_task()` remain fire-and-forget; `stop_task_async()` now provides acknowledged delivery (terminal Task confirmation is separate).
 - `create_sdk_mcp_server()` / `@tool` / `SdkMcpTool` — in-process MCP; R uses `mcptools` subprocess instead (architectural, not backporting)
 - Abstract `Transport` base class — no value for single-implementation R SDK
 - Union type aliases (`ContentBlock`, `Message`, etc.) — R is dynamic; mypy aliases add no runtime value
@@ -195,7 +199,7 @@ do_stream <- coro::async(function(client, interrupt_flag, session) {
   interrupted   <- FALSE
 
   repeat {
-    msgs <- tryCatch(client$poll_messages(), error = function(e) list())
+    msgs <- client$poll_messages()
 
     if (length(msgs) == 0L) {
       # 无消息时等 50ms（让 Shiny 处理输入事件）

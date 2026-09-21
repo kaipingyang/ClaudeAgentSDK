@@ -272,6 +272,7 @@ test_that("transport process exit rejects an in-flight async control", {
   fake_proc <- new.env(parent = emptyenv())
   fake_proc$is_alive <- function() alive
   fake_proc$write_input <- function(data) raw(0)
+  fake_proc$read_output <- function(n = -1L) ""
   private$proc <- fake_proc
   private$ready <- TRUE
 

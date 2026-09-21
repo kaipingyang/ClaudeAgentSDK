@@ -114,6 +114,13 @@ ClaudeSDKClient <- R6::R6Class(
       invisible(self)
     },
 
+    #' @description Return whether the connected Claude Code subprocess is alive.
+    #'   This does not read messages, send a request, or create a connection.
+    #' @return A single logical value.
+    is_alive = function() {
+      !is.null(private$transport) && isTRUE(private$transport$is_alive())
+    },
+
     # ------------------------------------------------------------------
     # Message sending
     # ------------------------------------------------------------------
@@ -146,10 +153,22 @@ ClaudeSDKClient <- R6::R6Class(
     #'   Shiny `observe()` + `invalidateLater()` polling patterns where
     #'   `later::later()`-based approaches starve input processing.
     #'
-    #' @return List of typed message objects (may be empty).
+    #'   Buffered final messages are returned before a terminated connection
+    #'   raises a `claude_error_cli_connection` on an empty poll.
+    #' @return List of typed message objects (may be empty while connected).
     poll_messages = function() {
       private$assert_connected()
-      private$transport$read_available_messages()
+      messages <- private$transport$read_available_messages()
+      if (!length(messages) && !self$is_alive()) {
+        claude_cli_connection_error("Claude Code process exited while waiting for messages.")
+      }
+      for (message in messages) {
+        if (inherits(message, "ResultMessage") &&
+            !is.null(message$session_id) && nzchar(message$session_id)) {
+          private$.session_id <- message$session_id
+        }
+      }
+      messages
     },
 
     #' @description Return a `coro` generator that yields ALL messages
@@ -216,11 +235,6 @@ ClaudeSDKClient <- R6::R6Class(
 
       p <- promises::promise(function(resolve, reject) {
         poll_step <- function() {
-          if (!transport$is_alive()) {
-            reject(simpleError("Claude Code process exited during async receive"))
-            return()
-          }
-
           msgs <- tryCatch(
             transport$read_available_messages(),
             error = function(e) {
@@ -244,6 +258,11 @@ ClaudeSDKClient <- R6::R6Class(
               resolve(msg)
               return()
             }
+          }
+
+          if (!transport$is_alive()) {
+            reject(simpleError("Claude Code process exited during async receive"))
+            return()
           }
 
           # Re-arm: schedule next non-blocking poll
@@ -396,6 +415,29 @@ ClaudeSDKClient <- R6::R6Class(
       private$assert_connected()
       private$send_control_request(list(subtype = "stop_task", task_id = task_id))
       invisible(self)
+    },
+
+    #' @description Request a task stop and await its correlated acknowledgement
+    #'   without a second stdout reader. Acknowledgement is not task completion;
+    #'   keep consuming task events until a terminal status arrives.
+    #' @param task_id Character. Task identifier.
+    #' @param timeout_ms Numeric. Milliseconds before acknowledgement rejection.
+    #' @param on_fulfilled Optional callback for no-Promise mode.
+    #' @param on_rejected Optional callback for no-Promise mode.
+    #' @return A `promises::promise`, or the request id in callback mode.
+    stop_task_async = function(task_id, timeout_ms = 5000L,
+                                on_fulfilled = NULL, on_rejected = NULL) {
+      private$assert_connected()
+      request <- list(subtype = "stop_task", task_id = task_id)
+      if (is.function(on_fulfilled) && is.function(on_rejected)) {
+        return(private$transport$send_async_callback(
+          request = request,
+          on_fulfilled = on_fulfilled,
+          on_rejected = on_rejected,
+          timeout_ms = timeout_ms
+        ))
+      }
+      private$transport$send_async(request, timeout_ms = timeout_ms)
     },
 
     # ------------------------------------------------------------------

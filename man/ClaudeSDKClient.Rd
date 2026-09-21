@@ -79,6 +79,7 @@ Use with \code{ClaudeAgentOptions(resume = client$session_id)} or call
     \item \href{#method-ClaudeSDKClient-initialize}{\code{ClaudeSDKClient$new()}}
     \item \href{#method-ClaudeSDKClient-connect}{\code{ClaudeSDKClient$connect()}}
     \item \href{#method-ClaudeSDKClient-disconnect}{\code{ClaudeSDKClient$disconnect()}}
+    \item \href{#method-ClaudeSDKClient-is_alive}{\code{ClaudeSDKClient$is_alive()}}
     \item \href{#method-ClaudeSDKClient-send}{\code{ClaudeSDKClient$send()}}
     \item \href{#method-ClaudeSDKClient-query}{\code{ClaudeSDKClient$query()}}
     \item \href{#method-ClaudeSDKClient-poll_messages}{\code{ClaudeSDKClient$poll_messages()}}
@@ -93,6 +94,7 @@ Use with \code{ClaudeAgentOptions(resume = client$session_id)} or call
     \item \href{#method-ClaudeSDKClient-set_model_async}{\code{ClaudeSDKClient$set_model_async()}}
     \item \href{#method-ClaudeSDKClient-rewind_files}{\code{ClaudeSDKClient$rewind_files()}}
     \item \href{#method-ClaudeSDKClient-stop_task}{\code{ClaudeSDKClient$stop_task()}}
+    \item \href{#method-ClaudeSDKClient-stop_task_async}{\code{ClaudeSDKClient$stop_task_async()}}
     \item \href{#method-ClaudeSDKClient-get_mcp_status}{\code{ClaudeSDKClient$get_mcp_status()}}
     \item \href{#method-ClaudeSDKClient-get_context_usage}{\code{ClaudeSDKClient$get_context_usage()}}
     \item \href{#method-ClaudeSDKClient-get_context_usage_async}{\code{ClaudeSDKClient$get_context_usage_async()}}
@@ -157,6 +159,22 @@ immediately after connecting.}
 }
 
 \if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-ClaudeSDKClient-is_alive"></a>}}
+\if{latex}{\out{\hypertarget{method-ClaudeSDKClient-is_alive}{}}}
+\subsection{\code{ClaudeSDKClient$is_alive()}}{
+  Return whether the connected Claude Code subprocess is alive.
+This does not read messages, send a request, or create a connection.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{ClaudeSDKClient$is_alive()}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    A single logical value.
+  }
+}
+
+\if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-ClaudeSDKClient-send"></a>}}
 \if{latex}{\out{\hypertarget{method-ClaudeSDKClient-send}{}}}
 \subsection{\code{ClaudeSDKClient$send()}}{
@@ -205,13 +223,16 @@ Alias for \code{send()} that matches the Python SDK's \code{client.query()} API.
 messages available right now (may be empty).  Designed for
 Shiny \code{observe()} + \code{invalidateLater()} polling patterns where
 \code{later::later()}-based approaches starve input processing.
+
+Buffered final messages are returned before a terminated connection
+raises a \code{claude_error_cli_connection} on an empty poll.
   \subsection{Usage}{
     \if{html}{\out{<div class="r">}}
     \preformatted{ClaudeSDKClient$poll_messages()}
     \if{html}{\out{</div>}}
   }
   \subsection{Returns}{
-    List of typed message objects (may be empty).
+    List of typed message objects (may be empty while connected).
   }
 }
 
@@ -476,6 +497,38 @@ user message.  Requires \code{enable_file_checkpointing = TRUE}.
       \item{\code{task_id}}{Character. Task ID from a \code{TaskNotificationMessage}.}
     }
     \if{html}{\out{</div>}}
+  }
+}
+
+\if{html}{\out{<hr>}}
+\if{html}{\out{<a id="method-ClaudeSDKClient-stop_task_async"></a>}}
+\if{latex}{\out{\hypertarget{method-ClaudeSDKClient-stop_task_async}{}}}
+\subsection{\code{ClaudeSDKClient$stop_task_async()}}{
+  Request a task stop and await its correlated acknowledgement
+without a second stdout reader. Acknowledgement is not task completion;
+keep consuming task events until a terminal status arrives.
+  \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
+    \preformatted{ClaudeSDKClient$stop_task_async(
+  task_id,
+  timeout_ms = 5000L,
+  on_fulfilled = NULL,
+  on_rejected = NULL
+)}
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
+    \describe{
+      \item{\code{task_id}}{Character. Task identifier.}
+      \item{\code{timeout_ms}}{Numeric. Milliseconds before acknowledgement rejection.}
+      \item{\code{on_fulfilled}}{Optional callback for no-Promise mode.}
+      \item{\code{on_rejected}}{Optional callback for no-Promise mode.}
+    }
+    \if{html}{\out{</div>}}
+  }
+  \subsection{Returns}{
+    A \code{promises::promise}, or the request id in callback mode.
   }
 }
 

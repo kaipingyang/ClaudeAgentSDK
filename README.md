@@ -267,7 +267,7 @@ pending_id <- reactiveVal(NULL)
 
 do_stream <- coro::async(function(client, pending_id, session) {
   repeat {
-    msgs <- tryCatch(client$poll_messages(), error = function(e) list())
+    msgs <- client$poll_messages()
     if (length(msgs) == 0L) {
       await(promises::promise(function(resolve, reject) {
         later::later(function() resolve(TRUE), 0.05)
@@ -588,6 +588,34 @@ for a complete example.
 
 ## Advanced: Async / Shiny Integration
 
+### Long-lived clients and acknowledged task stop
+
+`client$is_alive()` checks the existing transport without connecting or reading stdout.
+It is a liveness signal, not a response deadline: healthy tools and approvals may remain
+quiet for a long time. `poll_messages()` consumes available final frames even after process
+exit, then raises `claude_error_cli_connection` once a dead connection has no remaining
+messages. Do not turn that error into `list()` or check liveness before draining the tail.
+
+`stop_task_async()` uses the same correlated control dispatcher as the other async
+controls, in promise or callback mode:
+
+```r
+client$stop_task_async(
+  task_id,
+  timeout_ms = 5000L,
+  on_fulfilled = function(value) message("Stop requested; waiting for task status."),
+  on_rejected = function(error) message("Stop failed: ", conditionMessage(error))
+)
+```
+
+Keep the existing single message owner polling while a control request is pending,
+including while waiting for a human approval; do not create a competing stdout reader.
+The acknowledgement does not prove the task stopped. Wait for its terminal Task event,
+and allow retry or report an unknown outcome when confirmation is unavailable. The older
+`stop_task()` remains fire-and-forget for compatibility. After a global interrupt, drain
+the current Result before starting another turn; if a bounded drain cannot confirm that
+boundary, disconnect rather than reusing the uncertain queue or replaying tools.
+
 ### Recommended: `coro::async` + `poll_messages()`
 
 The recommended Shiny pattern uses `coro::async` with `poll_messages()` inside
@@ -616,7 +644,7 @@ do_stream <- coro::async(function(client, interrupt_flag, session) {
       tryCatch(client$interrupt(), error = function(e) NULL)
     }
 
-    msgs <- tryCatch(client$poll_messages(), error = function(e) list())
+    msgs <- client$poll_messages()
     if (length(msgs) == 0L) {
       await(promises::promise(function(resolve, reject) {
         later::later(function() resolve(TRUE), 0.05)
@@ -708,11 +736,19 @@ p <- client$receive_response_async(on_message = function(msg) {
 
 # Drive the event loop (non-Shiny context)
 result <- NULL
-then(p, onFulfilled = function(val) result <<- val)
-while (is.null(result)) later::run_now(timeoutSecs = 0.1)
-
-cat("\nCost: $", result$total_cost_usd, "\n")
+failure <- NULL
+settled <- FALSE
+then(p, onFulfilled = function(value) {
+  result <<- value
+  settled <<- TRUE
+}, onRejected = function(error) {
+  failure <<- error
+  settled <<- TRUE
+})
+while (!settled) later::run_now(timeoutSecs = 0.1)
 client$disconnect()
+if (!is.null(failure)) stop(failure)
+cat("\nCost: $", result$total_cost_usd, "\n")
 ```
 
 See [`examples/14_shinychat_simple.R`](https://github.com/kaipingyang/ClaudeAgentSDK/blob/main/examples/14_shinychat_simple.R)

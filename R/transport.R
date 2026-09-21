@@ -453,7 +453,7 @@ SubprocessCLITransport <- R6::R6Class(
     #'   polling.
     #' @return List of typed message objects (may be empty).
     read_available_messages = function() {
-      if (is.null(private$proc) || !private$proc$is_alive()) {
+      if (is.null(private$proc)) {
         if (!is.null(private$control_dispatcher)) {
           private$control_dispatcher$reject_all(
             simpleError("Claude Code process exited")
@@ -464,10 +464,11 @@ SubprocessCLITransport <- R6::R6Class(
 
       msgs <- list()
       opts <- private$options
+      alive <- private$proc$is_alive()
 
       # Non-blocking poll (0 ms timeout)
-      status <- tryCatch(private$proc$poll_io(0L), error = function(e) NULL)
-      if (is.null(status)) return(msgs)
+      status <- if (alive) private$proc$poll_io(0L) else
+        c(output = "ready", error = "ready")
 
       # Handle stderr
       stderr_ready <- !is.null(names(status)) &&
@@ -489,7 +490,7 @@ SubprocessCLITransport <- R6::R6Class(
 
       if (stdout_ready) {
         max_buf <- opts$max_buffer_size %||% .DEFAULT_MAX_BUFFER_SIZE
-        raw <- tryCatch(private$proc$read_output(max_buf), error = function(e) "")
+        raw <- private$proc$read_output(if (alive) max_buf else -1L)
         if (nzchar(raw)) {
           result <- split_lines_with_buffer(private$buffer, raw)
           private$buffer <- result$remaining
@@ -526,6 +527,9 @@ SubprocessCLITransport <- R6::R6Class(
         }
       }
 
+      if (!alive && !is.null(private$control_dispatcher)) {
+        private$control_dispatcher$reject_all(simpleError("Claude Code process exited"))
+      }
       msgs
     },
 
