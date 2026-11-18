@@ -21,7 +21,9 @@ ResultMessage(
   deferred_tool_use = NULL,
   errors = NULL,
   api_error_status = NULL,
-  uuid = NULL
+  uuid = NULL,
+  terminal_reason = NULL,
+  origin = NULL
 )
 }
 \arguments{
@@ -61,6 +63,11 @@ of the failing API call when \code{is_error} is \code{TRUE} and \code{subtype} i
 \code{"success"}; \code{NULL} otherwise.}
 
 \item{uuid}{Character or NULL.}
+
+\item{terminal_reason}{Character or NULL. Why the query loop ended
+(\code{"completed"}, \code{"max_turns"}, \code{"aborted_streaming"}, \code{"aborted_tools"}, ...).}
+
+\item{origin}{List or NULL. Why the turn started (see \code{\link[=UserMessage]{UserMessage()}}).}
 }
 \value{
 Object of class \code{ResultMessage}.

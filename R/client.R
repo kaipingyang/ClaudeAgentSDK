@@ -84,7 +84,8 @@ ClaudeSDKClient <- R6::R6Class(
       # Send initial prompt if provided
       if (!is.null(prompt) && is.character(prompt)) {
         private$transport$send(
-          build_user_message_json(prompt, session_id = "default")
+          build_user_message_json(prompt, session_id = "default",
+                                  verbatim_prompts = isTRUE(self$options$verbatim_prompts))
         )
       }
 
@@ -165,7 +166,8 @@ ClaudeSDKClient <- R6::R6Class(
     send = function(prompt, session_id = "default") {
       private$assert_connected()
       private$transport$send(
-        build_user_message_json(prompt, session_id = session_id)
+        build_user_message_json(prompt, session_id = session_id,
+                                verbatim_prompts = isTRUE(self$options$verbatim_prompts))
       )
       invisible(self)
     },

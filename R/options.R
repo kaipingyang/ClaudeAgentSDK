@@ -83,6 +83,16 @@
 #' @param include_hook_events Logical. When `TRUE`, the CLI emits hook lifecycle
 #'   events (`hook_started`/`hook_response`) into the message stream as
 #'   `HookEventMessage` objects. Maps to `--include-hook-events`.
+#' @param verbatim_prompts Logical. When `TRUE`, user messages are delivered
+#'   exactly as written: no `@path` expansion and no slash-command dispatch.
+#'   Requires Claude Code >= 2.1.248; older CLIs ignore it (a warning is issued
+#'   at connect), so do not rely on it for untrusted text with an older CLI.
+#' @param forward_subagent_text Logical. When `TRUE`, the CLI forwards subagent
+#'   text and thinking blocks as messages in the stream.
+#' @param resume_session_at Character or NULL. With `resume`, fork the session at
+#'   this earlier transcript entry (`--resume-session-at`).
+#' @param resume_drops_turn Character or NULL. With `resume_session_at`, validate
+#'   that only entries of this turn are dropped (`--resume-drops-turn`).
 #'
 #' @return Object of class `ClaudeAgentOptions`.
 #' @examples
@@ -145,7 +155,11 @@ ClaudeAgentOptions <- function(
     task_budget               = NULL,
     strict_mcp_config         = FALSE,
     skills                    = NULL,
-    include_hook_events       = FALSE
+    include_hook_events       = FALSE,
+    verbatim_prompts          = FALSE,
+    forward_subagent_text     = FALSE,
+    resume_session_at         = NULL,
+    resume_drops_turn         = NULL
 ) {
   structure(
     list(
@@ -189,7 +203,11 @@ ClaudeAgentOptions <- function(
       task_budget               = task_budget,
       strict_mcp_config         = strict_mcp_config,
       skills                    = skills,
-      include_hook_events       = include_hook_events
+      include_hook_events       = include_hook_events,
+      verbatim_prompts          = isTRUE(verbatim_prompts),
+      forward_subagent_text     = isTRUE(forward_subagent_text),
+      resume_session_at         = resume_session_at,
+      resume_drops_turn         = resume_drops_turn
     ),
     class = "ClaudeAgentOptions"
   )

@@ -625,7 +625,137 @@ get_session_messages <- function(session_id,
     parent_id  <- cur[["parentUuid"]]
     cur        <- if (!is.null(parent_id)) by_uuid[[parent_id]] else NULL
   }
-  rev(chain)
+  .recover_orphaned_parallel_tool_results(by_uuid, rev(chain))
+}
+
+# ---------------------------------------------------------------------------
+# Parallel tool turns (Python SDK v0.2.170, mirrors the TypeScript SDK).
+# The CLI writes one assistant entry per content block; N parallel tool calls
+# share message.id and are chained, while each tool_result hangs off its own
+# call, so the transcript forks and the parentUuid walk keeps only one branch.
+# Put the missing calls/results back right after the response's last entry.
+# ---------------------------------------------------------------------------
+.assistant_message_id <- function(entry) {
+  if (!identical(entry[["type"]], "assistant") || !is.list(entry[["message"]])) return(NULL)
+  id <- entry[["message"]][["id"]]
+  if (is.character(id) && length(id) == 1L && nzchar(id)) id else NULL
+}
+
+.content_block_ids <- function(entry, block_type, id_field) {
+  content <- if (is.list(entry[["message"]])) entry[["message"]][["content"]] else NULL
+  if (!is.list(content)) return(character())
+  ids <- vapply(content, function(block) {
+    if (is.list(block) && identical(block[["type"]], block_type) &&
+        is.character(block[[id_field]]) && length(block[[id_field]]) == 1L) block[[id_field]]
+    else NA_character_
+  }, character(1))
+  ids[!is.na(ids)]
+}
+
+.is_tool_result_entry <- function(entry) {
+  identical(entry[["type"]], "user") && is.character(entry[["parentUuid"]]) &&
+    nzchar(entry[["parentUuid"]]) && length(.content_block_ids(entry, "tool_result", "tool_use_id")) > 0L
+}
+
+.same_writer <- function(a, b) {
+  isTRUE(a[["isSidechain"]]) == isTRUE(b[["isSidechain"]]) &&
+    identical(a[["agentId"]], b[["agentId"]])
+}
+
+.recover_orphaned_parallel_tool_results <- function(by_uuid, chain) {
+  chain_assistants <- Filter(function(e) identical(e[["type"]], "assistant"), chain)
+  if (!length(chain_assistants)) return(chain)
+  seen <- vapply(chain, function(e) e[["uuid"]], character(1))
+  anchors <- list()
+  for (entry in chain_assistants) {
+    id <- .assistant_message_id(entry)
+    if (!is.null(id)) anchors[[id]] <- entry
+  }
+  if (!length(anchors)) return(chain)
+
+  siblings <- list()
+  owner <- list()            # call id -> owning entry, or FALSE when ambiguous
+  results <- list()
+  for (entry in by_uuid) {
+    id <- .assistant_message_id(entry)
+    if (!is.null(id)) {
+      siblings[[id]] <- c(siblings[[id]], list(entry))
+      for (call_id in .content_block_ids(entry, "tool_use", "id")) {
+        prev <- owner[[call_id]]
+        if (is.null(prev)) { owner[[call_id]] <- entry; next }
+        same <- is.list(prev) && identical(.assistant_message_id(prev), id)
+        owner[[call_id]] <- if (same) entry else FALSE
+      }
+    } else if (.is_tool_result_entry(entry)) {
+      results[[length(results) + 1L]] <- entry
+    }
+  }
+  by_assistant <- list()
+  add_result <- function(key, result) by_assistant[[key]] <<- c(by_assistant[[key]], list(result))
+  for (result in results) {
+    add_result(result[["parentUuid"]], result)
+    source <- result[["sourceToolAssistantUUID"]]
+    if (is.character(source) && length(source) == 1L) {
+      source_entry <- by_uuid[[source]]
+      if (!is.null(source_entry) && .same_writer(result, source_entry)) add_result(source, result)
+    }
+    for (call_id in .content_block_ids(result, "tool_result", "tool_use_id")) {
+      o <- owner[[call_id]]
+      if (is.list(o) && .same_writer(result, o)) add_result(o[["uuid"]], result)
+    }
+  }
+
+  ts <- function(e) if (is.character(e[["timestamp"]])) e[["timestamp"]] else ""
+  sort_ts <- function(xs) if (length(xs)) xs[order(vapply(xs, ts, ""), method = "radix")] else xs
+  answered_on_chain <- unique(unlist(lapply(chain, .content_block_ids, "tool_result", "tool_use_id")))
+  file_position <- stats::setNames(seq_along(by_uuid), names(by_uuid))
+  processed <- character()
+  inserts <- list()
+  for (assistant in chain_assistants) {
+    id <- .assistant_message_id(assistant)
+    if (is.null(id) || id %in% processed) next
+    processed <- c(processed, id)
+    group <- siblings[[id]] %||% list(assistant)
+    members <- vapply(group, function(m) m[["uuid"]], character(1))
+    orphan_siblings <- Filter(function(m) !(m[["uuid"]] %in% seen), group)
+    orphan_results <- list(); strays <- list(); collected <- character()
+    for (member in group) {
+      for (result in by_assistant[[member[["uuid"]]]] %||% list()) {
+        uid <- result[["uuid"]]
+        if (uid %in% seen || uid %in% collected) next
+        collected <- c(collected, uid)
+        if (result[["parentUuid"]] %in% members) orphan_results <- c(orphan_results, list(result))
+        else strays <- c(strays, list(result))
+      }
+    }
+    if (length(strays)) {
+      answered <- unique(c(answered_on_chain,
+                           unlist(lapply(orphan_results, .content_block_ids, "tool_result", "tool_use_id"))))
+      strays <- strays[order(vapply(strays, function(e) file_position[[e[["uuid"]]]], numeric(1)))]
+      for (result in strays) {
+        call_ids <- .content_block_ids(result, "tool_result", "tool_use_id")
+        open_call <- any(vapply(call_ids, function(call_id) {
+          o <- owner[[call_id]]
+          !(call_id %in% answered) && is.list(o) && o[["uuid"]] %in% members
+        }, logical(1)))
+        if (!open_call) next
+        answered <- c(answered, call_ids)
+        orphan_results <- c(orphan_results, list(result))
+      }
+    }
+    if (!length(orphan_siblings) && !length(orphan_results)) next
+    recovered <- c(sort_ts(orphan_siblings), sort_ts(orphan_results))
+    seen <- c(seen, vapply(recovered, function(e) e[["uuid"]], character(1)))
+    inserts[[anchors[[id]][["uuid"]]]] <- recovered
+  }
+  if (!length(inserts)) return(chain)
+  out <- list()
+  for (entry in chain) {
+    out <- c(out, list(entry))
+    extra <- inserts[[entry[["uuid"]]]]
+    if (length(extra)) out <- c(out, extra)
+  }
+  out
 }
 
 .is_visible_message <- function(entry) {

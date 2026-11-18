@@ -4,7 +4,7 @@
 \alias{HookMatcher}
 \title{Create a HookMatcher}
 \usage{
-HookMatcher(matcher = NULL, hooks = list(), timeout = NULL)
+HookMatcher(matcher = NULL, hooks = list(), timeout = NULL, on_failure = NULL)
 }
 \arguments{
 \item{matcher}{Character or NULL. Tool name or pattern to match
@@ -14,6 +14,10 @@ HookMatcher(matcher = NULL, hooks = list(), timeout = NULL)
 \verb{function(input_data, tool_use_id, context)} and returns a named list.}
 
 \item{timeout}{Integer or NULL. Timeout in milliseconds for each hook call.}
+
+\item{on_failure}{\code{"block"}, \code{"continue"} or NULL. With \code{"block"} the action is
+blocked when a callback errors or returns NULL; the CLI must support it
+(checked at connect). NULL/\code{"continue"} treats failure as no decision.}
 }
 \value{
 Object of class \code{HookMatcher}.

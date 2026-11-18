@@ -171,3 +171,36 @@ claude_message_parse_error <- function(message, data = NULL, ...) {
     ...
   )
 }
+
+
+#' Build a ResultError condition from a terminal error ResultMessage
+#'
+#' Mirrors the Python SDK's `ResultError` (v0.2.140): a process error carrying the
+#' structured terminal payload (`subtype`, `errors`, `result`, `api_error_status`,
+#' `terminal_reason`, `session_id`). Returned, not signalled; use `stop(cond)`.
+#' Unlike Python, the SDK does not raise it automatically on process exit: R
+#' clients receive the error `ResultMessage` itself and can convert it.
+#' @param result A `ResultMessage` with `is_error = TRUE`.
+#' @param exit_code,stderr Optional process exit details.
+#' @return A condition of class `claude_result_error` (also `claude_process_error`).
+#' @export
+result_error <- function(result, exit_code = NULL, stderr = NULL) {
+  # Normalise like Python: a bare string becomes a list; trim; drop blank and
+  # non-string entries.
+  raw <- result$errors %||% list()
+  if (is.character(raw) && length(raw) == 1L) raw <- list(raw)
+  errors <- Filter(function(x) is.character(x) && length(x) == 1L && !is.na(x) && nzchar(trimws(x)), raw)
+  errors <- lapply(errors, trimws)
+  detail <- if (length(errors)) paste(unlist(errors), collapse = "; ")
+            else if (is.character(result$result)) trimws(result$result) else ""
+  message <- paste0("Claude Code returned an error result (", result$subtype %||% "error", ")",
+                    if (nzchar(detail)) paste0(": ", detail) else "")
+  structure(
+    class = c("claude_result_error", "claude_process_error", "claude_error_process",
+              "claude_error", "error", "condition"),
+    list(message = message, call = NULL, subtype = result$subtype, errors = errors,
+         result = result$result, api_error_status = result$api_error_status,
+         terminal_reason = result$terminal_reason, session_id = result$session_id,
+         exit_code = exit_code, stderr = stderr)
+  )
+}

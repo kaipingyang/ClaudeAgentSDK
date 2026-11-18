@@ -45,7 +45,11 @@ ClaudeAgentOptions(
   task_budget = NULL,
   strict_mcp_config = FALSE,
   skills = NULL,
-  include_hook_events = FALSE
+  include_hook_events = FALSE,
+  verbatim_prompts = FALSE,
+  forward_subagent_text = FALSE,
+  resume_session_at = NULL,
+  resume_drops_turn = NULL
 )
 }
 \arguments{
@@ -167,6 +171,20 @@ the initialize request; configures everything needed (including allowing the
 \item{include_hook_events}{Logical. When \code{TRUE}, the CLI emits hook lifecycle
 events (\code{hook_started}/\code{hook_response}) into the message stream as
 \code{HookEventMessage} objects. Maps to \code{--include-hook-events}.}
+
+\item{verbatim_prompts}{Logical. When \code{TRUE}, user messages are delivered
+exactly as written: no \verb{@path} expansion and no slash-command dispatch.
+Requires Claude Code >= 2.1.248; older CLIs ignore it (a warning is issued
+at connect), so do not rely on it for untrusted text with an older CLI.}
+
+\item{forward_subagent_text}{Logical. When \code{TRUE}, the CLI forwards subagent
+text and thinking blocks as messages in the stream.}
+
+\item{resume_session_at}{Character or NULL. With \code{resume}, fork the session at
+this earlier transcript entry (\code{--resume-session-at}).}
+
+\item{resume_drops_turn}{Character or NULL. With \code{resume_session_at}, validate
+that only entries of this turn are dropped (\code{--resume-drops-turn}).}
 }
 \value{
 Object of class \code{ClaudeAgentOptions}.

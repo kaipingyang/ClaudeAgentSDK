@@ -204,8 +204,7 @@ test_that("continue_conversation = FALSE omits --continue", {
 # ===========================================================================
 test_that("resume produces --resume with session id", {
   args <- build_args(ClaudeAgentOptions(resume = "abc-123"))
-  expect_true("--resume" %in% args)
-  expect_equal(flag_value(args, "--resume"), "abc-123")
+  expect_true("--resume=abc-123" %in% args)
 })
 
 # ===========================================================================
@@ -213,8 +212,7 @@ test_that("resume produces --resume with session id", {
 # ===========================================================================
 test_that("session_id produces --session-id", {
   args <- build_args(ClaudeAgentOptions(session_id = "sid-1"))
-  expect_true("--session-id" %in% args)
-  expect_equal(flag_value(args, "--session-id"), "sid-1")
+  expect_true("--session-id=sid-1" %in% args)
 })
 
 # ===========================================================================

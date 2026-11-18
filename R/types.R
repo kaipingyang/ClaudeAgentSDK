@@ -135,6 +135,8 @@ ServerToolResultBlock <- function(tool_use_id, content) {
 #' @param parent_tool_use_id Character or NULL.
 #' @param tool_use_result List or NULL.
 #' @param is_replay Logical or NULL. Whether the CLI marked this as a replayed message.
+#' @param origin List or NULL. Why the turn started (`kind` = `"human"`,
+#'   `"task-notification"`, ...); unknown kinds mean "not human".
 #' @return Object of class `UserMessage`.
 #' @examples
 #' msg <- UserMessage("Hello, Claude!")
@@ -144,14 +146,16 @@ UserMessage <- function(content,
                         uuid               = NULL,
                         parent_tool_use_id = NULL,
                         tool_use_result    = NULL,
-                        is_replay          = NULL) {
+                        is_replay          = NULL,
+                        origin             = NULL) {
   .new_obj(
     list(
       content            = content,
       uuid               = uuid,
       parent_tool_use_id = parent_tool_use_id,
       tool_use_result    = tool_use_result,
-      is_replay          = is_replay
+      is_replay          = is_replay,
+      origin             = origin
     ),
     "UserMessage"
   )
@@ -449,6 +453,9 @@ DeferredToolUse <- function(id, name, input) {
 #' @param deferred_tool_use `DeferredToolUse` or NULL. Present when a PreToolUse
 #'   hook deferred a tool call.
 #' @param errors List or NULL.
+#' @param terminal_reason Character or NULL. Why the query loop ended
+#'   (`"completed"`, `"max_turns"`, `"aborted_streaming"`, `"aborted_tools"`, ...).
+#' @param origin List or NULL. Why the turn started (see [UserMessage()]).
 #' @param api_error_status Integer or NULL. HTTP status code (e.g. 429, 500, 529)
 #'   of the failing API call when `is_error` is `TRUE` and `subtype` is
 #'   `"success"`; `NULL` otherwise.
@@ -477,7 +484,9 @@ ResultMessage <- function(subtype, duration_ms, duration_api_ms,
                           deferred_tool_use   = NULL,
                           errors              = NULL,
                           api_error_status    = NULL,
-                          uuid                = NULL) {
+                          uuid                = NULL,
+                          terminal_reason     = NULL,
+                          origin              = NULL) {
   .new_obj(
     list(
       subtype            = subtype,
@@ -496,6 +505,8 @@ ResultMessage <- function(subtype, duration_ms, duration_api_ms,
       deferred_tool_use  = deferred_tool_use,
       errors             = errors,
       api_error_status   = api_error_status,
+      terminal_reason    = terminal_reason,
+      origin             = origin,
       uuid               = uuid
     ),
     "ResultMessage"
@@ -820,6 +831,9 @@ AgentDefinition <- function(description,
 #' @param hooks List of functions. Each function has signature
 #'   `function(input_data, tool_use_id, context)` and returns a named list.
 #' @param timeout Integer or NULL. Timeout in milliseconds for each hook call.
+#' @param on_failure `"block"`, `"continue"` or NULL. With `"block"` the action is
+#'   blocked when a callback errors or returns NULL; the CLI must support it
+#'   (checked at connect). NULL/`"continue"` treats failure as no decision.
 #' @return Object of class `HookMatcher`.
 #' @examples
 #' hm <- HookMatcher(
@@ -828,9 +842,17 @@ AgentDefinition <- function(description,
 #' )
 #' hm$matcher
 #' @export
-HookMatcher <- function(matcher = NULL, hooks = list(), timeout = NULL) {
+HookMatcher <- function(matcher = NULL, hooks = list(), timeout = NULL,
+                        on_failure = NULL) {
+  # Python SDK v0.2.177: "block" blocks the action when a callback fails;
+  # "continue" (CLI default) treats failure as no decision.
+  if (!is.null(on_failure) &&
+      !(is.character(on_failure) && length(on_failure) == 1L &&
+        on_failure %in% c("block", "continue"))) {
+    stop("`on_failure` must be \"block\", \"continue\" or NULL.", call. = FALSE)
+  }
   .new_obj(
-    list(matcher = matcher, hooks = hooks, timeout = timeout),
+    list(matcher = matcher, hooks = hooks, timeout = timeout, on_failure = on_failure),
     "HookMatcher"
   )
 }
@@ -1554,17 +1576,21 @@ PermissionUpdate <- function(type, rules = NULL, behavior = NULL,
 #' Create a SystemPromptPreset
 #' @param exclude_dynamic_sections Logical or NULL.
 #' @param append Character or NULL. Additional instructions to append.
+#' @param snapshot Logical or NULL. When `TRUE`, the session keeps the system
+#'   prompt recorded on its first request (better prompt caching).
 #' @return Object of class `SystemPromptPreset`.
 #' @examples
 #' sp <- SystemPromptPreset(exclude_dynamic_sections = TRUE)
 #' sp$type  # "preset"
 #' @export
 SystemPromptPreset <- function(exclude_dynamic_sections = NULL,
-                                append = NULL) {
+                                append = NULL, snapshot = NULL) {
   .new_obj(list(
     type                      = "preset",
     exclude_dynamic_sections = exclude_dynamic_sections,
-    append                   = append
+    append                   = append,
+    # Python SDK v0.2.153: keep the system prompt recorded on the first request.
+    snapshot                 = snapshot
   ), "SystemPromptPreset")
 }
 
@@ -1862,4 +1888,21 @@ print.ResultMessage <- function(x, ...) {
       " cost=", x$total_cost_usd %||% "NA",
       ">\n", sep = "")
   invisible(x)
+}
+
+
+#' Create a ConversationResetMessage
+#'
+#' Emitted when the session's conversation is replaced without ending the
+#' connection (for example after `/clear`). Running totals on later
+#' `ResultMessage`s restart from zero. Mirrors the Python SDK v0.2.137.
+#' @param new_conversation_id Character. Identifier of the fresh conversation
+#'   (not the `session_id` of later messages).
+#' @param uuid Character. Message id.
+#' @param session_id Character. The session that was reset.
+#' @return Object of class `ConversationResetMessage`.
+#' @export
+ConversationResetMessage <- function(new_conversation_id, uuid, session_id) {
+  .new_obj(list(new_conversation_id = new_conversation_id, uuid = uuid,
+                session_id = session_id), "ConversationResetMessage")
 }

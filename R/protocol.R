@@ -60,6 +60,7 @@ parse_message <- function(line) {
     "result"           = .parse_result_message(obj),
     "stream_event"     = .parse_stream_event(obj),
     "rate_limit_event" = .parse_rate_limit_event(obj),
+    "conversation_reset" = .parse_conversation_reset(obj),
     "control_request"        = obj,   # pass-through for transport layer
     "control_response"       = obj,   # pass-through for client layer
     "control_cancel_request" = obj,   # pass-through; handled in transport loop
@@ -118,7 +119,8 @@ parse_message <- function(line) {
     uuid               = obj[["uuid"]],
     parent_tool_use_id = obj[["parent_tool_use_id"]],
     tool_use_result    = obj[["tool_use_result"]],
-    is_replay          = obj[["isReplay"]]
+    is_replay          = obj[["isReplay"]],
+    origin             = .parse_origin(obj)
   )
 }
 
@@ -229,7 +231,9 @@ parse_message <- function(line) {
     deferred_tool_use  = deferred_tool_use,
     errors             = obj[["errors"]],
     api_error_status   = obj[["api_error_status"]],
-    uuid               = obj[["uuid"]]
+    uuid               = obj[["uuid"]],
+    terminal_reason    = obj[["terminal_reason"]],
+    origin             = .parse_origin(obj)
   )
 }
 
@@ -310,16 +314,22 @@ build_control_error_response <- function(request_id, error_msg) {
 #'
 #' @param prompt Character(1) or list. Prompt text or content block list.
 #' @param session_id Character(1). Session identifier (default `"default"`).
+#' @param verbatim_prompts Logical. Mark the message `client_composed` so the CLI
+#'   delivers it as written (Claude Code >= 2.1.248).
 #' @return Character(1). JSON string ready to write to the CLI's stdin.
 #' @keywords internal
-build_user_message_json <- function(prompt, session_id = "default") {
+build_user_message_json <- function(prompt, session_id = "default",
+                                    verbatim_prompts = FALSE) {
+  message <- list(
+    type               = "user",
+    session_id         = session_id,
+    message            = list(role = "user", content = prompt),
+    parent_tool_use_id = NULL
+  )
+  # Python SDK v0.2.158: deliver the text as written (no @path / slash dispatch).
+  if (isTRUE(verbatim_prompts)) message$client_composed <- TRUE
   jsonlite::toJSON(
-    list(
-      type               = "user",
-      session_id         = session_id,
-      message            = list(role = "user", content = prompt),
-      parent_tool_use_id = NULL
-    ),
+    message,
     auto_unbox = TRUE,
     null       = "null"
   )
@@ -344,4 +354,23 @@ build_initialize_request <- function(request_id, hooks_config = NULL,
     auto_unbox = TRUE,
     null       = "null"
   )
+}
+
+
+# Why a turn started (Python SDK v0.2.137): keep only well-formed objects so
+# newer origin kinds stay visible; treat unknown kinds as "not human".
+.parse_origin <- function(obj) {
+  origin <- obj[["origin"]]
+  if (is.list(origin) && !is.null(names(origin)) && is.character(origin[["kind"]]) &&
+      length(origin[["kind"]]) == 1L) origin else NULL
+}
+
+.parse_conversation_reset <- function(obj) {
+  for (field in c("new_conversation_id", "uuid", "session_id")) {
+    if (is.null(obj[[field]])) {
+      claude_message_parse_error(
+        paste0("Missing required field in conversation_reset message: ", field), obj)
+    }
+  }
+  ConversationResetMessage(obj[["new_conversation_id"]], obj[["uuid"]], obj[["session_id"]])
 }

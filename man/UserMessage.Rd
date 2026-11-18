@@ -9,7 +9,8 @@ UserMessage(
   uuid = NULL,
   parent_tool_use_id = NULL,
   tool_use_result = NULL,
-  is_replay = NULL
+  is_replay = NULL,
+  origin = NULL
 )
 }
 \arguments{
@@ -22,6 +23,9 @@ UserMessage(
 \item{tool_use_result}{List or NULL.}
 
 \item{is_replay}{Logical or NULL. Whether the CLI marked this as a replayed message.}
+
+\item{origin}{List or NULL. Why the turn started (\code{kind} = \code{"human"},
+\code{"task-notification"}, ...); unknown kinds mean "not human".}
 }
 \value{
 Object of class \code{UserMessage}.

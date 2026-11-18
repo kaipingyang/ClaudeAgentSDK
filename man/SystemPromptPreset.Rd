@@ -4,12 +4,19 @@
 \alias{SystemPromptPreset}
 \title{Create a SystemPromptPreset}
 \usage{
-SystemPromptPreset(exclude_dynamic_sections = NULL, append = NULL)
+SystemPromptPreset(
+  exclude_dynamic_sections = NULL,
+  append = NULL,
+  snapshot = NULL
+)
 }
 \arguments{
 \item{exclude_dynamic_sections}{Logical or NULL.}
 
 \item{append}{Character or NULL. Additional instructions to append.}
+
+\item{snapshot}{Logical or NULL. When \code{TRUE}, the session keeps the system
+prompt recorded on its first request (better prompt caching).}
 }
 \value{
 Object of class \code{SystemPromptPreset}.

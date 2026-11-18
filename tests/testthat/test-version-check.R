@@ -250,9 +250,9 @@ test_that("transport schedules advisory check only after initialize", {
   )
   expect_false(grepl("check_claude_version_once\\(cli_path\\)", connect_source))
   expect_false(grepl("check_claude_version\\(cli_path\\)", connect_source))
-  expect_match(connect_source, "schedule_claude_version_check\\(cli_path\\)")
+  expect_match(connect_source, "schedule_claude_version_check\\(cli_path")
   initialize_at <- regexpr("private$wait_for_initialize()", connect_source, fixed = TRUE)[[1L]]
-  schedule_at <- regexpr("schedule_claude_version_check(cli_path)", connect_source, fixed = TRUE)[[1L]]
+  schedule_at <- regexpr("schedule_claude_version_check(cli_path", connect_source, fixed = TRUE)[[1L]]
   expect_gt(initialize_at, 0L)
   expect_gt(schedule_at, initialize_at)
 })

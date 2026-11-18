@@ -1,5 +1,34 @@
 # Changelog
 
+# ClaudeAgentSDK 0.2.5.9002
+
+Parity follow-up against the official Python `claude-agent-sdk` v0.2.110 -> v0.2.184.
+
+### Security
+- `--resume`, `--session-id`, `--resume-session-at` and `--resume-drops-turn` are passed as
+  single `--flag=value` argv tokens, and dash-leading `extra_args` values use `--flag=value`,
+  so a value starting with `-` can never be parsed as a separate CLI flag (Python v0.2.121/v0.2.124).
+- Skill names in `skills` are validated before being formatted into `--allowedTools`
+  (parentheses, commas, control characters, BOM, `*`, `:*`/` *` suffixes, leading `/`,
+  surrounding whitespace, consecutive or trailing backslashes are rejected) (Python v0.2.129).
+- A warning is raised when `can_use_tool` is combined with `allowed_tools` or
+  `permission_mode = "bypassPermissions"`, which would stop the callback firing (Python v0.2.111).
+
+### New features
+- `ResultMessage$terminal_reason` and `origin` on `UserMessage`/`ResultMessage` (Python v0.2.126/v0.2.137).
+- `ConversationResetMessage` for the CLI's `conversation_reset` frame, e.g. after `/clear` (Python v0.2.137).
+- `result_error()` builds a structured `claude_result_error` condition from an error `ResultMessage` (Python v0.2.140).
+- `ClaudeAgentOptions(verbatim_prompts = TRUE)` delivers user text as written, with no `@path`
+  expansion or slash-command dispatch (Python v0.2.158).
+- `ClaudeAgentOptions(forward_subagent_text = TRUE)` and `SystemPromptPreset(snapshot = TRUE)`
+  are sent in the initialize request (Python v0.2.140/v0.2.153).
+- `ClaudeAgentOptions(resume_session_at =, resume_drops_turn =)` (Python v0.2.137).
+- `HookMatcher(on_failure = "block" | "continue")`, sent as `onFailure` (Python v0.2.177).
+
+### Bug fixes
+- `get_session_messages()` keeps every tool call and result of turns that ran tools in parallel;
+  the parentUuid walk previously kept only one branch (Python v0.2.170).
+
 # ClaudeAgentSDK 0.2.5.9001
 
 - Add callback-based `ClaudeSDKClient$connect_async()` and transport initialization

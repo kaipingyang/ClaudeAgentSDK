@@ -78,6 +78,7 @@ reference:
       - TaskNotificationMessage
       - TaskUpdatedMessage
       - HookEventMessage
+      - ConversationResetMessage
       - DeferredToolUse
 
   - title: "Content Block Types"
@@ -166,6 +167,7 @@ reference:
       - claude_cli_not_found
       - claude_cli_connection_error
       - claude_process_error
+      - result_error
       - claude_json_decode_error
       - claude_message_parse_error
 

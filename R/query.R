@@ -39,7 +39,8 @@ claude_query <- function(prompt,
     transport <- SubprocessCLITransport$new(options)
     transport$connect()
   }
-  transport$send(build_user_message_json(prompt, session_id = "default"))
+  transport$send(build_user_message_json(prompt, session_id = "default",
+                                         verbatim_prompts = isTRUE(options$verbatim_prompts)))
   transport$receive_messages()
 }
 

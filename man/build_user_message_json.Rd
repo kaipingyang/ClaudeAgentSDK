@@ -4,12 +4,19 @@
 \alias{build_user_message_json}
 \title{Build an outgoing user-message JSON string}
 \usage{
-build_user_message_json(prompt, session_id = "default")
+build_user_message_json(
+  prompt,
+  session_id = "default",
+  verbatim_prompts = FALSE
+)
 }
 \arguments{
 \item{prompt}{Character(1) or list. Prompt text or content block list.}
 
 \item{session_id}{Character(1). Session identifier (default \code{"default"}).}
+
+\item{verbatim_prompts}{Logical. Mark the message \code{client_composed} so the CLI
+delivers it as written (Claude Code >= 2.1.248).}
 }
 \value{
 Character(1). JSON string ready to write to the CLI's stdin.

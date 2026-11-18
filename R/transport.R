@@ -159,7 +159,7 @@ SubprocessCLITransport <- R6::R6Class(
       if (!is.null(private$proc) && private$proc$is_alive()) return(invisible(self))
       cli_path <- private$start_process()
       private$wait_for_initialize()
-      schedule_claude_version_check(cli_path)
+      schedule_claude_version_check(cli_path, min_version = private$minimum_cli_version())
       invisible(self)
     },
 
@@ -210,7 +210,7 @@ SubprocessCLITransport <- R6::R6Class(
           on_rejected(error)
         } else {
           private$init_result <- reply
-          schedule_claude_version_check(cli_path)
+          schedule_claude_version_check(cli_path, min_version = private$minimum_cli_version())
           on_fulfilled(self)
         }
         invisible(TRUE)
@@ -770,6 +770,7 @@ SubprocessCLITransport <- R6::R6Class(
       opts <- private$options
       args <- c("--output-format", "stream-json", "--verbose")
 
+
       # Skills defaults (mirrors Python _apply_skills_defaults): compute
       # effective allowed_tools + setting_sources from the `skills` option.
       eff_allowed_tools   <- opts$allowed_tools
@@ -781,12 +782,14 @@ SubprocessCLITransport <- R6::R6Class(
           }
         } else {
           for (.sk in opts$skills) {
+            .validate_skill_name(.sk)
             pat <- paste0("Skill(", .sk, ")")
             if (!(pat %in% eff_allowed_tools)) eff_allowed_tools <- c(eff_allowed_tools, pat)
           }
         }
         if (is.null(eff_setting_sources)) eff_setting_sources <- c("user", "project")
       }
+      .warn_can_use_tool_shadowed(opts, eff_allowed_tools)
 
       # system_prompt
       if (is.null(opts$system_prompt)) {
@@ -828,8 +831,19 @@ SubprocessCLITransport <- R6::R6Class(
       }
       if (!is.null(opts$permission_mode)) args <- c(args, "--permission-mode", opts$permission_mode)
       if (isTRUE(opts$continue_conversation)) args <- c(args, "--continue")
-      if (!is.null(opts$resume)     && nzchar(opts$resume))     args <- c(args, "--resume",      opts$resume)
-      if (!is.null(opts$session_id) && nzchar(opts$session_id)) args <- c(args, "--session-id",  opts$session_id)
+      # Single `=`-joined tokens so a dash-leading value can never be parsed as
+      # a separate CLI flag (Python SDK v0.2.121).
+      if (!is.null(opts$resume)     && nzchar(opts$resume))     args <- c(args, paste0("--resume=", opts$resume))
+      if (!is.null(opts$session_id) && nzchar(opts$session_id)) args <- c(args, paste0("--session-id=", opts$session_id))
+      # Python SDK v0.2.137: fork at an earlier transcript entry / guard dropped turn.
+      if (!is.null(opts$resume_session_at) && nzchar(opts$resume_session_at)) {
+        args <- c(args, paste0("--resume-session-at=", opts$resume_session_at))
+      }
+      # An explicit empty guard is still sent so the CLI rejects it instead of
+      # silently resuming unvalidated (matches Python `is not None`).
+      if (!is.null(opts$resume_drops_turn)) {
+        args <- c(args, paste0("--resume-drops-turn=", opts$resume_drops_turn))
+      }
 
       # settings / sandbox
       settings_val <- private$build_settings_value()
@@ -880,6 +894,10 @@ SubprocessCLITransport <- R6::R6Class(
         flag <- if (startsWith(nm, "--")) nm else paste0("--", nm)
         if (is.null(val)) {
           args <- c(args, flag)
+        } else if (startsWith(as.character(val)[[1L]], "-")) {
+          # A dash-leading value is not bound to an optional-value flag in the
+          # two-token form; the equals form always binds (Python SDK v0.2.124).
+          args <- c(args, paste0(flag, "=", as.character(val)[[1L]]))
         } else {
           args <- c(args, flag, as.character(val))
         }
@@ -953,6 +971,20 @@ SubprocessCLITransport <- R6::R6Class(
     # -----------------------------------------------------------------------
     send_initialize_request = function() {
       req_id <- "req_init_1"
+      init_req_body <- private$build_initialize_body()
+      init_request <- list(
+        type       = "control_request",
+        request_id = req_id,
+        request    = init_req_body
+      )
+      init_json <- jsonlite::toJSON(init_request, auto_unbox = TRUE, null = "null")
+      .write_all_to_process(private$proc, paste0(init_json, "\n"))
+      invisible(NULL)
+    },
+
+    # Initialize request body (mirrors Python Query.initialize()); also registers
+    # hook callbacks with unique ids.
+    build_initialize_body = function() {
 
       # Build hooks config and register callbacks with unique IDs (mirrors query.py:initialize())
       hooks_config <- NULL
@@ -974,6 +1006,7 @@ SubprocessCLITransport <- R6::R6Class(
               }
               matcher_cfg <- list(matcher = m$matcher, hookCallbackIds = callback_ids)
               if (!is.null(m$timeout)) matcher_cfg[["timeout"]] <- m$timeout
+              if (!is.null(m$on_failure)) matcher_cfg[["onFailure"]] <- m$on_failure
               matcher_cfg
             })
           }
@@ -989,9 +1022,12 @@ SubprocessCLITransport <- R6::R6Class(
 
       # exclude_dynamic_sections from SystemPromptPreset (mirrors Python Query.initialize())
       exclude_dyn <- NULL
+      snapshot <- NULL
       if (is.list(private$options$system_prompt) &&
           identical(private$options$system_prompt[["type"]], "preset")) {
         exclude_dyn <- private$options$system_prompt[["exclude_dynamic_sections"]]
+        snapshot <- private$options$system_prompt[["snapshot"]]
+        if (!(is.logical(snapshot) && length(snapshot) == 1L && !is.na(snapshot))) snapshot <- NULL
       }
 
       init_req_body <- list(
@@ -1000,15 +1036,12 @@ SubprocessCLITransport <- R6::R6Class(
       )
       if (!is.null(agents_config))  init_req_body[["agents"]]                 <- agents_config
       if (!is.null(exclude_dyn))    init_req_body[["excludeDynamicSections"]] <- exclude_dyn
-
-      init_request <- list(
-        type       = "control_request",
-        request_id = req_id,
-        request    = init_req_body
-      )
-      init_json <- jsonlite::toJSON(init_request, auto_unbox = TRUE, null = "null")
-      .write_all_to_process(private$proc, paste0(init_json, "\n"))
-      invisible(NULL)
+      # Python SDK v0.2.153 / v0.2.140.
+      if (!is.null(snapshot))       init_req_body[["systemPromptSnapshot"]]   <- snapshot
+      if (isTRUE(private$options$forward_subagent_text)) {
+        init_req_body[["forwardSubagentText"]] <- TRUE
+      }
+      init_req_body
     },
 
     read_initialize_reply = function(poll_ms) {
@@ -1034,13 +1067,44 @@ SubprocessCLITransport <- R6::R6Class(
               response[["error"]] %||% "Claude initialize handshake was rejected"
             ))
           } else {
-            observed <- list(complete = TRUE, reply = response[["response"]] %||% list())
+            reply <- response[["response"]] %||% list()
+            problem <- private$blocking_hooks_problem(reply)
+            observed <- if (is.null(problem)) list(complete = TRUE, reply = reply)
+                        else list(error = claude_cli_connection_error(problem))
           }
         } else {
           private$buffer$defer(line)
         }
       }
       observed
+    },
+
+    # Python SDK v0.2.177: a hook set to on_failure = "block" must not silently
+    # fail open on a CLI that ignores onFailure or did not register the hooks.
+    # verbatim_prompts relies on `client_composed`, honoured from Claude Code
+    # 2.1.248 (Python SDK v0.2.158); warn on older CLIs.
+    minimum_cli_version = function() {
+      if (isTRUE(private$options$verbatim_prompts)) "2.1.248" else MINIMUM_CLAUDE_CODE_VERSION
+    },
+
+    blocking_hooks_problem = function(reply) {
+      blocks <- any(vapply(unlist(private$options$hooks %||% list(), recursive = FALSE),
+        function(m) is.list(m) && !is.null(m$on_failure) && !identical(m$on_failure, "continue"),
+        logical(1)))
+      if (!blocks) return(NULL)
+      if (!isTRUE(reply[["hook_on_failure_supported"]])) {
+        return(paste(
+          "The process answering initialize does not honor on_failure on hook matchers,",
+          "so a hook that fails would not block. Update Claude Code, or remove",
+          "on_failure = \"block\" from your hooks."))
+      }
+      if (identical(reply[["hooks_applied"]], FALSE)) {
+        return(paste(
+          "This session was already running and did not register your hooks, so a hook",
+          "set to on_failure = \"block\" would never run. Start a new session, or remove",
+          "on_failure = \"block\" from your hooks."))
+      }
+      NULL
     },
 
     initialize_timeout = function() {
@@ -1188,25 +1252,27 @@ SubprocessCLITransport <- R6::R6Class(
     handle_hook = function(request) {
       # Dispatch by callback_id (mirrors Python query.py handle_control_request hook_callback branch)
       callback_id <- request[["callback_id"]]
+      # Errors propagate to handle_control_request(), which sends a control error
+      # response; the CLI then applies the matcher's onFailure policy
+      # ("block" fails closed). Mirrors Python query.py.
       if (is.null(callback_id) || is.null(private$hook_callbacks)) {
-        return(list(continue_ = TRUE))
+        stop("Hook callback request without a registered callback id.", call. = FALSE)
       }
       hook_fn <- private$hook_callbacks[[callback_id]]
       if (is.null(hook_fn)) {
-        warning(paste0("No hook callback found for ID: ", callback_id), call. = FALSE)
-        return(list(continue_ = TRUE))
+        stop(paste0("No hook callback found for ID: ", callback_id), call. = FALSE)
       }
-      result <- tryCatch(
-        hook_fn(
-          request[["input"]],
-          request[["tool_use_id"]],
-          list(signal = NULL)
-        ),
-        error = function(e) list(continue_ = TRUE)
+      result <- hook_fn(
+        request[["input"]],
+        request[["tool_use_id"]],
+        list(signal = NULL)
       )
+      if (is.null(result)) {
+        stop(paste0("Hook callback ", callback_id, " returned NULL."), call. = FALSE)
+      }
       # Convert R-style names to CLI-expected names (mirrors Python _convert_hook_output_for_cli):
       # continue_ -> continue,  async_ -> async
-      private$convert_hook_output_for_cli(result %||% list(continue_ = TRUE))
+      private$convert_hook_output_for_cli(result)
     },
 
     # Mirrors Python's _convert_hook_output_for_cli().
@@ -1256,3 +1322,56 @@ SubprocessCLITransport <- R6::R6Class(
     }
   )
 )
+
+
+# Skill names are formatted into `--allowedTools`, which the CLI splits on commas
+# and spaces outside parentheses. Reject names that cannot ride safely in a
+# `Skill(name)` rule or can never match a discovered skill (Python SDK v0.2.129).
+.validate_skill_name <- function(name) {
+  if (!is.character(name) || length(name) != 1L || is.na(name)) {
+    stop("Skill names must be single strings.", call. = FALSE)
+  }
+  fail <- function(reason) stop(sprintf("Invalid skill name '%s': %s", name, reason), call. = FALSE)
+  # Python str.strip() whitespace (incl. Unicode spaces such as U+00A0, U+2028).
+  name <- enc2utf8(name)
+  space <- c(9:13, 28:32, 133L, 160L, 5760L, 8192:8202, 8232L, 8233L, 8239L, 8287L, 12288L)
+  codes <- utf8ToInt(name)
+  keep <- which(!codes %in% space)
+  stripped <- if (length(keep)) intToUtf8(codes[min(keep):max(keep)]) else ""
+  if (!nzchar(stripped)) stop("Skill names must be non-empty strings.", call. = FALSE)
+  if (!identical(name, stripped)) fail("leading or trailing whitespace can never match.")
+  codes <- utf8ToInt(enc2utf8(name))
+  if (grepl("[(),]", name) || any(codes < 32L | (codes >= 127L & codes <= 159L) | codes == 65279L)) {
+    fail("parentheses, commas, control characters and byte-order marks are not allowed.")
+  }
+  if (identical(name, "*")) fail("use skills = \"all\" to enable every skill.")
+  if (endsWith(name, ":*") || endsWith(name, " *")) fail("wildcard-suffix names are not allowed.")
+  if (startsWith(name, "/")) fail("skill names may not start with '/'.")
+  if (grepl("\\\\\\\\", name)) fail("consecutive backslashes are not allowed.")
+  if (endsWith(name, "\\")) fail("names may not end with an unpaired backslash.")
+  invisible(TRUE)
+}
+
+
+# Python SDK v0.2.111: warn when a permission callback can never fire because a
+# whole tool is pre-allowed (`Read`, `Read()`, `Read(*)`, including the bare `Skill`
+# injected by skills = "all") or permissions are bypassed. Narrowed rules such as
+# `Bash(ls:*)` still reach the callback and do not warn.
+.warn_can_use_tool_shadowed <- function(opts, effective_allowed_tools) {
+  if (!is.function(opts$can_use_tool)) return(invisible(FALSE))
+  rules <- trimws(as.character(unlist(effective_allowed_tools %||% character())))
+  rules <- rules[nzchar(rules)]
+  whole <- regmatches(rules, regexec("^([A-Za-z_][A-Za-z0-9_:.-]*)(\\(\\*?\\))?$", rules))
+  tools <- unique(vapply(Filter(length, whole), `[[`, "", 2L))
+  if (identical(opts$permission_mode, "bypassPermissions")) {
+    warning(paste(
+      "`can_use_tool` is set with permission_mode = \"bypassPermissions\";",
+      "the callback will never be called."), call. = FALSE)
+  } else if (length(tools)) {
+    warning(sprintf(paste(
+      "`can_use_tool` will not be called for %s because %s pre-allowed by",
+      "`allowed_tools`/`skills`."), paste(tools, collapse = ", "),
+      if (length(tools) == 1L) "it is" else "they are"), call. = FALSE)
+  }
+  invisible(TRUE)
+}

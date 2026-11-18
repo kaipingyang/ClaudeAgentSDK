@@ -78,23 +78,32 @@ control-request handshake.
 \if{html}{\out{<a id="method-SubprocessCLITransport-connect_async"></a>}}
 \if{latex}{\out{\hypertarget{method-SubprocessCLITransport-connect_async}{}}}
 \subsection{\code{SubprocessCLITransport$connect_async()}}{
-  Initialize without blocking the R event loop. This owns stdout only until
-initialization settles; normal message polling starts afterward.
+  Initialize without blocking the R event loop. This owns stdout
+only until initialization settles; normal message polling starts afterward.
   \subsection{Usage}{
-    \preformatted{SubprocessCLITransport$connect_async(on_fulfilled, on_rejected, timeout_ms = NULL)}
+    \if{html}{\out{<div class="r">}}
+    \preformatted{SubprocessCLITransport$connect_async(
+  on_fulfilled,
+  on_rejected,
+  timeout_ms = NULL
+)}
+    \if{html}{\out{</div>}}
   }
   \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
     \describe{
       \item{\code{on_fulfilled}}{Function called with this transport after initialization.}
       \item{\code{on_rejected}}{Function called with an error on failure or cancellation.}
       \item{\code{timeout_ms}}{Positive deadline in milliseconds. NULL uses
 CLAUDE_CODE_STREAM_CLOSE_TIMEOUT, with the existing 60-second minimum.}
     }
+    \if{html}{\out{</div>}}
   }
   \subsection{Returns}{
     A cancellation function; FALSE after the request has settled.
   }
 }
+
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-SubprocessCLITransport-disconnect"></a>}}
 \if{latex}{\out{\hypertarget{method-SubprocessCLITransport-disconnect}{}}}

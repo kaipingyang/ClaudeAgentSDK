@@ -151,23 +151,28 @@ immediately after connecting.}
 \if{html}{\out{<a id="method-ClaudeSDKClient-connect_async"></a>}}
 \if{latex}{\out{\hypertarget{method-ClaudeSDKClient-connect_async}{}}}
 \subsection{\code{ClaudeSDKClient$connect_async()}}{
-  Connect without blocking the R event loop. Do not poll or send until
-\code{on_fulfilled} is called. Cancellation never sends a user prompt.
+  Connect without blocking the R event loop. Do not poll or send
+until on_fulfilled is called. Cancellation never sends a user prompt.
   \subsection{Usage}{
+    \if{html}{\out{<div class="r">}}
     \preformatted{ClaudeSDKClient$connect_async(on_fulfilled, on_rejected, timeout_ms = NULL)}
+    \if{html}{\out{</div>}}
   }
   \subsection{Arguments}{
+    \if{html}{\out{<div class="arguments">}}
     \describe{
       \item{\code{on_fulfilled}}{Function called with this client after initialization.}
       \item{\code{on_rejected}}{Function called on connection failure or cancellation.}
       \item{\code{timeout_ms}}{Positive deadline in milliseconds. NULL preserves the
 transport's environment-controlled initialization timeout.}
     }
+    \if{html}{\out{</div>}}
   }
   \subsection{Returns}{
     A cancellation function, returning FALSE after settlement.
   }
 }
+
 \if{html}{\out{<hr>}}
 \if{html}{\out{<a id="method-ClaudeSDKClient-disconnect"></a>}}
 \if{latex}{\out{\hypertarget{method-ClaudeSDKClient-disconnect}{}}}
